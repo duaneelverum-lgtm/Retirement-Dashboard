@@ -789,8 +789,10 @@ def main():
                 lump_sum_needed = max(0.0, target_gap)
                 
                 # If gap is 0, show "On Track"
-                if target_gap <= 0:
+                if target_spend > 0 and target_gap <= 0:
                     lump_content = f'<div><div style="font-weight: bold; font-size: 24px; color: #21c354; margin-top: 10px;">ON TRACK</div><div style="font-size: 13px; color: #555; margin-top: 5px;">You\'ve already met this target!</div></div>'
+                elif target_spend == 0:
+                    lump_content = f'<div><div style="font-size: 13px; color: #999; margin-top: 10px;">Please enter expenses in the Budget tab.</div></div>'
                 else:
                     lump_content = f'<div><div style="font-size: 13px; color: #555;">To retire in {target_years} years, you\'d need a one-time investment of:</div><div style="font-weight: bold; font-size: 18px; color: #0068c9;">${lump_sum_needed:,.0f}</div><div style="font-size: 11px; color: #888; margin-top: 5px;">Added to your current assets today.</div></div>'
 
@@ -809,8 +811,10 @@ def main():
                 else:
                     extra_monthly = 0
                 
-                if target_gap <= 0:
+                if target_spend > 0 and target_gap <= 0:
                     boost_content = f'<div><div style="font-weight: bold; font-size: 24px; color: #21c354; margin-top: 10px;">ON TRACK</div><div style="font-size: 13px; color: #555; margin-top: 5px;">No extra income needed!</div></div>'
+                elif target_spend == 0:
+                    boost_content = f'<div><div style="font-size: 13px; color: #999; margin-top: 10px;">Data needed.</div></div>'
                 else:
                     boost_content = f'<div><div style="font-size: 13px; color: #555;">Invest an additional</div><div style="font-weight: bold; font-size: 18px; color: #21c354;">${max(0.0, extra_monthly):,.0f}/mo</div><div style="font-size: 11px; color: #888; margin-top: 5px;">Your current monthly surplus is <b>${net_cashflow_global:,.2f}</b>.</div></div>'
 
@@ -834,8 +838,10 @@ def main():
                     temp_wealth = (temp_wealth * (1+r)**12) + (pmt * (((1+r)**12 - 1) / r))
                     retire_later_target *= 1.03
                 
-                if target_gap <= 0:
+                if target_spend > 0 and target_gap <= 0:
                     later_content = f'<div><div style="font-weight: bold; font-size: 24px; color: #21c354; margin-top: 10px;">ON TRACK</div><div style="font-size: 13px; color: #555; margin-top: 5px;">Current age: {planned_ret_age}</div></div>'
+                elif target_spend == 0:
+                    later_content = f'<div><div style="font-size: 13px; color: #999; margin-top: 10px;">Data needed.</div></div>'
                 else:
                     later_content = f'<div><div style="font-size: 13px; color: #555;">Hit your goal with current savings by retiring at age</div><div style="font-weight: bold; font-size: 18px; color: #ffa421;">{found_age}</div><div style="font-size: 11px; color: #888; margin-top: 5px;">Based on current <b>${net_worth:,.0f}</b> assets.</div></div>'
 
@@ -851,8 +857,10 @@ def main():
             with s4:
                 safe_spend = (future_wealth * withdraw_rate) / 12
                 
-                if target_gap <= 0:
+                if target_spend > 0 and target_gap <= 0:
                     less_content = f'<div><div style="font-weight: bold; font-size: 24px; color: #21c354; margin-top: 10px;">ON TRACK</div><div style="font-size: 13px; color: #555; margin-top: 5px;">No spending cuts needed!</div></div>'
+                elif target_spend == 0:
+                    less_content = f'<div><div style="font-size: 13px; color: #999; margin-top: 10px;">Data needed.</div></div>'
                 else:
                     less_content = f'<div><div style="font-size: 13px; color: #555;">A safe monthly amount is</div><div style="font-weight: bold; font-size: 18px; color: #ff2b2b;">${max(0.0, safe_spend):,.0f}/mo</div><div style="font-size: 11px; color: #888; margin-top: 5px;">Requires <b>${abs(safe_spend - total_expenses_global):,.0f} {"more" if (safe_spend - total_expenses_global) > 0 else "less"}</b> than current.</div></div>'
 
@@ -1937,6 +1945,20 @@ def main():
             name="What-If Scenario",
             line=dict(color="#00CC96", width=4)
         ))
+
+        # Add vertical lines for each scenario event
+        for s in data.get("scenarios", []):
+            s_age = s.get("age")
+            if s_age:
+                fig_comp.add_vline(
+                    x=s_age, 
+                    line_width=1, 
+                    line_dash="dash", 
+                    line_color="gray", 
+                    annotation_text=s.get("name", ""), 
+                    annotation_position="top left",
+                    annotation=dict(font=dict(size=12, color="gray"))
+                )
         
         fig_comp.update_layout(
             xaxis_title="Age",
