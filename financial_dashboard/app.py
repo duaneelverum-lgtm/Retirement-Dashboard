@@ -144,6 +144,87 @@ def confirm_reset_dialog():
         if st.button("Cancel", use_container_width=True):
             st.rerun()
 
+# --- BLOG LOGIC ---
+def load_blog_posts():
+    """Loads markdown posts from the posts/ directory."""
+    posts_dir = os.path.join(BASE_DIR, "posts")
+    posts = []
+    
+    # Ensure directory exists
+    if not os.path.exists(posts_dir):
+        return []
+        
+    for filename in os.listdir(posts_dir):
+        if filename.endswith(".md"):
+            with open(os.path.join(posts_dir, filename), "r") as f:
+                content = f.read()
+                
+            # Simple frontmatter parser
+            if content.startswith("---"):
+                try:
+                    # Remove the first "---"
+                    _, frontmatter, body = content.split("---", 2)
+                    
+                    # Parse simplified YAML-like structure
+                    meta = {}
+                    for line in frontmatter.strip().split("\n"):
+                        if ":" in line:
+                            key, val = line.split(":", 1)
+                            meta[key.strip()] = val.strip()
+                            
+                    # Add post
+                    posts.append({
+                        "id": filename,
+                        "title": meta.get("title", "Untitled"),
+                        "date": meta.get("date", "1970-01-01"),
+                        "author": meta.get("author", "Unknown"),
+                        "category": meta.get("category", "General"),
+                        "excerpt": meta.get("excerpt", ""),
+                        "content": body.strip()
+                    })
+                except Exception as e:
+                    print(f"Error parsing {filename}: {e}")
+                    
+    # Sort by date descending
+    return sorted(posts, key=lambda x: x['date'], reverse=True)
+
+def render_blog_card(post):
+    """Renders a preview card for a blog post."""
+    with st.container():
+        col_img, col_text = st.columns([1, 5])
+        
+        with col_img:
+            # Placeholder thumbnail
+            st.markdown(f"""
+            <div style="background-color: #f0f2f6; height: 80px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 30px;">
+                📝
+            </div>
+            """, unsafe_allow_html=True)
+            
+        with col_text:
+            st.markdown(f"**{post['title']}**")
+            st.caption(f"📅 {post['date']} • 🏷️ {post['category']}")
+            st.write(post["excerpt"])
+            
+            if st.button(f"Read More", key=f"btn_read_{post['id']}", type="secondary"):
+                st.session_state["selected_post"] = post
+                st.rerun()
+        
+        st.divider()
+
+def render_full_post(post):
+    """Renders the full blog post view."""
+    if st.button("← Back to Blog"):
+        del st.session_state["selected_post"]
+        st.rerun()
+        
+    st.title(post["title"])
+    st.caption(f"Published on {post['date']} by {post['author']} • {post['category']}")
+    
+    st.markdown("---")
+    st.markdown(post["content"])
+    st.markdown("---")
+
 
 def render_reset_button(key_suffix):
     with st.expander("Reset All Data", expanded=False):
@@ -244,16 +325,46 @@ def main():
     st.info("💡 Your data is private. It only lasts for this session. Please use the **Clear Session** button to reset, or close your browser.")
     
     # Tabs (Top-Level Navigation)
-    tab_summary, tab_how_long, tab_what_if, tab_personal, tab_budget, tab_details, tab_liabilities = st.tabs([
-        "⛰️ The Big Picture", 
-        "⏳ How Long Will It Last?",
-        "🚀 What If?",
-        "👤 Profile",
-        "💰 Budget",
-        "🏦 Assets", 
-        "💳 Liabilities"
-    ])
+    # Tabs (Top-Level Navigation)
+    # Added "Blog" tab as the second item
+    # Layout: Main Content (Left) + Blog (Right Sidebar)
+    col_main, col_blog = st.columns([3.5, 1], gap="medium")
+    
+    with col_main:
+        tab_summary, tab_how_long, tab_what_if, tab_personal, tab_budget, tab_details, tab_liabilities = st.tabs([
+            "⛰️ The Big Picture", 
+            "⏳ How Long Will It Last?",
+            "🚀 What If?",
+            "👤 Profile",
+            "💰 Budget",
+            "🏦 Assets", 
+            "💳 Liabilities"
+        ])
 
+
+
+    # --- RIGHT SIDEBAR: Blog ---
+    with col_blog:
+        st.subheader("Blog Posts")
+        posts = load_blog_posts()
+        if not posts:
+            st.info("No posts.")
+        else:
+            # Scrollable container for blog posts
+            with st.container(height=600):
+                for post in posts:
+                    with st.container(border=True):
+                        st.caption(f"📅 {post['date']}")
+                        st.markdown(f"**{post['title']}**")
+                        if st.button("Read", key=f"right_blog_{post['id']}", use_container_width=True):
+                            @st.dialog(post['title'])
+                            def show_post_item(item):
+                                st.caption(f"📅 {item['date']} • 🏷️ {item['category']} • ✍️ {item['author']}")
+                                st.markdown("---")
+                                st.markdown(item['content'])
+                            show_post_item(post)
+
+        st.caption("Financial Dashboard v1.0")
 
     # --- TAB: Personal Details ---
     # --- Profile Tab ---
