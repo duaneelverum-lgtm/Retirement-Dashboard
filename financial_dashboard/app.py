@@ -647,8 +647,14 @@ def main():
         # Explicit check: User requested Annual Income from Budget Tab * 12
         annual_income = total_income_global * 12
         target_spend = total_expenses_global
+        
+        # Account for Govt Benefits to reduce Nest Egg Needed
+        gov = data.get("government", {})
+        passive_income = gov.get("cpp_amount", 0.0) + gov.get("oas_amount", 0.0)
+        net_target_spend = max(0, target_spend - passive_income)
+
         withdraw_rate = 0.04 # Standard 4% rule
-        target_nest_egg = (target_spend * 12) / withdraw_rate if target_spend > 0 else 0.0
+        target_nest_egg = (net_target_spend * 12) / withdraw_rate if net_target_spend > 0 else 0.0
         
         # Show helpful message if no budget data entered yet
         if annual_income == 0 and target_spend == 0:
@@ -728,8 +734,9 @@ def main():
                     mid_text = ", you are working toward your retirement goal."
             
             nest_egg_text = ""
-            if target_nest_egg > 0:
-                 nest_egg_text = f" To sustain your <strong>${target_spend:,.0f}/mo</strong> lifestyle forever, you need a Net Worth of <strong>${target_nest_egg:,.0f}</strong>."
+            if target_nest_egg >= 0:
+                 pension_note = f" (after ${passive_income:,.0f} benefits)" if passive_income > 0 else ""
+                 nest_egg_text = f" To sustain your <strong>${target_spend:,.0f}/mo</strong> lifestyle{pension_note}, you need a Net Worth of <strong>${target_nest_egg:,.0f}</strong>."
             
             full_sentence = start_text + mid_text + nest_egg_text
             
