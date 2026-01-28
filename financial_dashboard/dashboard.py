@@ -46,7 +46,7 @@ def load_data():
 def display_custom_metric(label, value, delta=None, help_text=None):
     delta_html = ""
     if delta:
-        # Determine color based on content (simple heuristic)
+        # Determine color based on content
         color = "#007a33" # Green
         bg_color = "#e6f4ea"
         if "-" in str(delta) and "benefit" not in label.lower() and "income" not in label.lower():
@@ -64,6 +64,10 @@ def display_custom_metric(label, value, delta=None, help_text=None):
     """, unsafe_allow_html=True)
 
 def save_data(data):
+    if DEMO_MODE:
+        # In demo mode, save to session state instead of file
+        st.session_state["finance_data"] = data
+        return
     with open(DATA_FILE, "w") as f:
         json.dump(data, f, indent=2)
 
@@ -132,11 +136,11 @@ def confirm_reset_dialog():
             st.session_state["_reset_counter"] = new_reset # Persist counter
             
             # 1. Reset Data Object
-            empty_data = {
+            st.session_state["finance_data"] = {
                 "accounts": [], "transactions": [], "history": [], 
                 "personal": {}, "budget": [], "government": {}, "inheritance": {}, "annual_expenditures": []
             }
-            save_data(empty_data)
+            save_data(st.session_state["finance_data"])
             st.rerun()
     with c2:
         if st.button("Cancel", use_container_width=True):
@@ -201,7 +205,17 @@ def main():
         </style>
     """, unsafe_allow_html=True)
 
-    data = load_data()
+    # Session-state backed data for Demo interactivity
+    if "finance_data" not in st.session_state:
+        st.session_state["finance_data"] = load_data()
+    
+    # Initialize session state for form results persistence
+    if "show_results" not in st.session_state:
+        st.session_state["show_results"] = False
+    if "calculated_results" not in st.session_state:
+        st.session_state["calculated_results"] = {}
+    
+    data = st.session_state["finance_data"]
 
     # Hide Sidebar in Demo Mode (CSS)
     if DEMO_MODE:
@@ -219,9 +233,17 @@ def main():
 
 
     # --- Main Dashboard ---
-    st.title("Duane's Retirement Dashboard")
+    col_title, col_clear = st.columns([5, 1])
+    with col_title:
+        st.title("Duane's Retirement Dashboard")
+    with col_clear:
+        if st.button("🗑️ Clear Session", type="secondary", use_container_width=True, help="Clear all data and results"):
+            confirm_reset_dialog()
 
     st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Info banner about session state
+    # st.info("💡 Your data is private. It only lasts for this session. Please use the **Clear Session** button to reset, or close your browser.")
     
     # Tabs (Top-Level Navigation)
     tab_summary, tab_how_long, tab_what_if, tab_personal, tab_budget, tab_details, tab_liabilities = st.tabs([
@@ -234,79 +256,89 @@ def main():
         "💳 Liabilities"
     ])
 
-    # --- Pre-calculate Budget Totals ---
-    # These are needed for both the Summary tab calculations and the Budget tab metrics
-    current_budget_global = data.get("budget", [])
-    total_income_global = sum(float(item.get("amount", 0.0)) for item in current_budget_global if item.get("type") == "Income")
-    total_expenses_global = 0.0
-    for item in current_budget_global:
-        if item.get("type") == "Expense":
-            amt = float(item.get("amount", 0.0))
-            freq = item.get("frequency", "Monthly")
-            if freq == "Annually":
-                total_expenses_global += (amt / 12)
-            else:
-                total_expenses_global += amt
-    net_cashflow_global = total_income_global - total_expenses_global
 
     # --- TAB: Personal Details ---
+    # --- Profile Tab ---
     with tab_personal:
-        st.markdown("### 👤 Personal Planning Details")
+        if st.session_state.get("show_personal_results"):
+            st.toast("✅ Personal details saved!", icon="👤")
+
+        st.markdown("### 👤 Profile")
+        st.info("💡 **Start here.** Changes on this page will update totals across the site.")
         
         personal = data.get("personal", {})
         
-        # Default values if missing
-        p_name = personal.get("name", "")
-        p_dob = personal.get("dob", "1965-01-01")
-        p_city = personal.get("city", "")
-        p_ret_age = personal.get("retirement_age", 65)
-        p_life_exp = personal.get("life_expectancy", 95)
-        
+        # Form for input
         with st.form("personal_details_form"):
             col1, col2 = st.columns(2)
             with col1:
-                name = st.text_input("Full Name", value=p_name)
-                # Convert string DOB to date object for picker
-                try:
-                    dob_date = datetime.strptime(p_dob, "%Y-%m-%d").date()
-                except:
-                    dob_date = datetime(1965, 1, 1).date()
-                dob = st.date_input("Date of Birth", value=dob_date, min_value=datetime(1920, 1, 1).date(), max_value=datetime.now().date())
-                city = st.text_input("Current City", value=p_city, help="Used for future cost-of-living adjustments (planned).")
+                # Click-to-clear: empty value, placeholder shows saved data
+                name_input = st.text_input("Full Name", value="", placeholder=personal.get("name", "Enter your name"))
+                name = name_input if name_input else personal.get("name", "")
+                
+                dob_val = None
+                if personal.get("dob"):
+                    try:
+                        dob_val = datetime.strptime(personal["dob"], "%Y-%m-%d").date()
+                    except:
+                        pass
+                
+                dob = st.date_input("Date of Birth", value=dob_val, min_value=datetime(1900, 1, 1).date(), max_value=datetime.now().date())
+                
+                # Click-to-clear city field
+                city_input = st.text_input("Current City", value="", placeholder=personal.get("city", "Enter your city"))
+                city = city_input if city_input else personal.get("city", "")
             
             with col2:
-                ret_age = st.number_input("Target Retirement Age", value=int(p_ret_age), min_value=18, max_value=100)
-                life_exp = st.number_input("Plan Until Age (Life Expectancy)", value=int(p_life_exp), min_value=int(ret_age), max_value=110)
+                ret_age_input = st.number_input("Target Retirement Age", value=None, min_value=0, max_value=120, placeholder=str(personal.get("retirement_age", 65)))
+                ret_age = ret_age_input if ret_age_input is not None else personal.get("retirement_age")
                 
-                # Calculate current age for display
-                today = datetime.now().date()
-                calc_age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
-                st.metric("Age", f"{calc_age}")
+                life_exp_input = st.number_input("Plan Until Age (Life Expectancy)", value=None, min_value=0, max_value=120, placeholder=str(personal.get("life_expectancy", 95)))
+                life_exp = life_exp_input if life_exp_input is not None else personal.get("life_expectancy")
             
             _, c_save = st.columns([5, 1])
             with c_save:
-                if st.form_submit_button("Save Details", type="primary", disabled=DEMO_MODE, use_container_width=True):
+                if st.form_submit_button("Save Details", type="primary", use_container_width=True):
+                    # Calculate age
+                    calc_age = "---"
+                    if dob:
+                        today = datetime.now().date()
+                        calc_age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+                    
+                    # Save to data
                     data["personal"] = {
                         "name": name,
-                        "dob": str(dob),
+                        "dob": str(dob) if dob else None,
                         "city": city,
                         "retirement_age": ret_age,
                         "life_expectancy": life_exp
                     }
                     save_data(data)
-                    st.success("Personal details saved!")
+                    
+                    # Store in session state for immediate display
+                    st.session_state["show_personal_results"] = True
+                    st.session_state["saved_personal_data"] = data["personal"]
+                    st.session_state["calculated_age"] = calc_age
+                    
                     st.rerun()
 
     # Calculate calc_age outside for use in other tabs
-    p_dob_str = data.get("personal", {}).get("dob", "1965-01-01")
-    try:
-        p_dob_dt = datetime.strptime(p_dob_str, "%Y-%m-%d").date()
-    except:
-        p_dob_dt = datetime(1965, 1, 1).date()
-    today = datetime.now().date()
-    calc_age = today.year - p_dob_dt.year - ((today.month, today.day) < (p_dob_dt.month, p_dob_dt.day))
-    planned_ret_age = data.get("personal", {}).get("retirement_age", 65)
-    planned_life_exp = data.get("personal", {}).get("life_expectancy", 95)
+    # Handle None cases for global variables
+    p_dob_str = data.get("personal", {}).get("dob")
+    calc_age = 0
+    if p_dob_str:
+        try:
+            p_dob_dt = datetime.strptime(p_dob_str, "%Y-%m-%d").date()
+            today = datetime.now().date()
+            calc_age = today.year - p_dob_dt.year - ((today.month, today.day) < (p_dob_dt.month, p_dob_dt.day))
+        except:
+            pass
+            
+    planned_ret_age_val = data.get("personal", {}).get("retirement_age")
+    planned_ret_age = planned_ret_age_val if planned_ret_age_val is not None else 65 # Safe default for charts
+    
+    planned_life_exp_val = data.get("personal", {}).get("life_expectancy")
+    planned_life_exp = planned_life_exp_val if planned_life_exp_val is not None else 95 # Safe default for charts
     
     # --- Government Benefits Section (Moved to Personal) ---
     with tab_personal:
@@ -315,43 +347,29 @@ def main():
         
         gov = data.get("government", {})
         
+        # Display saved results if they exist
+        if st.session_state.get("show_gov_results"):
+            st.toast("✅ Government benefits saved!", icon="🇨🇦")
+        
         with st.form("gov_benefits_form"):
             # CPP Section
             st.markdown("**CPP (Canada Pension Plan)**")
             c_cpp1, c_cpp2 = st.columns(2)
             with c_cpp1:
-                # Defaults
                 g_cpp_start = gov.get("cpp_start_age", 65)
                 new_cpp_start = st.selectbox("CPP Start Age", options=list(range(60, 71)), index=list(range(60, 71)).index(g_cpp_start), key="p_cpp_start")
             with c_cpp2:
                 g_cpp_amt = gov.get("cpp_amount", 0.0)
-                # Use value=None only if we want to force clear, but standard practice for editing 
-                # existing data is to show the value. The user asked for "click to clear".
-                # Streamlit doesn't natively support "click to clear" on a pre-filled number_input 
-                # unless we set value=None. But then we lose the saved state on reload.
-                # A common workaround is to use `value=None` and `placeholder=str(saved_val)` 
-                # BUT this writes None to database if they don't type anything.
-                # 
-                # Strategy: We will check if the user has manually cleared it. 
-                # For "Click to Clear", typically we just want to avoid selecting the text manually.
-                # Streamlit's number_input selects all text on focus often, but let's try the None approach
-                # if the user specifically requested "click to clear" implying they want to see a placeholder.
-                # Re-reading request: "make sure that where I'm entering dollar amounts... make sure it's click to clear"
-                # This usually implies using `value=None` with a placeholder.
-                # However, we must Handle the SAVE logic to use the previous value if Input is None.
-                
-                new_cpp_amt_input = st.number_input("CPP Amount ($/mo)", value=None, step=50.0, placeholder=f"{g_cpp_amt:.2f}")
+                new_cpp_amt_input = st.number_input("CPP Amount ($/mo)", value=None, step=50.0, placeholder=f"{float(g_cpp_amt):.2f}")
                 new_cpp_amt = new_cpp_amt_input if new_cpp_amt_input is not None else float(g_cpp_amt)
             
-            st.markdown("<br>", unsafe_allow_html=True) # Spacer
+            st.markdown("<br>", unsafe_allow_html=True)
 
             # OAS Section
             st.markdown("**OAS (Old Age Security)**")
             c_oas1, c_oas2 = st.columns(2)
             with c_oas1:
-                # Defaults
                 g_oas_start = gov.get("oas_start_age", 65)
-                # OAS starts 65-70
                 oas_opts = list(range(65, 71))
                 try:
                     oas_idx = oas_opts.index(g_oas_start)
@@ -360,14 +378,14 @@ def main():
                 new_oas_start = st.selectbox("OAS Start Age", options=oas_opts, index=oas_idx, key="p_oas_start")
             with c_oas2:
                 g_oas_amt = gov.get("oas_amount", 0.0)
-                new_oas_amt_input = st.number_input("OAS Amount ($/mo)", value=None, step=50.0, placeholder=f"{g_oas_amt:.2f}")
+                new_oas_amt_input = st.number_input("OAS Amount ($/mo)", value=None, step=50.0, placeholder=f"{float(g_oas_amt):.2f}")
                 new_oas_amt = new_oas_amt_input if new_oas_amt_input is not None else float(g_oas_amt)
             
-            st.markdown("<br>", unsafe_allow_html=True) # Spacer
+            st.markdown("<br>", unsafe_allow_html=True)
             
             _, c_save = st.columns([5, 1])
             with c_save:
-                if st.form_submit_button("Save Benefits", type="primary", disabled=DEMO_MODE, use_container_width=True):
+                if st.form_submit_button("Save Benefits", type="primary", use_container_width=True):
                     data["government"] = {
                         "cpp_start_age": new_cpp_start,
                         "cpp_amount": new_cpp_amt,
@@ -375,7 +393,11 @@ def main():
                         "oas_amount": new_oas_amt
                     }
                     save_data(data)
-                    st.success("Government benefits saved!")
+                    
+                    # Store in session state for immediate display
+                    st.session_state["show_gov_results"] = True
+                    st.session_state["saved_gov_data"] = data["government"]
+                    
                     st.rerun()
 
     # --- Inheritance Section (Moved to Personal) ---
@@ -393,10 +415,12 @@ def main():
                 i_amt = inh.get("amount", 0.0)
                 
                 # Age input also requested to be cleared? "where I'm entering dollar amounts... or inheritance age"
-                new_inh_age_input = st.number_input("Inheritance Age", min_value=0, max_value=100, value=None, step=1, help="Age you expect to receive this.", placeholder=f"{i_age}")
+                # USER TESTING: Default to None with saved value as placeholder
+                new_inh_age_input = st.number_input("Inheritance Age", min_value=0, max_value=100, value=None, step=1, help="Age you expect to receive this.", placeholder=str(int(i_age)))
                 new_inh_age = new_inh_age_input if new_inh_age_input is not None else int(i_age)
                 
-                new_inh_amt_input = st.number_input("Amount ($)", value=None, step=1000.0, placeholder=f"{i_amt:.2f}")
+                # USER TESTING: Default to None with saved value as placeholder
+                new_inh_amt_input = st.number_input("Amount ($)", value=None, step=1000.0, placeholder=f"{float(i_amt):.2f}")
                 new_inh_amt = new_inh_amt_input if new_inh_amt_input is not None else float(i_amt)
             
             with c2:
@@ -414,13 +438,14 @@ def main():
                     new_sell_prop = st.checkbox("Plan to sell this property?", value=i_sell)
                     if new_sell_prop:
                         tgt_val = i_sell_age if i_sell_age >= new_inh_age else new_inh_age + 5
-                        new_sell_age = st.number_input("Sell Age", min_value=new_inh_age, max_value=100, value=int(tgt_val), step=1)
+                        sell_age_input = st.number_input("Sell Age", min_value=new_inh_age, max_value=100, value=None, step=1, placeholder=str(int(tgt_val)))
+                        new_sell_age = sell_age_input if sell_age_input is not None else int(tgt_val)
                     else:
                         st.caption("Value will add to Net Worth but NOT to liquid spendable balance.")
             
             _, c_save = st.columns([5, 1])
             with c_save:
-                if st.form_submit_button("Save Inheritance", type="primary", disabled=DEMO_MODE, use_container_width=True):
+                if st.form_submit_button("Save Inheritance", type="primary", use_container_width=True):
                     data["inheritance"] = {
                         "age": new_inh_age,
                         "amount": new_inh_amt,
@@ -435,7 +460,8 @@ def main():
     # --- Pre-calculate Budget Totals ---
     # These are needed for both the Summary tab calculations and the Budget tab metrics
     current_budget_global = data.get("budget", [])
-    total_income_global = sum(item["amount"] for item in current_budget_global if item["type"] == "Income")
+    
+    total_income_global = sum(float(item.get("amount", 0.0)) for item in current_budget_global if item.get("type") == "Income")
     total_expenses_global = 0.0
     for item in current_budget_global:
         if item["type"] == "Expense":
@@ -447,10 +473,11 @@ def main():
                 total_expenses_global += amt
     net_cashflow_global = total_income_global - total_expenses_global
 
-
     # --- TAB: Summary (Home) ---
+    # --- TAB: Summary/Big Picture ---
     with tab_summary:
         st.markdown("### ⛰️ The Big Picture")
+        st.info("💡 Please fill out the Profile, Budget, Assets and Liabilities pages to see the big picture.")
         net_worth, assets, liabilities = get_net_worth(data)
         
         # --- Auto-Update Today's History ---
@@ -500,14 +527,16 @@ def main():
              """, unsafe_allow_html=True)
 
              if len(df_hist_metrics) > 1:
-                col_metric1, col_metric2, col_metric3 = st.columns([1, 1, 1], gap="small")
+                col_metric1, col_metric2, col_metric3, col_metric4 = st.columns(4, gap="large")
                 col_metric1.metric("Current Net Worth", f"${current_value:,.2f}", f"${growth:,.2f}")
                 col_metric2.metric("Growth", f"{growth_pct:+.1f}%", f"since {df_hist_metrics['date_label'].iloc[0]}")
                 col_metric3.metric("Total Assets", f"${assets:,.2f}")
+                col_metric4.metric("Guilt Free Spending", f"${net_cashflow_global:,.2f}")
              else:
-                col_metric1, col_metric3 = st.columns(2)
+                col_metric1, col_metric2, col_metric3 = st.columns(3, gap="large")
                 col_metric1.metric("Current Net Worth", f"${current_value:,.2f}", "First snapshot recorded")
-                col_metric3.metric("Total Assets", f"${assets:,.2f}")
+                col_metric2.metric("Total Assets", f"${assets:,.2f}")
+                col_metric3.metric("Guilt Free Spending", f"${net_cashflow_global:,.2f}")
              
 
 
@@ -534,9 +563,6 @@ def main():
                 target_million = float(((int(max_val_in_data) // 1000000) + 1) * 1000000)
                 y_min = 0
                 y_max = target_million * 1.1  # Add 10% buffer so the top line is visible as a grid line
-                
-                st.write("") # Add padding
-                st.write("")
                 
 
                 
@@ -620,10 +646,15 @@ def main():
         st.subheader("🎯 When can I stop working?")
         
         # Calculate values first
+        # Explicit check: User requested Annual Income from Budget Tab * 12
         annual_income = total_income_global * 12
         target_spend = total_expenses_global
         withdraw_rate = 0.04 # Standard 4% rule
         target_nest_egg = (target_spend * 12) / withdraw_rate if target_spend > 0 else 0.0
+        
+        # Show helpful message if no budget data entered yet
+        if annual_income == 0 and target_spend == 0:
+            st.info("💡 **Tip:** Enter your income and expenses in the **Budget** tab to see personalized retirement projections here.")
         
         # Calculation logic
         is_retired_calc = (calc_age >= planned_ret_age)
@@ -642,7 +673,7 @@ def main():
             
         final_gap = target_nest_egg - future_wealth
         
-        # Calculate natural retirement timeline first (Including 3% Inflation + Annual Expenditures)
+        # Calculate natural retirement timeline first (Including 3% Inflation + Annual Bucket List)
         inf_rate = 0.03 / 12 # 3% annual inflation
         annual_exp_plan = data.get("annual_expenditures", [])
         
@@ -657,9 +688,9 @@ def main():
                 # Monthly loop for high accuracy
                 for mm in range(12):
                     temp_nw += (temp_nw * r)
-                    temp_nw += (pmt / 1) # Add monthly savings
+                    temp_nw += (pmt / 1) # Monthly savings
                 
-                # Subtract Annual Expenditures at end of year
+                # Subtract Annual Expenditures
                 for exp in annual_exp_plan:
                     e_amt = exp.get("amount", 0.0)
                     e_freq = exp.get("frequency", "One-time")
@@ -674,7 +705,7 @@ def main():
                     
                     if should_apply:
                         temp_nw -= e_amt
-                
+
                 # Adjust target nest egg for inflation (expenses grow)
                 curr_target = curr_target * (1.03) 
                 years_until_retire += 1
@@ -691,7 +722,9 @@ def main():
             elif net_cashflow_global <= 0:
                  mid_text = ", your expenses currently exceed your income."
             else:
-                 if net_worth >= target_nest_egg:
+                 if target_spend == 0:
+                    mid_text = ", please enter your monthly expenses in the Budget tab to see when you can retire."
+                 elif net_worth >= target_nest_egg:
                     mid_text = ", you have already reached your financial independence number!"
                  else:
                     mid_text = ", you are working toward your retirement goal."
@@ -831,136 +864,130 @@ def main():
     # --- TAB: Assets ---
     with tab_details:
 
-        if data["accounts"]:
-            # 1. Account Categories (Editable Summaries)
-            # Placeholder for dynamic title
-            asset_header_placeholder = st.empty()
+        # 1. Account Categories (Editable Summaries)
+        # Placeholder for dynamic title
+        asset_header_placeholder = st.empty()
 
-            # 1. Gather all Asset Accounts (Inverse of Liabilities)
-            liab_types = ["Liability", "Credit Card", "Loan", "Mortgage"]
-            asset_accounts = [
-                a for a in data["accounts"] 
-                if a.get("type") not in liab_types and a.get("balance", 0.0) >= 0
-            ]
+        # 1. Gather all Asset Accounts (Inverse of Liabilities)
+        liab_types = ["Liability", "Credit Card", "Loan", "Mortgage"]
+        asset_accounts = [
+            a for a in data["accounts"] 
+            if a.get("type") not in liab_types and a.get("balance", 0.0) >= 0
+        ]
+        
+        # Calculate Total Assets
+        total_assets_val = sum(a["balance"] for a in asset_accounts)
+        asset_header_placeholder.markdown(f"### Assets — ${total_assets_val:,.2f}")
+        st.info("💡 Please provide details for assets on this page in order to see how it affects the big picture.")
+        
+        # Fixed categories to allow adding data even when empty
+        types = ["Investments", "Bank", "Assets", "Cash", "Other"]
+        
+        for asset_type in types:
+            type_accounts = [a for a in asset_accounts if a["type"] == asset_type]
+            type_total = sum(a["balance"] for a in type_accounts)
             
-            # Calculate Total Assets
-            total_assets_val = sum(a["balance"] for a in asset_accounts)
-            asset_header_placeholder.markdown(f"### Assets — ${total_assets_val:,.2f}")
-            
-            # Fixed categories to allow adding data even when empty
-            types = ["Investments", "Bank", "Assets", "Cash", "Other"]
-            
-            for asset_type in types:
-                type_accounts = [a for a in asset_accounts if a["type"] == asset_type]
-                type_total = sum(a["balance"] for a in type_accounts)
+            with st.expander(f"**{asset_type}** — ${type_total:,.2f}", expanded=False):
+                # Custom Row-Based Editor for Assets
+                ss_key = f"assets_list_demo_{asset_type}"
+                if ss_key not in st.session_state:
+                    st.session_state[ss_key] = type_accounts
                 
-                with st.expander(f"**{asset_type}** — ${type_total:,.2f}", expanded=False):
-                    # Custom Row-Based Editor for Assets
-                    ss_key = f"assets_list_{asset_type}"
-                    if ss_key not in st.session_state:
-                        st.session_state[ss_key] = type_accounts
+                # Ensure default fields
+                for a in st.session_state[ss_key]:
+                    if "name" not in a: a["name"] = ""
+                    if "institution" not in a: a["institution"] = ""
+                    if "type" not in a: a["type"] = asset_type
+                    if "balance" not in a: a["balance"] = 0.0
+                    if "id" not in a: a["id"] = f"acc_demo_{int(datetime.now().timestamp())}_{random.randint(0, 1000)}"
+
+                # Header
+                h_cols = st.columns([2, 2, 2, 3, 0.8])
+                headers = ["Name", "Institution", "Type ⌵", "Balance", ""]
+                for col, h in zip(h_cols, headers):
+                    if h:
+                        col.markdown(f"**{h}**")
+                # Rows
+                updated_type_list = []
+                to_delete_asset = None
+                
+                for a_idx, a_row in enumerate(st.session_state[ss_key]):
+                    r_cols = st.columns([2, 2, 2, 3, 0.8])
                     
-                    # Ensure default fields
-                    for a in st.session_state[ss_key]:
-                        if "name" not in a: a["name"] = ""
-                        if "institution" not in a: a["institution"] = ""
-                        if "type" not in a: a["type"] = asset_type
-                        if "balance" not in a: a["balance"] = 0.0
-                        if "id" not in a: a["id"] = f"acc_{int(datetime.now().timestamp())}_{random.randint(0, 1000)}"
-
-                    # Header
-                    h_cols = st.columns([3, 2, 2, 2, 0.8])
-                    headers = ["Name", "Institution", "Type ⌵", "Balance", ""]
-                    for col, h in zip(h_cols, headers):
-                        if h:
-                            col.markdown(f"**{h}**")
-                    # Rows
-                    updated_type_list = []
-                    to_delete_asset = None
+                    # Click-to-clear pattern
+                    name_val = r_cols[0].text_input("Name", value="", placeholder=a_row["name"] or "Account name", key=f"a_name_demo_{asset_type}_{a_idx}", label_visibility="collapsed")
+                    a_name = name_val if name_val else a_row["name"]
                     
-                    for a_idx, a_row in enumerate(st.session_state[ss_key]):
-                        r_cols = st.columns([3, 2, 2, 2, 0.8])
-                        
-                        a_name = r_cols[0].text_input("Name", value=a_row["name"], key=f"a_name_{asset_type}_{a_idx}", label_visibility="collapsed")
-                        a_inst = r_cols[1].text_input("Inst", value=a_row.get("institution", ""), key=f"a_inst_{asset_type}_{a_idx}", label_visibility="collapsed")
-                        
-                        asset_types = ["Investments", "Bank", "Assets", "Cash", "Other"]
-                        curr_a_type = a_row.get("type", asset_type)
-                        if curr_a_type not in asset_types: curr_a_type = asset_type
-                        a_type = r_cols[2].selectbox("Type", options=asset_types, index=asset_types.index(curr_a_type), key=f"a_type_{asset_type}_{a_idx}", label_visibility="collapsed")
-                        
-                        # Handle balance safely
-                        try:
-                            curr_bal = float(a_row.get("balance", 0.0))
-                        except:
-                            curr_bal = 0.0
-                        a_bal = r_cols[3].number_input("Balance", value=curr_bal, key=f"a_bal_{asset_type}_{a_idx}", label_visibility="collapsed", format="%.2f")
-                        
-                        if r_cols[4].button("🗑️", key=f"a_del_{asset_type}_{a_idx}"):
-                            to_delete_asset = a_idx
+                    inst_val = r_cols[1].text_input("Inst", value="", placeholder=a_row.get("institution", "") or "Institution", key=f"a_inst_demo_{asset_type}_{a_idx}", label_visibility="collapsed")
+                    a_inst = inst_val if inst_val else a_row.get("institution", "")
+                    
+                    asset_types = ["Investments", "Bank", "Assets", "Cash", "Other"]
+                    curr_a_type = a_row.get("type", asset_type)
+                    if curr_a_type not in asset_types: curr_a_type = asset_type
+                    a_type = r_cols[2].selectbox("Type", options=asset_types, index=asset_types.index(curr_a_type), key=f"a_type_demo_{asset_type}_{a_idx}", label_visibility="collapsed")
+                    
+                    # Handle balance safely with click-to-clear
+                    try:
+                        curr_bal = float(a_row.get("balance", 0.0))
+                    except:
+                        curr_bal = 0.0
+                    bal_val = r_cols[3].number_input("Balance", value=None, placeholder=f"{curr_bal:.2f}", key=f"a_bal_demo_{asset_type}_{a_idx}", label_visibility="collapsed", format="%.2f")
+                    a_bal = bal_val if bal_val is not None else curr_bal
+                    
+                    if r_cols[4].button("🗑️", key=f"a_del_demo_{asset_type}_{a_idx}"):
+                        to_delete_asset = a_idx
 
-                        updated_type_list.append({
-                            "id": a_row.get("id"),
-                            "name": a_name,
-                            "institution": a_inst,
-                            "type": a_type,
-                            "balance": a_bal
-                        })
+                    updated_type_list.append({
+                        "id": a_row.get("id"),
+                        "name": a_name,
+                        "institution": a_inst,
+                        "type": a_type,
+                        "balance": a_bal
+                    })
 
-                    if to_delete_asset is not None:
-                        updated_type_list.pop(to_delete_asset)
-                        st.session_state[ss_key] = updated_type_list
-                        st.rerun()
-
+                if to_delete_asset is not None:
+                    updated_type_list.pop(to_delete_asset)
                     st.session_state[ss_key] = updated_type_list
+                    st.rerun()
 
-                    # Add Button
-                    if st.button("➕ Add Account", key=f"btn_add_asset_{asset_type}"):
-                        st.session_state[ss_key].append({
-                            "id": f"acc_{int(datetime.now().timestamp())}",
-                            "name": "",
-                            "institution": "",
-                            "type": asset_type,
-                            "balance": 0.0
-                        })
+                st.session_state[ss_key] = updated_type_list
+
+                # Add Button
+                if st.button("➕ Add Account", key=f"btn_add_asset_demo_{asset_type}"):
+                    st.session_state[ss_key].append({
+                        "id": f"acc_demo_{int(datetime.now().timestamp())}",
+                        "name": "",
+                        "institution": "",
+                        "type": asset_type,
+                        "balance": 0.0
+                    })
+                    st.rerun()
+                
+                _, c_save = st.columns([5, 1])
+                with c_save:
+                    if st.button("Save Changes", type="primary", key=f"save_demo_{asset_type}", use_container_width=True):
+                        new_type_accounts = st.session_state[ss_key]
+                        original_ids_in_scope = set(a.get("id") for a in type_accounts if a.get("id"))
+                        other_accounts = [a for a in data["accounts"] if a.get("id") not in original_ids_in_scope]
+                        data["accounts"] = other_accounts + new_type_accounts
+                        
+                        current_nw, _, _ = get_net_worth(data)
+                        today_str = str(datetime.now().date())
+                        existing_hist = next((h for h in data["history"] if h["date"] == today_str), None)
+                        if existing_hist:
+                            existing_hist["net_worth"] = current_nw
+                        else:
+                            data["history"].append({"date": today_str, "net_worth": current_nw})
+                        
+                        save_data(data)
+                        rc = st.session_state.get("_reset_counter", 0)
+                        st.session_state[f"hl_principal_direct_v4_{rc}"] = current_nw
+                        st.success(f"{asset_type} updated!")
                         st.rerun()
-                    
-                    _, c_save = st.columns([5, 1])
-                    with c_save:
-                        if st.button("Save Changes", type="primary", key=f"save_{asset_type}", disabled=DEMO_MODE, use_container_width=True):
-                            new_type_accounts = st.session_state[ss_key]
-                            
-                            # 1. Identify IDs of accounts that were in this editor (before edit)
-                            original_ids_in_scope = set(a.get("id") for a in type_accounts if a.get("id"))
-                            
-                            # 2. Keep all accounts NOT in this scope
-                            other_accounts = [a for a in data["accounts"] if a.get("id") not in original_ids_in_scope]
-                            
-                            # 3. Process new accounts (sanitize already happened in loop)
-                            
-                            # 4. Merge and Save
-                            data["accounts"] = other_accounts + new_type_accounts
-                            
-                            current_nw, _, _ = get_net_worth(data)
-                            today_str = str(datetime.now().date())
-                            existing_hist = next((h for h in data["history"] if h["date"] == today_str), None)
-                            if existing_hist:
-                                existing_hist["net_worth"] = current_nw
-                            else:
-                                data["history"].append({"date": today_str, "net_worth": current_nw})
-                            
-                            save_data(data)
-                            
-                            # Sync with Retirement Tab (Principal)
-                            rc = st.session_state.get("_reset_counter", 0)
-                            st.session_state[f"hl_principal_direct_v4_{rc}"] = current_nw
-                            
-                            st.success(f"{asset_type} updated!")
-                            st.rerun()
-            
-            # Global "Add Account" could be here if needed, but typically users can add rows in any category editor
-            # provided they set the type correctly.
-            # If they change the type to something else, it will move to that category expander on reload.
+        
+        # Global "Add Account" could be here if needed, but typically users can add rows in any category editor
+        # provided they set the type correctly.
+        # If they change the type to something else, it will move to that category expander on reload.
 
 
 
@@ -985,6 +1012,7 @@ def main():
         # Calculate Global Total (Abs value of debt)
         global_liab_total = sum(abs(a["balance"]) for a in all_liability_accounts)
         liab_header_placeholder.markdown(f"### Liabilities — ${global_liab_total:,.2f}")
+        st.info("💡 Please provide details for liabilities on this page in order to see how it affects the big picture.")
 
         # 3. Create Expanders per Category
         # We iterate through specific types to create the breakdown
@@ -1011,17 +1039,8 @@ def main():
             type_total = sum(abs(a["balance"]) for a in type_accounts)
             
             with st.expander(f"**{l_type}** — ${type_total:,.2f}", expanded=False):
-                # Create DataFrame
-                df_type = pd.DataFrame(type_accounts)
-                
-                # Ensure columns
-                for col in ["name", "institution", "type", "balance", "id"]:
-                    if col not in df_type.columns:
-                        df_type[col] = "" if col != "balance" else 0.0
-                
-                # Editor
                 # Custom Row-Based Editor for Liabilities
-                ss_key_liab = f"liabs_list_{l_type}"
+                ss_key_liab = f"liabs_list_demo_{l_type}"
                 if ss_key_liab not in st.session_state:
                     st.session_state[ss_key_liab] = type_accounts
                 
@@ -1031,10 +1050,10 @@ def main():
                     if "institution" not in l: l["institution"] = ""
                     if "type" not in l: l["type"] = l_type
                     if "balance" not in l: l["balance"] = 0.0
-                    if "id" not in l: l["id"] = f"liab_{int(datetime.now().timestamp())}_{random.randint(0, 1000)}"
+                    if "id" not in l: l["id"] = f"liab_demo_{int(datetime.now().timestamp())}_{random.randint(0, 1000)}"
 
                 # Header
-                h_cols_l = st.columns([3, 2, 2, 2, 0.8])
+                h_cols_l = st.columns([2, 2, 2, 3, 0.8])
                 headers_l = ["Name", "Institution", "Type ⌵", "Balance", ""]
                 for col, h in zip(h_cols_l, headers_l):
                     if h:
@@ -1044,30 +1063,35 @@ def main():
                 to_delete_liab = None
                 
                 for l_idx, l_row in enumerate(st.session_state[ss_key_liab]):
-                    r_cols_l = st.columns([3, 2, 2, 2, 0.8])
+                    r_cols_l = st.columns([2, 2, 2, 3, 0.8])
                     
-                    l_name = r_cols_l[0].text_input("Name", value=l_row["name"], key=f"l_name_{l_type}_{l_idx}", label_visibility="collapsed")
-                    l_inst = r_cols_l[1].text_input("Inst", value=l_row.get("institution", ""), key=f"l_inst_{l_type}_{l_idx}", label_visibility="collapsed")
+                    # Click-to-clear pattern
+                    name_val = r_cols_l[0].text_input("Name", value="", placeholder=l_row["name"] or "Liability name", key=f"l_name_demo_{l_type}_{l_idx}", label_visibility="collapsed")
+                    l_name = name_val if name_val else l_row["name"]
+                    
+                    inst_val = r_cols_l[1].text_input("Inst", value="", placeholder=l_row.get("institution", "") or "Institution", key=f"l_inst_demo_{l_type}_{l_idx}", label_visibility="collapsed")
+                    l_inst = inst_val if inst_val else l_row.get("institution", "")
                     
                     liab_options = ["Liability", "Credit Card", "Loan", "Mortgage", "Other"]
                     curr_l_type = l_row.get("type", l_type)
                     if curr_l_type not in liab_options: curr_l_type = l_type
-                    l_type = r_cols_l[2].selectbox("Type", options=liab_options, index=liab_options.index(curr_l_type), key=f"l_type_{l_type}_{l_idx}", label_visibility="collapsed")
+                    l_type_val = r_cols_l[2].selectbox("Type", options=liab_options, index=liab_options.index(curr_l_type), key=f"l_type_demo_{l_type}_{l_idx}", label_visibility="collapsed")
                     
                     try:
                         curr_l_bal = float(l_row.get("balance", 0.0))
                     except:
                         curr_l_bal = 0.0
-                    l_bal = r_cols_l[3].number_input("Balance", value=curr_l_bal, key=f"l_bal_{l_type}_{l_idx}", label_visibility="collapsed", format="%.2f")
+                    bal_val = r_cols_l[3].number_input("Balance", value=None, placeholder=f"{curr_l_bal:.2f}", key=f"l_bal_demo_{l_type}_{l_idx}", label_visibility="collapsed", format="%.2f")
+                    l_bal = bal_val if bal_val is not None else curr_l_bal
                     
-                    if r_cols_l[4].button("🗑️", key=f"l_del_{l_type}_{l_idx}"):
+                    if r_cols_l[4].button("🗑️", key=f"l_del_demo_{l_type}_{l_idx}"):
                         to_delete_liab = l_idx
 
                     updated_liab_list.append({
                         "id": l_row.get("id"),
                         "name": l_name,
                         "institution": l_inst,
-                        "type": l_type,
+                        "type": l_type_val,
                         "balance": l_bal
                     })
 
@@ -1079,9 +1103,9 @@ def main():
                 st.session_state[ss_key_liab] = updated_liab_list
 
                 # Add Button
-                if st.button("➕ Add Liability", key=f"btn_add_liab_{l_type}"):
+                if st.button("➕ Add Liability", key=f"btn_add_liab_demo_{l_type}"):
                     st.session_state[ss_key_liab].append({
-                        "id": f"liab_{int(datetime.now().timestamp())}",
+                        "id": f"liab_demo_{int(datetime.now().timestamp())}",
                         "name": "",
                         "institution": "",
                         "type": l_type,
@@ -1091,15 +1115,12 @@ def main():
                 
                 _, c_save = st.columns([5, 1])
                 with c_save:
-                    if st.button("Save Changes", type="primary", key=f"save_liab_{l_type}", disabled=DEMO_MODE, use_container_width=True):
-                        new_type_accounts = st.session_state[ss_key_liab]
+                    if st.button("Save Changes", type="primary", key=f"save_liab_demo_{l_type}", use_container_width=True):
+                        new_accounts = st.session_state[ss_key_liab]
+                        original_ids = set(a.get("id") for a in type_accounts if a.get("id"))
+                        other_accounts = [a for a in data["accounts"] if a.get("id") not in original_ids]
+                        data["accounts"] = other_accounts + new_accounts
                         
-                        # Apply to master list
-                        original_ids_in_scope = set(a.get("id") for a in type_accounts if a.get("id"))
-                        other_accounts = [a for a in data["accounts"] if a.get("id") not in original_ids_in_scope]
-                        data["accounts"] = other_accounts + new_type_accounts
-                        
-                        # History Update
                         current_nw, _, _ = get_net_worth(data)
                         today_str = str(datetime.now().date())
                         existing_hist = next((h for h in data["history"] if h["date"] == today_str), None)
@@ -1109,37 +1130,36 @@ def main():
                             data["history"].append({"date": today_str, "net_worth": current_nw})
                         
                         save_data(data)
-                        
-                        # Sync with Retirement Tab (Principal)
                         rc = st.session_state.get("_reset_counter", 0)
                         st.session_state[f"hl_principal_direct_v4_{rc}"] = current_nw
-                        
                         st.success(f"{l_type} updated!")
                         st.rerun()
+        
 
-
+    # --- TAB: Budget ---
     # --- TAB: Budget ---
     with tab_budget:
         st.markdown("### Income & Expenses")
+        st.info("💡 Please provide details for income and expenses on this page in order to see how it affects the big picture.")
 
         # Prepare Budget Data
-        if "budget_list" not in st.session_state:
-            st.session_state.budget_list = data.get("budget", [])
+        if "budget_list_demo" not in st.session_state:
+            st.session_state.budget_list_demo = data.get("budget", [])
         
         # Ensure default fields
-        for item in st.session_state.budget_list:
+        for item in st.session_state.budget_list_demo:
             if "name" not in item: item["name"] = ""
             if "amount" not in item: item["amount"] = 0.0
             if "type" not in item: item["type"] = "Expense"
             if "frequency" not in item: item["frequency"] = "Monthly"
-            if "id" not in item: item["id"] = f"bud_{int(datetime.now().timestamp())}_{random.randint(0, 1000)}"
+            if "id" not in item: item["id"] = f"bud_demo_{int(datetime.now().timestamp())}_{random.randint(0, 1000)}"
 
         # Split into income and expenses
-        income_items = [i for i in st.session_state.budget_list if i.get("type") == "Income"]
-        expense_items = [i for i in st.session_state.budget_list if i.get("type") == "Expense"]
+        income_items = [i for i in st.session_state.budget_list_demo if i.get("type") == "Income"]
+        expense_items = [i for i in st.session_state.budget_list_demo if i.get("type") == "Expense"]
 
         # --- Section 1: Income ---
-        with st.expander("💵 Income", expanded=True):
+        with st.expander("Monthly Income", expanded=True):
             h_cols_i = st.columns([3, 2, 2, 0.8])
             headers_i = ["Source", "Notes", "Amount", ""]
             for col, h in zip(h_cols_i, headers_i): 
@@ -1151,38 +1171,45 @@ def main():
             
             for idx, row in enumerate(income_items):
                 r_cols_i = st.columns([3, 2, 2, 0.8])
-                new_name = r_cols_i[0].text_input("Name", value=row["name"], key=f"i_name_{idx}", label_visibility="collapsed")
-                new_cat = r_cols_i[1].text_input("Notes", value=row.get("category", ""), key=f"i_cat_{idx}", label_visibility="collapsed")
-                new_amt = r_cols_i[2].number_input("Amount", value=float(row["amount"]), key=f"i_amt_{idx}", label_visibility="collapsed", format="%.2f")
-                if r_cols_i[3].button("🗑️", key=f"i_del_inc_{idx}"): to_delete_income = idx
+                # Click-to-clear pattern
+                name_val = r_cols_i[0].text_input("Name", value="", placeholder=row["name"] or "Income source", key=f"i_name_demo_{idx}", label_visibility="collapsed")
+                new_name = name_val if name_val else row["name"]
+                
+                cat_val = r_cols_i[1].text_input("Notes", value="", placeholder=row.get("category", "") or "Notes", key=f"i_cat_demo_{idx}", label_visibility="collapsed")
+                new_cat = cat_val if cat_val else row.get("category", "")
+                
+                amt_val = r_cols_i[2].number_input("Amount", value=None, placeholder=f"{float(row['amount']):.2f}", key=f"i_amt_demo_{idx}", label_visibility="collapsed", format="%.2f")
+                new_amt = amt_val if amt_val is not None else float(row["amount"])
+                
+                if r_cols_i[3].button("🗑️", key=f"i_del_inc_demo_{idx}"): to_delete_income = idx
                 
                 subtotal_income += new_amt
                 updated_income.append({"id": row["id"], "name": new_name, "category": new_cat, "amount": new_amt, "type": "Income", "frequency": "Monthly"})
 
             if to_delete_income is not None:
                 updated_income.pop(to_delete_income)
-                st.session_state.budget_list = updated_income + expense_items
+                st.session_state.budget_list_demo = updated_income + expense_items
                 st.rerun()
 
-            if st.button("➕ Add Income Source", key="btn_add_income"):
-                st.session_state.budget_list.append({"id": f"bud_{int(datetime.now().timestamp())}", "name": "", "category": "", "amount": 0.0, "type": "Income", "frequency": "Monthly"})
+            if st.button("➕ Add Income Source", key="btn_add_income_demo"):
+                st.session_state.budget_list_demo.append({"id": f"bud_demo_{int(datetime.now().timestamp())}", "name": "", "category": "", "amount": 0.0, "type": "Income", "frequency": "Monthly"})
                 st.rerun()
 
             st.write("")
-            st.metric("Total Monthly Income", f"${subtotal_income:,.2f}")
+            st.metric("Total Income", f"${subtotal_income:,.2f}")
             
             _, c_save = st.columns([5, 1])
             with c_save:
-                if st.button("Save Changes", type="primary", key="btn_save_income", disabled=DEMO_MODE, use_container_width=True):
+                if st.button("Save Changes", type="primary", key="btn_save_income_demo", use_container_width=True):
                     data["budget"] = updated_income + expense_items
                     save_data(data)
                     rc = st.session_state.get("_reset_counter", 0)
                     st.session_state[f"hl_income_direct_v4_{rc}"] = subtotal_income
-                    st.success("Income saved!")
+                    st.success("Income updated!")
                     st.rerun()
 
         # --- Section 2: Expenses ---
-        with st.expander("💸 Expenses", expanded=True):
+        with st.expander("Monthly Expenses", expanded=True):
             h_cols_e = st.columns([3, 2, 2, 2, 0.8])
             headers_e = ["Kind", "Category", "Amount", "Frequency ⌵", ""]
             for col, h in zip(h_cols_e, headers_e): 
@@ -1194,13 +1221,20 @@ def main():
 
             for idx, row in enumerate(expense_items):
                 r_cols_e = st.columns([3, 2, 2, 2, 0.8])
-                new_name = r_cols_e[0].text_input("Name", value=row["name"], key=f"e_name_{idx}", label_visibility="collapsed")
-                new_cat = r_cols_e[1].text_input("Cat", value=row.get("category", ""), key=f"e_cat_{idx}", label_visibility="collapsed")
-                new_amt = r_cols_e[2].number_input("Amt", value=float(row["amount"]), key=f"e_amt_{idx}", label_visibility="collapsed", format="%.2f")
+                # Click-to-clear pattern
+                name_val = r_cols_e[0].text_input("Name", value="", placeholder=row["name"] or "Expense", key=f"e_name_demo_{idx}", label_visibility="collapsed")
+                new_name = name_val if name_val else row["name"]
+                
+                cat_val = r_cols_e[1].text_input("Cat", value="", placeholder=row.get("category", "") or "Category", key=f"e_cat_demo_{idx}", label_visibility="collapsed")
+                new_cat = cat_val if cat_val else row.get("category", "")
+                
+                amt_val = r_cols_e[2].number_input("Amt", value=None, placeholder=f"{float(row['amount']):.2f}", key=f"e_amt_demo_{idx}", label_visibility="collapsed", format="%.2f")
+                new_amt = amt_val if amt_val is not None else float(row["amount"])
+                
                 freq_opts = ["Monthly", "Annually"]
                 curr_f = row.get("frequency", "Monthly")
-                new_freq = r_cols_e[3].selectbox("Freq", options=freq_opts, index=0 if curr_f == "Monthly" else 1, key=f"e_freq_{idx}", label_visibility="collapsed")
-                if r_cols_e[4].button("🗑️", key=f"e_del_exp_{idx}"): to_delete_expense = idx
+                new_freq = r_cols_e[3].selectbox("Freq", options=freq_opts, index=0 if curr_f == "Monthly" else 1, key=f"e_freq_demo_{idx}", label_visibility="collapsed")
+                if r_cols_e[4].button("🗑️", key=f"e_del_exp_demo_{idx}"): to_delete_expense = idx
                 
                 if new_freq == "Annually": sub_exp_monthly += (new_amt/12)
                 else: sub_exp_monthly += new_amt
@@ -1209,29 +1243,30 @@ def main():
 
             if to_delete_expense is not None:
                 updated_expenses.pop(to_delete_expense)
-                st.session_state.budget_list = income_items + updated_expenses
+                st.session_state.budget_list_demo = income_items + updated_expenses
                 st.rerun()
 
-            if st.button("➕ Add Expense", key="btn_add_expense_new"):
-                st.session_state.budget_list.append({"id": f"exp_{int(datetime.now().timestamp())}", "name": "", "category": "", "amount": 0.0, "type": "Expense", "frequency": "Monthly"})
+            if st.button("➕ Add Expense", key="btn_add_expense_demo_new"):
+                st.session_state.budget_list_demo.append({"id": f"exp_demo_{int(datetime.now().timestamp())}", "name": "", "category": "", "amount": 0.0, "type": "Expense", "frequency": "Monthly"})
                 st.rerun()
 
             st.write("")
-            st.metric("Total Monthly Expenses", f"${sub_exp_monthly:,.2f}")
+            st.metric("Total Expenses", f"${sub_exp_monthly:,.2f}")
+            
             _, c_save = st.columns([5, 1])
             with c_save:
-                if st.button("Save Expenses", type="primary", key="btn_save_expenses_new", disabled=DEMO_MODE, use_container_width=True):
+                if st.button("Save Changes", type="primary", key="btn_save_expenses_demo_new", use_container_width=True):
                     data["budget"] = income_items + updated_expenses
                     save_data(data)
                     rc = st.session_state.get("_reset_counter", 0)
                     st.session_state[f"hl_expenses_direct_v4_{rc}"] = sub_exp_monthly
-                    st.success("Expenses saved!")
+                    st.success("Expenses updated!")
                     st.rerun()
 
         # --- Section 3: Annual Bucket List ---
         with st.expander("🏆 Annual Bucket List", expanded=True):
-            if "annual_list" not in st.session_state:
-                st.session_state.annual_list = data.get("annual_expenditures", [])
+            if "annual_list_demo" not in st.session_state:
+                st.session_state.annual_list_demo = data.get("annual_expenditures", [])
             
             h_cols_a = st.columns([3, 2, 2, 2, 0.8])
             headers_a = ["Activity", "Amount", "Frequency ⌵", "Start Age", ""]
@@ -1240,29 +1275,37 @@ def main():
                     col.markdown(f"**{h}**")
             updated_ann = []
             to_delete_ann = None
-            for idx, row in enumerate(st.session_state.annual_list):
+            for idx, row in enumerate(st.session_state.annual_list_demo):
                 r_cols_a = st.columns([3, 2, 2, 2, 0.8])
-                a_name = r_cols_a[0].text_input("Name", value=row["name"], key=f"ann_n_{idx}", label_visibility="collapsed")
-                a_amt = r_cols_a[1].number_input("Amt", value=float(row["amount"]), key=f"ann_a_{idx}", label_visibility="collapsed", format="%.2f")
+                # Click-to-clear pattern
+                name_val = r_cols_a[0].text_input("Name", value="", placeholder=row["name"] or "Activity", key=f"ann_n_demo_{idx}", label_visibility="collapsed")
+                a_name = name_val if name_val else row["name"]
+                
+                amt_val = r_cols_a[1].number_input("Amt", value=None, placeholder=f"{float(row['amount']):.2f}", key=f"ann_a_demo_{idx}", label_visibility="collapsed", format="%.2f")
+                a_amt = amt_val if amt_val is not None else float(row["amount"])
+                
                 ann_f_opts = ["One-time", "Every Year", "Every 2 Years", "Every 5 Years", "Every 10 Years"]
                 curr_af = row.get("frequency", "One-time")
-                a_freq = r_cols_a[2].selectbox("Freq", options=ann_f_opts, index=ann_f_opts.index(curr_af) if curr_af in ann_f_opts else 0, key=f"ann_f_{idx}", label_visibility="collapsed")
-                a_age = r_cols_a[3].number_input("Age", value=int(row.get("start_age", 65)), key=f"ann_g_{idx}", label_visibility="collapsed")
-                if r_cols_a[4].button("🗑️", key=f"ann_d_{idx}"): to_delete_ann = idx
+                a_freq = r_cols_a[2].selectbox("Freq", options=ann_f_opts, index=ann_f_opts.index(curr_af) if curr_af in ann_f_opts else 0, key=f"ann_f_demo_{idx}", label_visibility="collapsed")
+                
+                age_val = r_cols_a[3].number_input("Age", value=None, placeholder=str(int(row.get("start_age", 65))), key=f"ann_g_demo_{idx}", label_visibility="collapsed")
+                a_age = age_val if age_val is not None else int(row.get("start_age", 65))
+                
+                if r_cols_a[4].button("🗑️", key=f"ann_d_demo_{idx}"): to_delete_ann = idx
                 updated_ann.append({"id": row.get("id"), "name": a_name, "amount": a_amt, "frequency": a_freq, "start_age": a_age})
 
             if to_delete_ann is not None:
                 updated_ann.pop(to_delete_ann)
-                st.session_state.annual_list = updated_ann
+                st.session_state.annual_list_demo = updated_ann
                 st.rerun()
 
-            if st.button("➕ Add Annual Item", key="btn_add_ann_new"):
-                st.session_state.annual_list.append({"id": f"ann_{int(datetime.now().timestamp())}", "name": "", "amount": 0.0, "frequency": "One-time", "start_age": 65})
+            if st.button("➕ Add Annual Item", key="btn_add_ann_demo_new"):
+                st.session_state.annual_list_demo.append({"id": f"ann_demo_{int(datetime.now().timestamp())}", "name": "", "amount": 0.0, "frequency": "One-time", "start_age": 65})
                 st.rerun()
 
             _, c_save = st.columns([5, 1])
             with c_save:
-                if st.button("Save Changes", type="primary", key="btn_save_ann_new", disabled=DEMO_MODE, use_container_width=True):
+                if st.button("Save Changes", type="primary", key="btn_save_ann_demo_new", use_container_width=True):
                     data["annual_expenditures"] = updated_ann
                     save_data(data)
                     st.success("Annual expenditures saved!")
@@ -1271,18 +1314,18 @@ def main():
         st.markdown("---")
         st.subheader("Budget Summary")
         c1, c2, c3 = st.columns(3)
-        c1.metric("Total Monthly Income", f"${subtotal_income:,.2f}")
-        c2.metric("Total Monthly Expenses", f"${sub_exp_monthly:,.2f}", delta_color="inverse")
+        c1.metric("Total Income", f"${subtotal_income:,.2f}")
+        c2.metric("Total Expenses", f"${sub_exp_monthly:,.2f}", delta_color="inverse")
         net_cash_live = subtotal_income - sub_exp_monthly
-        c3.metric("Net Monthly Cashflow", f"${net_cash_live:,.2f}", delta=f"${net_cash_live:,.2f}")
-
-
+        c3.metric("Net Cashflow", f"${net_cash_live:,.2f}", delta=f"${net_cash_live:,.2f}")
+        
 
 
 
     # --- TAB: How Long Will It Last? ---
     with tab_how_long:
         st.markdown("### ⏳ How Long Will It Last?")
+        st.info("💡 Financial inputs are taken from information you have provided on other pages. You can change these values here by using the plus or minus signs.")
         # Using columns to create "Left Panel" (Inputs) and "Right Panel" (Results)
         # Added spacer column in the middle for padding
         col_main_left, col_spacer, col_main_right = st.columns([1, 0.2, 2])
@@ -1333,7 +1376,7 @@ def main():
         sell_age = inh.get("sell_age", 0)
 
         # --- Top Row Layout (3 Columns) ---
-        c_inputs, col_space1, c_market, col_space2, c_assump = st.columns([1, 0.2, 1, 0.2, 1])
+        c_inputs, col_space1, c_assump = st.columns([1, 0.4, 1])
         
         with c_inputs:
             st.markdown("#### Financial Inputs")
@@ -1347,7 +1390,7 @@ def main():
             monthly_expenses = monthly_expenses_input if monthly_expenses_input is not None else float(default_expenses)
 
             # 3. Principal (Defaults to Net Worth)
-            principal_input = st.number_input("Retirement Plan Balance", value=None, placeholder=f"{liquid_nw:.0f}", step=1000.0, key="hl_principal_direct_v4")
+            principal_input = st.number_input("Investments", value=None, placeholder=f"{liquid_nw:.0f}", step=1000.0, key="hl_principal_direct_v4")
             principal = principal_input if principal_input is not None else float(liquid_nw)
 
         with c_assump:
@@ -1370,12 +1413,13 @@ def main():
             
             st.caption("Change these values on the **Personal** tab.")
 
-        with c_market:
-            st.markdown("#### Market Variables")
-            inflation = st.slider("Inflation", 0.0, 10.0, 3.0, 0.1, key="hl_inflation")
-            annual_return = st.slider("Annual Rate of Return (%)", 0.0, 15.0, 5.0, 0.1, key="hl_return")
 
 
+
+
+        # Get Market Variables (defined by sliders rendered later in the layout)
+        inflation = st.session_state.get("hl_inflation", 3.0)
+        annual_return = st.session_state.get("hl_return", 5.0)
 
         # Logic Calculation (Real-time)
         if (principal or 0.0) >= 0: # Allow 0 expenses or income
@@ -1587,8 +1631,15 @@ def main():
                 if inherit_amount > 0 and inherit_age > current_age and inherit_age <= (current_age + max_years):
                     fig_proj.add_vline(x=inherit_age, line_width=1, line_dash="dash", line_color="#a855f7", annotation_text="Inheritance", annotation_position="top right", annotation=dict(y=0.95))
 
-                st.markdown("#### Retirement Plan Balance Over Time")
-                st.plotly_chart(fig_proj, use_container_width=True)
+                st.markdown("#### Investments Over Time")
+                c_chart, c_vars = st.columns([3, 1])
+                with c_chart:
+                    st.plotly_chart(fig_proj, use_container_width=True)
+                with c_vars:
+                    st.markdown("<br><br>", unsafe_allow_html=True) # Align with graph area
+                    st.markdown("##### Market Variables")
+                    inflation = st.slider("Inflation (%)", 0.0, 10.0, 3.0, 0.1, key="hl_inflation")
+                    annual_return = st.slider("Annual Return (%)", 0.0, 15.0, 5.0, 0.1, key="hl_return")
  
             st.markdown("---")
             
@@ -1598,7 +1649,8 @@ def main():
             with st.container():
                 col_rev_1, col_rev_2 = st.columns([1, 3])
                 with col_rev_1:
-                    target_years = st.number_input("For your savings to last (Years):", value=30, step=1, key="hl_target")
+                    target_years_input = st.number_input("For your savings to last (Years):", value=None, step=1, key="hl_target", placeholder="30")
+                    target_years = target_years_input if target_years_input is not None else 30
                 
                 with col_rev_2:
                      # Binary search solver
@@ -1658,20 +1710,18 @@ def main():
     # --- TAB: What If? ---
     with tab_what_if:
         st.markdown("### 🚀 What if")
-        st.markdown("""
-        <div style="background-color: #f8f9fa; border-left: 4px solid #dee2e6; padding: 10px 15px; border-radius: 4px; color: #6c757d; font-size: 14px; margin-bottom: 20px;">
-            <strong>Note:</strong> What-if scenarios simulate future outcomes and do not affect your actual tracking data.
-        </div>
-        """, unsafe_allow_html=True)
+        st.info('💡 The "What If" scenarios do not affect your real tracking data.')
         
         # 1. Manage Scenarios
+        scenarios = data.get("scenarios", [])
+        df_scenarios = pd.DataFrame(scenarios)
         with st.expander("🚀 Scenarios", expanded=True):
             # Custom Row-Based Editor for Single-Click Dropdowns
-            if "scenarios_list" not in st.session_state:
-                st.session_state.scenarios_list = data.get("scenarios", [])
+            if "scenarios_list_demo" not in st.session_state:
+                st.session_state.scenarios_list_demo = data.get("scenarios", [])
             
             # Ensure default fields for each scenario
-            for s in st.session_state.scenarios_list:
+            for s in st.session_state.scenarios_list_demo:
                 if "name" not in s: s["name"] = ""
                 if "age" not in s: s["age"] = 65
                 if "type" not in s: s["type"] = "Cost"
@@ -1679,10 +1729,10 @@ def main():
                 if "sc_return" not in s: s["sc_return"] = 0.0
                 if "sc_inflation" not in s: s["sc_inflation"] = 0.0
                 if "frequency" not in s: s["frequency"] = "One-time"
-                if "id" not in s: s["id"] = f"scen_{int(datetime.now().timestamp())}_{random.randint(0, 1000)}"
+                if "id" not in s: s["id"] = f"scen_demo_{int(datetime.now().timestamp())}_{random.randint(0, 1000)}"
 
             # Header
-            h_cols = st.columns([2.1, 1, 1.75, 2, 0.8])
+            h_cols = st.columns([2, 1, 2.5, 2, 0.8])
             headers = ["Description", "Age", "Cost", "Frequency ⌵", ""]
             for col, h in zip(h_cols, headers):
                 if h:
@@ -1691,26 +1741,28 @@ def main():
             updated_list = []
             to_delete = None
             
-            for idx, row in enumerate(st.session_state.scenarios_list):
-                r_cols = st.columns([2.1, 1, 1.75, 2, 0.8])
+            for idx, row in enumerate(st.session_state.scenarios_list_demo):
+                r_cols = st.columns([2, 1, 2.5, 2, 0.8])
                 
                 # Force type to "Cost" since we removed the selector
                 new_type = "Cost"
 
-                new_name = r_cols[0].text_input("Name", value=row["name"], key=f"sc_name_{idx}", label_visibility="collapsed")
-                new_age = r_cols[1].number_input("Age", value=int(row["age"]), min_value=18, max_value=110, key=f"sc_age_{idx}", label_visibility="collapsed")
+                # Click-to-clear pattern
+                name_val = r_cols[0].text_input("Name", value="", placeholder=row["name"] or "Scenario description", key=f"sc_name_demo_{idx}", label_visibility="collapsed")
+                new_name = name_val if name_val else row["name"]
                 
-                # Removed Type column (Effect on Savings)
-                # Cost Input: Use None for value if 0 to allow "click to clear" / placeholder behavior
-                curr_impact = float(row["impact"])
-                new_impact = r_cols[2].number_input("Cost", value=curr_impact if curr_impact != 0 else None, placeholder="0.00", key=f"sc_impact_{idx}", label_visibility="collapsed")
+                age_val = r_cols[1].number_input("Age", value=None, placeholder=str(int(row["age"])), min_value=18, max_value=110, key=f"sc_age_demo_{idx}", label_visibility="collapsed")
+                new_age = age_val if age_val is not None else int(row["age"])
+                
+                impact_val = r_cols[2].number_input("Cost", value=None, placeholder=f"{float(row['impact']):.2f}", key=f"sc_impact_demo_{idx}", label_visibility="collapsed")
+                new_impact = impact_val if impact_val is not None else float(row["impact"])
                 
                 freq_opts = ["One-time", "Monthly", "Twice per year", "Annually", "Every 2 years", "Every 3 years", "Every 5 years", "Every 10 years", "Until End of Plan"]
                 curr_freq = row.get("frequency", "One-time")
                 if curr_freq not in freq_opts: curr_freq = "One-time"
-                new_freq = r_cols[3].selectbox("Freq", options=freq_opts, index=freq_opts.index(curr_freq), key=f"sc_freq_{idx}", label_visibility="collapsed")
+                new_freq = r_cols[3].selectbox("Freq", options=freq_opts, index=freq_opts.index(curr_freq), key=f"sc_freq_demo_{idx}", label_visibility="collapsed")
                 
-                if r_cols[4].button("🗑️", key=f"sc_del_{idx}"):
+                if r_cols[4].button("🗑️", key=f"sc_del_demo_{idx}"):
                     to_delete = idx
 
                 updated_list.append({
@@ -1718,7 +1770,7 @@ def main():
                     "name": new_name,
                     "age": new_age,
                     "type": new_type,
-                    "impact": new_impact if new_impact is not None else 0.0,
+                    "impact": new_impact,
                     "sc_return": row.get("sc_return", 0.0),
                     "sc_inflation": row.get("sc_inflation", 0.0),
                     "frequency": new_freq
@@ -1726,15 +1778,15 @@ def main():
 
             if to_delete is not None:
                 updated_list.pop(to_delete)
-                st.session_state.scenarios_list = updated_list
+                st.session_state.scenarios_list_demo = updated_list
                 st.rerun()
 
-            st.session_state.scenarios_list = updated_list
+            st.session_state.scenarios_list_demo = updated_list
 
             # Add Button
-            if st.button("➕ Add Scenario", key="btn_add_scenario"):
-                st.session_state.scenarios_list.append({
-                    "id": f"scen_{int(datetime.now().timestamp())}",
+            if st.button("➕ Add Scenario", key="btn_add_scenario_demo"):
+                st.session_state.scenarios_list_demo.append({
+                    "id": f"scen_demo_{int(datetime.now().timestamp())}",
                     "name": "",
                     "age": 65,
                     "type": "Cost",
@@ -1748,13 +1800,14 @@ def main():
             st.write("")
             _, c_save = st.columns([5, 1])
             with c_save:
-                if st.button("Save Changes", type="primary", key="btn_save_scenarios", disabled=DEMO_MODE, use_container_width=True):
-                    data["scenarios"] = st.session_state.scenarios_list
+                if st.button("Save Changes", type="primary", key="btn_save_scenarios_demo", use_container_width=True):
+                    data["scenarios"] = st.session_state.scenarios_list_demo
                     save_data(data)
                     st.success("Scenarios saved!")
                     st.rerun()
-        
+
         st.write("") # Extra padding
+        st.write("")
         st.write("")
 
         # 2. Calculation Logic
@@ -1829,8 +1882,6 @@ def main():
                                 else: eff_inc -= abs(e_impact)
                             
                             # Rates (Update if non-zero)
-                            # For recurring events, we only update the rate once (when it first starts)
-                            # or we can update it every trigger month (doesn't hurt since it's the same value)
                             if e_ret > 0: curr_return = e_ret
                             if e_inf > 0: curr_inflation = e_inf
                 
@@ -1845,11 +1896,9 @@ def main():
                     for exp in data.get("annual_expenditures", []):
                         if exp.get("frequency") == "One-time" and sim_age_f == exp.get("start_age"): bal -= exp.get("amount", 0)
                         elif exp.get("frequency") == "Every Year" and sim_age_f >= exp.get("start_age"): bal -= exp.get("amount", 0)
-                        # ... other frequencies simplified for brevity in What-If ...
 
                 hist.append(max(0, bal))
                 if bal <= 0 and m < max_years * 12:
-                    # Pad the rest with 0s
                     hist += [0] * (max_years * 12 - m)
                     break
                 
@@ -1865,15 +1914,8 @@ def main():
         # 3. Visualization
         st.markdown("#### Comparison: Net Worth Over Time")
         
-        # Determine shared axis
         sim_years = list(range(max_years + 1))
         sim_ages = [calc_age + y for y in sim_years]
-        
-        # Create Comparison Chart
-        # Calculate Y-Axis Max with headroom
-        all_hist = base_h + scen_h
-        max_bal_comp = max(all_hist) if all_hist else 0
-        y_max_comp = max_bal_comp * 1.1 if max_bal_comp > 0 else 1000000
         
         fig_comp = go.Figure()
         
@@ -1891,33 +1933,21 @@ def main():
             line=dict(color="#00CC96", width=4)
         ))
         
-        # Add Vertical Markers for Scenario Events
-        for sc in data.get("scenarios", []):
-            sc_age = sc.get("age", 0)
-            if sc_age > calc_age and sc_age <= 100:
-                fig_comp.add_vline(x=sc_age, line_width=1, line_dash="dot", line_color="#555", 
-                                   annotation_text=sc.get("name", "Event"), annotation_position="top right")
-
         fig_comp.update_layout(
-            xaxis=dict(title="Age", range=[calc_age, 100]),
+            xaxis_title="Age",
             yaxis_title="Account Balance",
-            yaxis=dict(range=[0, y_max_comp], tickformat='$,.0f'),
+            yaxis=dict(tickformat='$,.0f'),
             hovermode="x unified",
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=-0.05, bgcolor="rgba(255,255,255,0.5)"),
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
             height=450,
-            font=dict(size=14),
-            margin=dict(l=0, r=20, t=30, b=20)
+            font=dict(size=14)
         )
         
         st.plotly_chart(fig_comp, use_container_width=True)
-        st.markdown("<br>", unsafe_allow_html=True)
         
         # Summary Metrics
-        st.markdown("#### Analysis")
-        st.write("")
         m1, m2, m3 = st.columns(3)
         
-        # Find run-out ages
         def get_run_out(h):
             for i, v in enumerate(h):
                 if v <= 0: return calc_age + (i / 12)
@@ -1926,32 +1956,13 @@ def main():
         base_ro = get_run_out(base_h)
         scen_ro = get_run_out(scen_h)
         
-        # Calculate Difference at the earliest Run-Out Age (Critical Point)
-        crit_ro = min(base_ro, scen_ro)
-        # Convert age to index
-        crit_idx = int((crit_ro - calc_age) * 12)
-        # Clamp index to bounds
-        crit_idx = max(0, min(crit_idx, len(base_h)-1, len(scen_h)-1))
-        
-        diff_at_crit = scen_h[crit_idx] - base_h[crit_idx]
-        
         m1.metric("Base Plan Lasts Until", f"Age {int(base_ro)}")
         m2.metric("Scenario Lasts Until", f"Age {int(scen_ro)}", delta=f"{int(scen_ro - base_ro)} years")
-        m3.metric(f"Balance Difference (Age {int(crit_ro)})", f"${abs(diff_at_crit):,.0f}", delta=f"{diff_at_crit:,.0f}", delta_color="normal")
+        
+        final_diff = scen_h[-1] - base_h[-1]
+        m3.metric("Net Change at Age 110", f"${abs(final_diff):,.0f}", delta=f"{final_diff:,.0f}", delta_color="normal")
+            
 
-    # --- FOOTER: Reset Action (Bottom) ---
-    st.markdown("---")
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    # Use an expander to hide the destructive action by default
-    # This prevents accidental clicks and separates it from flow actions (Save/Next)
-    # Restricting width by placing in a column (Left-aligned)
-    c_reset_box, c_spacer = st.columns([2, 5])
-    with c_reset_box:
-        with st.expander("⚠️ Reset Dashboard", expanded=False):
-            st.write("This action will clear all your data.")
-            if st.button("Reset All Data", key="btn_reset_data_final"):
-                confirm_reset_dialog()
 
 if __name__ == "__main__":
     main()
