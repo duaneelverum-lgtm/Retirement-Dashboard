@@ -1476,7 +1476,7 @@ def main():
 
 
     # --- TAB: How Long Will It Last? ---
-    with tab_how_long:
+    with tab_will_it_last:
         st.markdown("### ⏳ How Long Will It Last?")
         st.info("💡 Financial inputs are taken from information you have provided on other pages. You can change these values here by using the plus or minus signs.")
         # Using columns to create "Left Panel" (Inputs) and "Right Panel" (Results)
