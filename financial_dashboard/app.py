@@ -1027,8 +1027,8 @@ def main():
                     if "id" not in a: a["id"] = f"acc_demo_{int(datetime.now().timestamp())}_{random.randint(0, 1000)}"
 
                 # Header
-                h_cols = st.columns([2, 2, 2, 3, 0.8])
-                headers = ["Name", "Institution", "Type ⌵", "Balance", ""]
+                h_cols = st.columns([3, 3, 3, 0.8])
+                headers = ["Name", "Institution", "Balance", ""]
                 for col, h in zip(h_cols, headers):
                     if h:
                         col.markdown(f"**{h}**")
@@ -1037,7 +1037,7 @@ def main():
                 to_delete_asset = None
                 
                 for a_idx, a_row in enumerate(st.session_state[ss_key]):
-                    r_cols = st.columns([2, 2, 2, 3, 0.8])
+                    r_cols = st.columns([3, 3, 3, 0.8])
                     
                     # Click-to-clear pattern
                     name_val = r_cols[0].text_input("Name", value="", placeholder=a_row["name"] or "Account name", key=f"a_name_demo_{asset_type}_{a_idx}", label_visibility="collapsed")
@@ -1046,20 +1046,18 @@ def main():
                     inst_val = r_cols[1].text_input("Inst", value="", placeholder=a_row.get("institution", "") or "Institution", key=f"a_inst_demo_{asset_type}_{a_idx}", label_visibility="collapsed")
                     a_inst = inst_val if inst_val else a_row.get("institution", "")
                     
-                    asset_types = ["Investments", "Bank", "Assets", "Cash", "Other"]
-                    curr_a_type = a_row.get("type", asset_type)
-                    if curr_a_type not in asset_types: curr_a_type = asset_type
-                    a_type = r_cols[2].selectbox("Type", options=asset_types, index=asset_types.index(curr_a_type), key=f"a_type_demo_{asset_type}_{a_idx}", label_visibility="collapsed")
+                    # Implicitly use the current section type since column was removed
+                    a_type = asset_type
                     
                     # Handle balance safely with click-to-clear
                     try:
                         curr_bal = float(a_row.get("balance", 0.0))
                     except:
                         curr_bal = 0.0
-                    bal_val = r_cols[3].number_input("Balance", value=None, placeholder=f"{curr_bal:.2f}", key=f"a_bal_demo_{asset_type}_{a_idx}", label_visibility="collapsed", format="%.2f")
+                    bal_val = r_cols[2].number_input("Balance", value=None, placeholder=f"{curr_bal:.2f}", key=f"a_bal_demo_{asset_type}_{a_idx}", label_visibility="collapsed", format="%.2f")
                     a_bal = bal_val if bal_val is not None else curr_bal
                     
-                    if r_cols[4].button("🗑️", key=f"a_del_demo_{asset_type}_{a_idx}"):
+                    if r_cols[3].button("🗑️", key=f"a_del_demo_{asset_type}_{a_idx}"):
                         to_delete_asset = a_idx
 
                     updated_type_list.append({
