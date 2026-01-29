@@ -351,7 +351,7 @@ def main():
             st.info("No posts.")
         else:
             # Scrollable container for blog posts
-            with st.container(height=800):
+            with st.container(height=1000):
                 for post in posts:
                     with st.container(border=True):
                         st.caption(f"📅 {post['date']}")
