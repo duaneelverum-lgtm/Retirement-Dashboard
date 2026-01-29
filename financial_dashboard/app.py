@@ -1016,6 +1016,16 @@ def main():
                 # Custom Row-Based Editor for Assets
                 ss_key = f"assets_list_demo_{asset_type}"
                 if ss_key not in st.session_state:
+                    # If existing data is empty for this type, add a sample
+                    if not type_accounts:
+                        sample_name = "Sample Account"
+                        if asset_type == "Investments": sample_name = "RRSP / 401k"
+                        elif asset_type == "Cash": sample_name = "Emergency Fund"
+                        elif asset_type == "Assets": sample_name = "Car"
+                        
+                        type_accounts = [
+                            {"id": f"acc_sample_{asset_type}", "name": sample_name, "institution": "Bank", "type": asset_type, "balance": 1000.0}
+                        ]
                     st.session_state[ss_key] = type_accounts
                 
                 # Ensure default fields
@@ -1165,6 +1175,15 @@ def main():
                 # Custom Row-Based Editor for Liabilities
                 ss_key_liab = f"liabs_list_demo_{l_type}"
                 if ss_key_liab not in st.session_state:
+                     # If existing data is empty for this type, add a sample
+                    if not type_accounts:
+                        sample_name = "Sample Debt"
+                        if l_type == "Credit Card": sample_name = "Visa"
+                        elif l_type == "Mortgage": sample_name = "Home Loan"
+                        
+                        type_accounts = [
+                            {"id": f"liab_sample_{l_type}", "name": sample_name, "institution": "Bank", "type": l_type, "balance": 5000.0}
+                        ]
                     st.session_state[ss_key_liab] = type_accounts
                 
                 # Ensure default fields
@@ -1265,7 +1284,15 @@ def main():
 
         # Prepare Budget Data
         if "budget_list_demo" not in st.session_state:
-            st.session_state.budget_list_demo = data.get("budget", [])
+            # Check if actual data exists, else use sample
+            existing_budget = data.get("budget", [])
+            if not existing_budget:
+                # Add sample data
+                existing_budget = [
+                    {"id": f"bud_demo_sample_1", "name": "Salary", "category": "Work", "amount": 5000.0, "type": "Income", "frequency": "Monthly"},
+                    {"id": f"bud_demo_sample_2", "name": "Rent / Mortgage", "category": "Housing", "amount": 2000.0, "type": "Expense", "frequency": "Monthly"}
+                ]
+            st.session_state.budget_list_demo = existing_budget
         
         # Ensure default fields
         for item in st.session_state.budget_list_demo:
@@ -1387,7 +1414,12 @@ def main():
         # --- Section 3: Annual Bucket List ---
         with st.expander("🏆 Annual Bucket List", expanded=True):
             if "annual_list_demo" not in st.session_state:
-                st.session_state.annual_list_demo = data.get("annual_expenditures", [])
+                existing_annual = data.get("annual_expenditures", [])
+                if not existing_annual:
+                    existing_annual = [
+                        {"id": "ann_sample_1", "name": "International Trip", "amount": 5000.0, "frequency": "Every Year", "start_age": 65}
+                    ]
+                st.session_state.annual_list_demo = existing_annual
             
             h_cols_a = st.columns([3, 2, 2, 2, 0.8])
             headers_a = ["Activity", "Amount", "Frequency ⌵", "Start Age", ""]
