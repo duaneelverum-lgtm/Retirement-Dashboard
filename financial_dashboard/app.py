@@ -331,9 +331,9 @@ def main():
     col_main, col_blog = st.columns([3.5, 1], gap="medium")
     
     with col_main:
-        tab_summary, tab_how_long, tab_what_if, tab_personal, tab_budget, tab_details, tab_liabilities = st.tabs([
+        tab_summary, tab_will_it_last, tab_what_if, tab_personal, tab_budget, tab_details, tab_liabilities = st.tabs([
             "⛰️ The Big Picture", 
-            "⏳ How Long Will It Last?",
+            "⏳ Will It Last?",
             "🚀 What If?",
             "👤 Profile",
             "💰 Budget",
@@ -753,7 +753,7 @@ def main():
 
         # --- NEW SECTION: When can I stop working? ---
         st.markdown("---")
-        st.subheader("🎯 When can I stop working?")
+        st.subheader("🎯 Will It Last?")
         
         # Calculate values first
         # Explicit check: User requested Annual Income from Budget Tab * 12
@@ -1006,7 +1006,7 @@ def main():
         st.info("💡 Please provide details for assets on this page in order to see how it affects the big picture.")
         
         # Fixed categories to allow adding data even when empty
-        types = ["Investments", "Bank", "Assets", "Cash", "Other"]
+        types = ["Investments", "Assets", "Cash", "Other"]
         
         for asset_type in types:
             type_accounts = [a for a in asset_accounts if a["type"] == asset_type]
@@ -1121,7 +1121,7 @@ def main():
         
         # 1. Define Liability Categories
         # These match the logical groupings users expect
-        liab_types = ["Credit Card", "Loan", "Mortgage", "Liability"]
+        liab_types = ["Credit Card", "Loan", "Mortgage"]
         
         # 2. Gather All Liability Accounts first (for the global total)
         # Reusing the robust logic from get_net_worth essentially

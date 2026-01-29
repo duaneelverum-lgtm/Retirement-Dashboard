@@ -19226,3 +19226,4 @@ Traceback (most recent call last):
   File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/dashboard.py", line 485, in main
     display_custom_metric("Current Net Worth", f"${current_value:,.2f}", f"⇧ ${growth:,.2f}")
 NameError: name 'display_custom_metric' is not defined
+  Stopping...
