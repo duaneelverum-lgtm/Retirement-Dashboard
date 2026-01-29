@@ -1892,7 +1892,18 @@ def main():
         with st.expander("🚀 Scenarios", expanded=True):
             # Custom Row-Based Editor for Single-Click Dropdowns
             if "scenarios_list_demo" not in st.session_state:
-                st.session_state.scenarios_list_demo = data.get("scenarios", [])
+                loaded_scenarios = data.get("scenarios", [])
+                if not loaded_scenarios:
+                     # Add sample scenario if empty
+                     loaded_scenarios = [{
+                         "id": "sample_scen_1",
+                         "name": "Buy a Cottage",
+                         "age": 60,
+                         "type": "Cost",
+                         "impact": 150000.0,
+                         "frequency": "One-time"
+                     }]
+                st.session_state.scenarios_list_demo = loaded_scenarios
             
             # Ensure default fields for each scenario
             for s in st.session_state.scenarios_list_demo:
