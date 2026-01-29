@@ -1477,10 +1477,6 @@ def main():
 
     # --- TAB: How Long Will It Last? ---
     with tab_will_it_last:
-        # Initialize variables to prevent scope issues
-        inflation = 3.0
-        annual_return = 5.0
-        
         st.markdown("### ⏳ Will It Last?")
         st.info("💡 Financial inputs are taken from information you have provided on other pages. You can change these values here by using the plus or minus signs.")
         # Using columns to create "Left Panel" (Inputs) and "Right Panel" (Results)
@@ -1553,25 +1549,9 @@ def main():
         with c_assump:
             st.markdown("#### Assumptions")
             
-            # --- CSS to force Blue Sliders ---
-            st.markdown("""
-            <style>
-            /* Force blue sliders for this scope */
-            div.stSlider > div[data-baseweb="slider"] > div > div > div[role="slider"]{
-                background-color: #0068c9 !important;
-            }
-            div.stSlider > div[data-baseweb="slider"] > div > div > div > div {
-                 background-color: #0068c9 !important;
-            }
-            </style>
-            """, unsafe_allow_html=True)
-            
-            inflation = st.slider("Inflation (%)", 0.0, 10.0, 3.0, 0.1, key="hl_inflation")
-            annual_return = st.slider("Annual Return (%)", 0.0, 15.0, 5.0, 0.1, key="hl_return")
-            
             # Use columns or simple text for the permanent table
             st.markdown(f"""
-            <div style="font-size:14px; margin-bottom: 5px; margin-top: 15px;">
+            <div style="font-size:14px; margin-bottom: 5px;">
             <b>CPP:</b> ${cpp_amount:,.2f}/mo at age {cpp_start_age}<br>
             <b>OAS:</b> ${oas_amount:,.2f}/mo at age {oas_start_age}
             </div>
@@ -1592,6 +1572,10 @@ def main():
 
 # NO_OP - Searching first
 
+        # Get Market Variables (defined by sliders rendered later in the layout)
+        inflation = st.session_state.get("hl_inflation", 3.0)
+        annual_return = st.session_state.get("hl_return", 5.0)
+
         # Logic Calculation (Real-time)
         if (principal or 0.0) >= 0: # Allow 0 expenses or income
             balance = (principal or 0.0)
@@ -1601,6 +1585,15 @@ def main():
             
             history_bal = [balance]
             years_axis = [0]
+            
+            run_out = False
+            months = max_years * 12
+            
+# ... (lines 1603-1785 remain same, I will use precise TargetContent to bridge) ...
+# Actually, I am jumping to line 1591 to insert the fetch logic first, 
+# then I will do a separate call for the graph sliders to keep it clean.
+# Let's DO ONE CALL for the fetch logic at ~line 1591.
+
             
             run_out = False
             months = max_years * 12
@@ -1797,17 +1790,35 @@ def main():
                     fig_proj.add_vline(x=cpp_start_age, line_width=1, line_dash="dash", line_color="#21c354", annotation_text="CPP", annotation_position="top left", annotation=dict(y=0.90))
                     
                 if oas_start_age > current_age and oas_start_age <= (current_age + max_years):
-                    fig_proj.add_vline(x=oas_start_age, line_width=1, line_dash="dash", line_color="#0068c9", annotation_text="OAS", annotation_position="top left", annotation=dict(y=1.0))
+                     fig_proj.add_vline(x=oas_start_age, line_width=1, line_dash="dash", line_color="#21c354", annotation_text="OAS", annotation_position="top left", annotation=dict(y=0.95))
 
                 if inherit_amount > 0 and inherit_age > current_age and inherit_age <= (current_age + max_years):
                     fig_proj.add_vline(x=inherit_age, line_width=1, line_dash="dash", line_color="#a855f7", annotation_text="Inheritance", annotation_position="top right", annotation=dict(y=0.95))
 
                 st.markdown("#### Investments Over Time")
-                c_chart, c_vars = st.columns([3, 1])
-                with c_chart:
+                # Display Graph and Sliders side-by-side
+                c_graph, c_vars_bottom = st.columns([3, 1])
+                with c_graph:
                     st.plotly_chart(fig_proj, use_container_width=True)
-                with c_vars:
-                    st.markdown("<br><br>", unsafe_allow_html=True) # Align with graph area
+                with c_vars_bottom:
+                    st.markdown("<br>", unsafe_allow_html=True) # Spacer
+                    st.markdown("##### Market Variables")
+                    
+                    # --- CSS to force Blue Sliders ---
+                    st.markdown("""
+                    <style>
+                    /* Force blue sliders for this scope */
+                    div.stSlider > div[data-baseweb="slider"] > div > div > div[role="slider"]{
+                        background-color: #0068c9 !important;
+                    }
+                    div.stSlider > div[data-baseweb="slider"] > div > div > div > div {
+                         background-color: #0068c9 !important;
+                    }
+                    </style>
+                    """, unsafe_allow_html=True)
+
+                    inflation = st.slider("Inflation (%)", 0.0, 10.0, 3.0, 0.1, key="hl_inflation")
+                    annual_return = st.slider("Annual Return (%)", 0.0, 15.0, 5.0, 0.1, key="hl_return")
  
             st.markdown("---")
             
