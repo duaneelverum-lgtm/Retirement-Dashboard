@@ -1528,47 +1528,10 @@ def main():
         sell_property = inh.get("sell_property", False)
         sell_age = inh.get("sell_age", 0)
 
-        # --- Top Row Layout (3 Columns) ---
-        c_inputs, col_space1, c_assump = st.columns([1, 0.4, 1])
-        
-        with c_inputs:
-            st.markdown("#### Financial Inputs")
-            
-            # Use calculated defaults directly (Read-Only View)
-            monthly_income = default_income
-            monthly_expenses = default_expenses
-            principal = liquid_nw
-
-            st.markdown(f"""
-            <div style="font-size:14px; margin-bottom: 5px;">
-            <b>Total Monthly Income:</b> ${monthly_income:,.2f}<br>
-            <b>Monthly Expenses:</b> ${monthly_expenses:,.2f}<br>
-            <b>Investments:</b> ${principal:,.0f}
-            </div>
-            """, unsafe_allow_html=True)
-            
-            st.caption("Change these values on the **Budget** & **Assets** tabs.")
-
-        with c_assump:
-            st.markdown("#### Assumptions")
-            
-            # Use columns or simple text for the permanent table
-            inh_str = "None"
-            if inherit_amount > 0:
-                inh_str = f"${inherit_amount:,.0f} at age {inherit_age}"
-                if inherit_type != "Cash / Investments":
-                    inh_str += f" ({inherit_type})"
-
-            st.markdown(f"""
-            <div style="font-size:14px; margin-bottom: 5px;">
-            <b>Current Age:</b> {current_age} &nbsp;|&nbsp; <b>Retire Age:</b> {planned_ret_age}<br>
-            <b>CPP:</b> ${cpp_amount:,.2f}/mo at age {cpp_start_age}<br>
-            <b>OAS:</b> ${oas_amount:,.2f}/mo at age {oas_start_age}<br>
-            <b>Inheritance:</b> {inh_str}
-            </div>
-            """, unsafe_allow_html=True)
-            
-            st.caption("Change these values on the **Profile** tab.")
+        # --- Define Calculation Variables ---
+        monthly_income = default_income
+        monthly_expenses = default_expenses
+        principal = liquid_nw
 
 
 
@@ -1668,60 +1631,7 @@ def main():
                     # curr_income *= (1.0) 
                     curr_expenses *= (1 + inflation / 100)
 
-            with st.container():
-                st.markdown("---")
-                
-                # Result Box Logic
-                years_last = months / 12
-                y_val = int(months // 12)
-                m_val = int(months % 12)
-                
-                # Get First Name for personalization
-                full_name = data.get("personal", {}).get("name", "there")
-                first_name = full_name.split()[0] if full_name else "there"
-
-                # Styling based on outcome
-                if not run_out:
-                    # Green box
-                    box_color = "#d4edda"
-                    text_color = "#155724"
-                    border_color = "#c3e6cb"
-                    result_text = "You'll never run out of money!"
-                    sub_text = "Savings grow faster than spending."
-                elif y_val <= 0:
-                    # Immediate warning
-                    box_color = "#f8d7da"
-                    text_color = "#721c24"
-                    border_color = "#f5c6cb"
-                    result_text = "Your money will run out immediately."
-                    sub_text = "Better start saving!"
-                else:
-                    # Warning/Info box (Orange/Blue)
-                    box_color = "#cce5ff"
-                    text_color = "#004085"
-                    border_color = "#b8daff"
-                    result_text = f"Your money runs out in {y_val} years, {m_val} months."
-                    sub_text = f"(Until {datetime.now().year + y_val})"
-
-                # Result Box HTML (Single Line Flex)
-                st.markdown(f"""
-                <div style="
-                    background-color: {box_color};
-                    color: {text_color};
-                    border: 1px solid {border_color};
-                    padding: 8px 10px;
-                    border-radius: 5px;
-                    text-align: center;
-                    margin-bottom: 40px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 10px;
-                ">
-                    <span style="font-size: 18px; font-weight: bold;">{result_text}</span>
-                    <span style="font-size: 14px; opacity: 0.8;">{sub_text}</span>
-                </div>
-                """, unsafe_allow_html=True)
+                # Result box moved below chart
 
                 # Chart
                 
@@ -1823,7 +1733,95 @@ def main():
 
                     inflation = st.slider("Inflation (%)", 0.0, 10.0, 3.0, 0.1, key="hl_inflation")
                     annual_return = st.slider("Annual Return (%)", 0.0, 15.0, 5.0, 0.1, key="hl_return")
- 
+
+            # --- 2. Render Result Box (Middle) ---
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            # Result Box Logic
+            years_last = months / 12
+            y_val = int(months // 12)
+            m_val = int(months % 12)
+            
+            # Get First Name for personalization
+            full_name = data.get("personal", {}).get("name", "there")
+            first_name = full_name.split()[0] if full_name else "there"
+
+            # Styling based on outcome
+            if not run_out:
+                # Green box
+                box_color = "#d4edda"
+                text_color = "#155724"
+                border_color = "#c3e6cb"
+                result_text = "You'll never run out of money!"
+                sub_text = "Savings grow faster than spending."
+            elif y_val <= 0:
+                # Immediate warning
+                box_color = "#f8d7da"
+                text_color = "#721c24"
+                border_color = "#f5c6cb"
+                result_text = "Your money will run out immediately."
+                sub_text = "Better start saving!"
+            else:
+                # Warning/Info box (Orange/Blue)
+                box_color = "#cce5ff"
+                text_color = "#004085"
+                border_color = "#b8daff"
+                result_text = f"Your money runs out in {y_val} years, {m_val} months."
+                sub_text = f"(Until {datetime.now().year + y_val})"
+
+            # Result Box HTML (Single Line Flex)
+            st.markdown(f"""
+            <div style="
+                background-color: {box_color};
+                color: {text_color};
+                border: 1px solid {border_color};
+                padding: 8px 10px;
+                border-radius: 5px;
+                text-align: center;
+                margin-bottom: 20px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+            ">
+                <span style="font-size: 18px; font-weight: bold;">{result_text}</span>
+                <span style="font-size: 14px; opacity: 0.8;">{sub_text}</span>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # --- 3. Render Inputs & Assumptions (Bottom) ---
+            st.markdown("<br>", unsafe_allow_html=True)
+            c_inputs_btm, col_space_btm, c_assump_btm = st.columns([1, 0.4, 1])
+            
+            with c_inputs_btm:
+                st.markdown("#### Financial Inputs")
+                st.markdown(f"""
+                <div style="font-size:14px; margin-bottom: 5px;">
+                <b>Total Monthly Income:</b> ${monthly_income:,.2f}<br>
+                <b>Monthly Expenses:</b> ${monthly_expenses:,.2f}<br>
+                <b>Investments:</b> ${principal:,.0f}
+                </div>
+                """, unsafe_allow_html=True)
+                st.caption("Change these values on the **Budget** & **Assets** tabs.")
+
+            with c_assump_btm:
+                st.markdown("#### Assumptions")
+                inh_str = "None"
+                if inherit_amount > 0:
+                    inh_str = f"${inherit_amount:,.0f} at age {inherit_age}"
+                    if inherit_type != "Cash / Investments":
+                        inh_str += f" ({inherit_type})"
+
+                st.markdown(f"""
+                <div style="font-size:14px; margin-bottom: 5px;">
+                <b>Current Age:</b> {current_age} &nbsp;|&nbsp; <b>Retire Age:</b> {planned_ret_age}<br>
+                <b>CPP:</b> ${cpp_amount:,.2f}/mo at age {cpp_start_age}<br>
+                <b>OAS:</b> ${oas_amount:,.2f}/mo at age {oas_start_age}<br>
+                <b>Inheritance:</b> {inh_str}
+                </div>
+                """, unsafe_allow_html=True)
+                st.caption("Change these values on the **Profile** tab.")
+
             st.markdown("---")
             
             # Reverse Calculator Section
