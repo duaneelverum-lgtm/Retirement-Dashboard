@@ -1019,7 +1019,7 @@ def main():
                     # If existing data is empty for this type, add a sample
                     if not type_accounts:
                         sample_name = "Sample Account"
-                        if asset_type == "Investments": sample_name = "RRSP / 401k"
+                        if asset_type == "Investments": sample_name = "RRSP"
                         elif asset_type == "Cash": sample_name = "Emergency Fund"
                         elif asset_type == "Assets": sample_name = "Car"
                         
