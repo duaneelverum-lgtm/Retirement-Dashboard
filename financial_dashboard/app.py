@@ -1552,6 +1552,7 @@ def main():
             # Use columns or simple text for the permanent table
             st.markdown(f"""
             <div style="font-size:14px; margin-bottom: 5px;">
+            <b>Current Age:</b> {current_age} &nbsp;|&nbsp; <b>Retire Age:</b> {planned_ret_age}<br>
             <b>CPP:</b> ${cpp_amount:,.2f}/mo at age {cpp_start_age}<br>
             <b>OAS:</b> ${oas_amount:,.2f}/mo at age {oas_start_age}
             </div>
