@@ -355,9 +355,32 @@ def main():
             right: 15px !important;
             top: 15px !important;
         }
-        /* Increase Font Size for Tabs */
+        /* Subtle Tab Styling */
+        .stTabs [data-baseweb="tab-list"] {
+            gap: 2px;
+        }
+        .stTabs [data-baseweb="tab"] {
+            height: 50px;
+            white-space: pre-wrap;
+            background-color: #f8f9fa;
+            border-radius: 10px 10px 0px 0px;
+            border-bottom: none;
+            padding: 0px 16px;
+        }
+        .stTabs [data-baseweb="tab"]:hover {
+            background-color: #f0f2f6;
+        }
+        .stTabs [aria-selected="true"] {
+            background-color: #ffffff !important;
+            border-bottom: none !important;
+            border-top: 1px solid #eee;
+            border-left: 1px solid #eee;
+            border-right: 1px solid #eee;
+        }
+        
+        /* Font Styling for Tab Text */
         .stTabs [data-baseweb="tab-list"] button [data-testid="stMarkdownContainer"] p {
-            font-size: 1.25rem !important;
+            font-size: 1.0rem !important;
             font-weight: 600 !important;
         }
         </style>
@@ -778,9 +801,9 @@ def main():
 
 
 
-        # --- NEW SECTION: How'm I Doing? ---
+        # --- NEW SECTION: How am I Doing? ---
         st.markdown("---")
-        st.subheader("How'm I Doing?")
+        st.subheader("How am I Doing?")
         
         status_mode = st.pills("Current Status", ["I am still working", "I am retired"], default="I am still working", label_visibility="collapsed")
         
@@ -802,68 +825,67 @@ def main():
             st.info("💡 **Tip:** Enter your income and expenses in the **Budget** tab to see personalized retirement projections here.")
 
         if status_mode == "I am still working":
-
             st.markdown("#### How much should I be saving?")
              
-            # Standard Savings Logic (Re-indented)
-            years_to_ret = max(0, planned_ret_age - calc_age)
-            months_to_ret = years_to_ret * 12
-            r = 0.05 / 12
-            pmt = net_cashflow_global # Current monthly savings
-
-            # Projected Future Wealth
-            if years_to_ret > 0:
-                future_wealth = (net_worth * (1+r)**months_to_ret) + (pmt * (((1+r)**months_to_ret - 1) / r))
+            if annual_income == 0:
+                st.info("💡 **Tip:** Enter your financial data in the **Financial Data** tab to find out how much you should be saving.")
+            elif net_cashflow_global < 0:
+                st.error(f"⚠️ **Tip:** You are currently overspending by **${abs(net_cashflow_global):,.0f} / month** (your expenses exceed your income). You will need to address this deficit to start building your retirement nest egg.")
             else:
-                future_wealth = net_worth
-                
-            final_gap = target_nest_egg - future_wealth # Gap at Planned Retirement Age
+                # Standard Savings Logic
+                years_to_ret = max(0, planned_ret_age - calc_age)
+                months_to_ret = years_to_ret * 12
+                r = 0.05 / 12
+                pmt = net_cashflow_global 
 
-            # Calculate EXTRA monthly savings needed to close the gap
-            extra_monthly_savings_needed = 0
-            if final_gap > 0 and months_to_ret > 0:
-                 # Future Value of an annuity: FV = PMT * (((1+r)^n - 1) / r)
-                 # We need FV = final_gap
-                 # So PMT = final_gap * r / ((1+r)^n - 1)
-                 extra_monthly_savings_needed = final_gap * r / ((1+r)**months_to_ret - 1)
-            
-            # --- Display Logic ---
-            st.markdown(f"To retire at age **{planned_ret_age}** with your desired spending of **${target_spend:,.0f}/mo**...")
-            
-            if final_gap > 0:
-                 st.info(f"You need to save an additional **${extra_monthly_savings_needed:,.0f} / month**.")
-                 st.caption(f"This is on top of your current monthly surplus of ${net_cashflow_global:,.0f}.")
-            else:
-                 st.success(f"✅ You are ON TRACK. You don't need to save any extra money.")
-                 st.caption(f"Your current plan exceeds your goal by ${abs(final_gap):,.0f}.")
+                if years_to_ret > 0:
+                    future_wealth = (net_worth * (1+r)**months_to_ret) + (pmt * (((1+r)**months_to_ret - 1) / r))
+                else:
+                    future_wealth = net_worth
+                    
+                final_gap = target_nest_egg - future_wealth 
+                lump_sum_today = final_gap / ((1 + r) ** months_to_ret) if (final_gap > 0 and months_to_ret > 0) else final_gap
+
+                # Calculate EXTRA monthly savings needed to close the gap
+                extra_monthly_savings_needed = 0
+                if final_gap > 0 and months_to_ret > 0:
+                     extra_monthly_savings_needed = final_gap * r / ((1+r)**months_to_ret - 1)
+
+                if final_gap > 0:
+                     st.info(f"💡 **Tip:** To retire at the age you've indicated on the Profile page ({planned_ret_age}), and according to your investments and financial data, you need to be saving **${extra_monthly_savings_needed:,.0f}** more per month until you retire or add a lump sum of **${lump_sum_today:,.0f}**.")
+                else:
+                     st.success(f"✅ **Tip:** You are ON TRACK. Based on your current plan, you have achieved your financial goal for age {planned_ret_age}! (Over-funded by ${abs(final_gap):,.0f})")
 
         else:
             # --- RETIRED LOGIC ---
             st.markdown("#### How much more money can I spend?")
             
-            # Simple 4% Rule Reverse Check (or customized)
-            # Safe withdrawal from current assets
-            safe_annual_draw = net_worth * withdraw_rate
-            safe_monthly_draw = safe_annual_draw / 12
-            
-            total_monthly_spending_power = safe_monthly_draw + passive_income
-            current_spend = target_spend
-            
-            surplus = total_monthly_spending_power - current_spend
-            
-            if surplus > 0:
-                st.success(f"You can safely spend an additional **${surplus:,.0f} / month** above your current budget.")
+            if net_worth == 0 and target_spend == 0:
+                st.info("💡 **Tip:** Enter your financial data in the **Financial Data** tab to find out how much more money you can spend.")
             else:
-                st.error(f"You are currently overspending your safe withdrawal rate by **${abs(surplus):,.0f} / month**.")
-            
-            st.markdown(f"""
-            **Breakdown:**
-            - Current Net Worth: **${net_worth:,.0f}**
-            - Safe Monthly Withdrawal (4%): **${safe_monthly_draw:,.0f}**
-            - Monthly Pension Benefits: **${passive_income:,.0f}**
-            - **Total Safe Spending Power: ${total_monthly_spending_power:,.0f}**
-            - *Your Current Spending: ${current_spend:,.0f}*
-            """)
+                # Simple 4% Rule Reverse Check (or customized)
+                # Safe withdrawal from current assets
+                safe_annual_draw = net_worth * withdraw_rate
+                safe_monthly_draw = safe_annual_draw / 12
+                
+                total_monthly_spending_power = safe_monthly_draw + passive_income
+                current_spend = target_spend
+                
+                surplus = total_monthly_spending_power - current_spend
+                
+                if surplus > 0:
+                    st.success(f"💡 **Tip:** You can safely spend an additional **${surplus:,.0f} / month** above your current budget.")
+                else:
+                    st.error(f"⚠️ **Tip:** You are currently overspending your safe withdrawal rate by **${abs(surplus):,.0f} / month**.")
+                
+                st.markdown(f"""
+                **Breakdown:**
+                - Current Net Worth: **${net_worth:,.0f}**
+                - Safe Monthly Withdrawal (4%): **${safe_monthly_draw:,.0f}**
+                - Monthly Pension Benefits: **${passive_income:,.0f}**
+                - **Total Safe Spending Power: ${total_monthly_spending_power:,.0f}**
+                - *Your Current Spending: ${current_spend:,.0f}*
+                """)
             
 
 
