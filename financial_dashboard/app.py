@@ -10,7 +10,7 @@ import io
 
 # --- Configuration ---
 st.set_page_config(
-    page_title="Duane's Dashboard Demo",
+    page_title="The Retirement Dashboard",
     page_icon="💰",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -314,7 +314,7 @@ def main():
     # --- Main Dashboard ---
     col_title, col_clear = st.columns([5, 1])
     with col_title:
-        st.title("Duane's Dashboard Demo")
+        st.title("The Retirement Dashboard")
     with col_clear:
         if st.button("🗑️ Clear Session", type="secondary", use_container_width=True, help="Clear all data and results"):
             confirm_reset_dialog()
