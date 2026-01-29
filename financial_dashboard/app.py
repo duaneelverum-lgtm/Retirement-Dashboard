@@ -1797,10 +1797,10 @@ def main():
 
                 st.markdown("#### Investments Over Time")
                 # Display Graph and Sliders side-by-side
-                c_graph, c_vars_bottom = st.columns([3, 1])
+                c_graph, c_vars = st.columns([3, 1])
                 with c_graph:
                     st.plotly_chart(fig_proj, use_container_width=True)
-                with c_vars_bottom:
+                with c_vars:
                     st.markdown("<br>", unsafe_allow_html=True) # Spacer
                     st.markdown("##### Market Variables")
                     
