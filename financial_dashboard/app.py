@@ -1294,24 +1294,6 @@ def main():
 
             st.write("")
             st.metric("Total Income", f"${subtotal_income:,.2f}")
-            
-            _, c_save = st.columns([5, 1])
-            with c_save:
-                if st.button("Save", type="primary", key="btn_save_income_demo", use_container_width=True):
-                    # Robust Save: Gather LATEST from BOTH sections to avoid stale data
-                    # First, update local state with what we just built in the and Expense loop
-                    # Actually, better to just update st.session_state.budget_list_demo immediately
-                    full_budget = updated_income + expense_items
-                    data["budget"] = full_budget
-                    save_data(data)
-                    
-                    # Sync session list
-                    st.session_state.budget_list_demo = full_budget
-                    
-                    rc = st.session_state.get("_reset_counter", 0)
-                    st.session_state[f"hl_income_direct_v4_{rc}"] = subtotal_income
-                    st.success("Income updated!")
-                    st.rerun()
 
         # --- Section 2: Expenses ---
         with st.expander("Monthly Expenses", expanded=True):
@@ -1357,21 +1339,6 @@ def main():
 
             st.write("")
             st.metric("Total Expenses", f"${sub_exp_monthly:,.2f}")
-            
-            _, c_save = st.columns([5, 1])
-            with c_save:
-                if st.button("Save", type="primary", key="btn_save_expenses_demo_new", use_container_width=True):
-                    full_budget = income_items + updated_expenses
-                    data["budget"] = full_budget
-                    save_data(data)
-                    
-                    # Sync session list
-                    st.session_state.budget_list_demo = full_budget
-                    
-                    rc = st.session_state.get("_reset_counter", 0)
-                    st.session_state[f"hl_expenses_direct_v4_{rc}"] = sub_exp_monthly
-                    st.success("Expenses updated!")
-                    st.rerun()
 
         # --- Section 3: Annual Bucket List ---
         with st.expander("🏆 Annual Bucket List", expanded=True):
@@ -1418,25 +1385,34 @@ def main():
                 st.session_state.annual_list_demo.append({"id": f"ann_demo_{int(datetime.now().timestamp())}", "name": "", "amount": 0.0, "frequency": "One-time", "start_age": 65})
                 st.rerun()
 
-            _, c_save = st.columns([5, 1])
-            with c_save:
-                if st.button("Save", type="primary", key="btn_save_ann_demo_new", use_container_width=True):
-                    data["annual_expenditures"] = updated_ann
-                    save_data(data)
-                    
-                    # Sync session list
-                    st.session_state.annual_list_demo = updated_ann
-                    
-                    st.success("Annual expenditures saved!")
-                    st.rerun()
-
         st.markdown("---")
         st.subheader("Budget Summary")
         c1, c2, c3 = st.columns(3)
         c1.metric("Total Income", f"${subtotal_income:,.2f}")
         c2.metric("Total Expenses", f"${sub_exp_monthly:,.2f}", delta_color="inverse")
         net_cash_live = subtotal_income - sub_exp_monthly
-        c3.metric("Net Cashflow", f"${net_cash_live:,.2f}", delta=f"${net_cash_live:,.2f}")
+        c3.metric("Net Cashflow", f"${net_cash_live:,.2f}")
+
+        st.write("")
+        _, c_save_all = st.columns([5, 1])
+        with c_save_all:
+            if st.button("Save Budget", type="primary", key="btn_save_budget_all_demo", use_container_width=True):
+                # Combine Income and Expenses back into data["budget"]
+                data["budget"] = updated_income + updated_expenses
+                data["annual_expenditures"] = updated_ann
+                save_data(data)
+                
+                # Sync session lists
+                st.session_state.budget_list_demo = updated_income + updated_expenses
+                st.session_state.annual_list_demo = updated_ann
+                
+                # Metrics triggers (for other tabs)
+                rc = st.session_state.get("_reset_counter", 0)
+                st.session_state[f"hl_income_direct_v4_{rc}"] = subtotal_income
+                st.session_state[f"hl_expenses_direct_v4_{rc}"] = sub_exp_monthly
+                
+                st.toast("✅ Budget saved!", icon="💰")
+                st.rerun()
         
 
 
