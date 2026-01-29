@@ -206,9 +206,11 @@ def render_blog_card(post):
             st.caption(f"📅 {post['date']} • 🏷️ {post['category']}")
             st.write(post["excerpt"])
             
+            st.markdown('<div class="blog-btn">', unsafe_allow_html=True)
             if st.button(f"Read More", key=f"btn_read_{post['id']}", type="secondary"):
                 st.session_state["selected_post"] = post
                 st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
         
         st.divider()
 
@@ -280,6 +282,17 @@ def main():
         button[key="btn_start_over_final"],
         button[key="btn_start_over_final_demo"] {
             transform: translateX(28px); /* Adjusted to align with tab content right-edge */
+        }
+        /* Light Blue Buttons for Blog (similar to info note) */
+        div.blog-btn > div.stButton > button {
+            background-color: #e1f5fe !important;
+            color: #01579b !important;
+            border: 1px solid #b3e5fc !important;
+            font-weight: 500 !important;
+        }
+        div.blog-btn > div.stButton > button:hover {
+            background-color: #b3e5fc !important;
+            border-color: #01579b !important;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -355,6 +368,7 @@ def main():
                     with st.container(border=True):
                         st.caption(f"📅 {post['date']}")
                         st.markdown(f"**{post['title']}**")
+                        st.markdown('<div class="blog-btn">', unsafe_allow_html=True)
                         if st.button("Read", key=f"right_blog_{post['id']}", use_container_width=True):
                             @st.dialog(post['title'])
                             def show_post_item(item):
@@ -362,6 +376,7 @@ def main():
                                 st.markdown("---")
                                 st.markdown(item['content'])
                             show_post_item(post)
+                        st.markdown('</div>', unsafe_allow_html=True)
 
         st.divider()
         st.caption("v1.0")
