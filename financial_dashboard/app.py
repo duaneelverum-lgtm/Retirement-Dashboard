@@ -567,19 +567,26 @@ def main():
                     st.rerun()
 
     # --- Pre-calculate Budget Totals ---
-    # These are needed for both the Summary tab calculations and the Budget tab metrics
     current_budget_global = data.get("budget", [])
+    annual_exp_global = data.get("annual_expenditures", [])
     
     total_income_global = sum(float(item.get("amount", 0.0)) for item in current_budget_global if item.get("type") == "Income")
-    total_expenses_global = 0.0
+    
+    # Base monthly expenses from recurring budget
+    base_monthly_expenses = 0.0
     for item in current_budget_global:
         if item["type"] == "Expense":
-            amt = item.get("amount", 0.0)
+            amt = float(item.get("amount", 0.0))
             freq = item.get("frequency", "Monthly")
             if freq == "Annually":
-                total_expenses_global += (amt / 12)
+                base_monthly_expenses += (amt / 12)
             else:
-                total_expenses_global += amt
+                base_monthly_expenses += amt
+    
+    # Averaged monthly cost of annual expenditures
+    avg_annual_monthly = sum(float(ann.get("amount", 0.0)) / 12 for ann in annual_exp_global)
+    
+    total_expenses_global = base_monthly_expenses + avg_annual_monthly
     net_cashflow_global = total_income_global - total_expenses_global
 
     # --- TAB: Summary (Home) ---
@@ -1105,6 +1112,9 @@ def main():
                         data["history"].append({"date": today_str, "net_worth": current_nw})
                     
                     save_data(data)
+                    # Sync session state back to prevent stale UI
+                    st.session_state[ss_key_assets] = new_assets
+                    
                     rc = st.session_state.get("_reset_counter", 0)
                     st.session_state[f"hl_principal_direct_v4_{rc}"] = current_nw
                     st.success("Assets updated!")
@@ -1252,6 +1262,9 @@ def main():
                         data["history"].append({"date": today_str, "net_worth": current_nw})
                     
                     save_data(data)
+                    # Sync session state back to prevent stale UI
+                    st.session_state[ss_key_liab] = new_accounts
+
                     rc = st.session_state.get("_reset_counter", 0)
                     st.session_state[f"hl_principal_direct_v4_{rc}"] = current_nw
                     st.success("Liabilities updated!")
@@ -1331,8 +1344,16 @@ def main():
             _, c_save = st.columns([5, 1])
             with c_save:
                 if st.button("Save", type="primary", key="btn_save_income_demo", use_container_width=True):
-                    data["budget"] = updated_income + expense_items
+                    # Robust Save: Gather LATEST from BOTH sections to avoid stale data
+                    # First, update local state with what we just built in the and Expense loop
+                    # Actually, better to just update st.session_state.budget_list_demo immediately
+                    full_budget = updated_income + expense_items
+                    data["budget"] = full_budget
                     save_data(data)
+                    
+                    # Sync session list
+                    st.session_state.budget_list_demo = full_budget
+                    
                     rc = st.session_state.get("_reset_counter", 0)
                     st.session_state[f"hl_income_direct_v4_{rc}"] = subtotal_income
                     st.success("Income updated!")
@@ -1386,8 +1407,13 @@ def main():
             _, c_save = st.columns([5, 1])
             with c_save:
                 if st.button("Save", type="primary", key="btn_save_expenses_demo_new", use_container_width=True):
-                    data["budget"] = income_items + updated_expenses
+                    full_budget = income_items + updated_expenses
+                    data["budget"] = full_budget
                     save_data(data)
+                    
+                    # Sync session list
+                    st.session_state.budget_list_demo = full_budget
+                    
                     rc = st.session_state.get("_reset_counter", 0)
                     st.session_state[f"hl_expenses_direct_v4_{rc}"] = sub_exp_monthly
                     st.success("Expenses updated!")
@@ -1443,6 +1469,10 @@ def main():
                 if st.button("Save", type="primary", key="btn_save_ann_demo_new", use_container_width=True):
                     data["annual_expenditures"] = updated_ann
                     save_data(data)
+                    
+                    # Sync session list
+                    st.session_state.annual_list_demo = updated_ann
+                    
                     st.success("Annual expenditures saved!")
                     st.rerun()
 
@@ -1583,21 +1613,21 @@ def main():
                 
                 # Subtract Annual Expenditures if it's the right month (e.g. month 1 of the year)
                 if m % 12 == 1:
-                    sim_age_floor = int(sim_age_years)
-                    for exp in data.get("annual_expenditures", []):
-                        e_amt = exp.get("amount", 0.0)
-                        e_freq = exp.get("frequency", "One-time")
-                        e_start = exp.get("start_age", 65)
-                        
-                        should_apply = False
-                        if e_freq == "One-time" and sim_age_floor == e_start: should_apply = True
-                        elif e_freq == "Every Year" and sim_age_floor >= e_start: should_apply = True
-                        elif e_freq == "Every 2 Years" and sim_age_floor >= e_start and (sim_age_floor - e_start) % 2 == 0: should_apply = True
-                        elif e_freq == "Every 5 Years" and sim_age_floor >= e_start and (sim_age_floor - e_start) % 5 == 0: should_apply = True
-                        elif e_freq == "Every 10 Years" and sim_age_floor >= e_start and (sim_age_floor - e_start) % 10 == 0: should_apply = True
-                        
-                        if should_apply:
-                            balance -= e_amt
+                        sim_age_floor = int(sim_age_years)
+                        for exp in data.get("annual_expenditures", []):
+                            e_amt = float(exp.get("amount", 0.0))
+                            e_freq = exp.get("frequency", "One-time")
+                            e_start = int(exp.get("start_age", 65))
+                            
+                            should_apply = False
+                            if e_freq == "One-time" and sim_age_floor == e_start: should_apply = True
+                            elif e_freq == "Every Year" and sim_age_floor >= e_start: should_apply = True
+                            elif e_freq == "Every 2 Years" and sim_age_floor >= e_start and (sim_age_floor - e_start) % 2 == 0: should_apply = True
+                            elif e_freq == "Every 5 Years" and sim_age_floor >= e_start and (sim_age_floor - e_start) % 5 == 0: should_apply = True
+                            elif e_freq == "Every 10 Years" and sim_age_floor >= e_start and (sim_age_floor - e_start) % 10 == 0: should_apply = True
+                            
+                            if should_apply:
+                                balance -= e_amt
 
                 history_bal.append(max(0, balance))
                 # years_axis.append(m / 12) <-- Old "Years from Now" logic
@@ -1772,12 +1802,14 @@ def main():
                 st.markdown("#### Financial Inputs")
                 st.markdown(f"""
                 <div style="font-size:14px; margin-bottom: 5px;">
-                <b>Total Monthly Income:</b> ${monthly_income:,.2f}<br>
-                <b>Monthly Expenses:</b> ${monthly_expenses:,.2f}<br>
+                <b>Total Monthly Income:</b> ${total_income_global:,.2f}<br>
+                <b>Base Monthly Expenses:</b> ${base_monthly_expenses:,.2f}<br>
+                <b>Annuals (Averaged):</b> ${avg_annual_monthly:,.2f}<br>
+                <hr style="margin: 5px 0; opacity: 0.3;">
                 <b>Investments:</b> ${principal:,.0f}
                 </div>
                 """, unsafe_allow_html=True)
-                st.caption("Change these values on the **Budget** & **Assets** tabs.")
+                st.caption("Adjust values on the **Budget** & **Assets** tabs.")
 
             with c_assump_btm:
                 st.markdown("#### Assumptions")
@@ -2061,8 +2093,19 @@ def main():
                 if m % 12 == 1:
                     sim_age_f = int(sim_age_yr)
                     for exp in data.get("annual_expenditures", []):
-                        if exp.get("frequency") == "One-time" and sim_age_f == exp.get("start_age"): bal -= exp.get("amount", 0)
-                        elif exp.get("frequency") == "Every Year" and sim_age_f >= exp.get("start_age"): bal -= exp.get("amount", 0)
+                        e_amt = float(exp.get("amount", 0.0))
+                        e_freq = exp.get("frequency", "One-time")
+                        e_start = int(exp.get("start_age", 65))
+                        
+                        should_apply = False
+                        if e_freq == "One-time" and sim_age_f == e_start: should_apply = True
+                        elif e_freq == "Every Year" and sim_age_f >= e_start: should_apply = True
+                        elif e_freq == "Every 2 Years" and sim_age_f >= e_start and (sim_age_f - e_start) % 2 == 0: should_apply = True
+                        elif e_freq == "Every 5 Years" and sim_age_f >= e_start and (sim_age_f - e_start) % 5 == 0: should_apply = True
+                        elif e_freq == "Every 10 Years" and sim_age_f >= e_start and (sim_age_f - e_start) % 10 == 0: should_apply = True
+                        
+                        if should_apply:
+                            bal -= e_amt
 
                 hist.append(max(0, bal))
                 if bal <= 0 and m < max_years * 12:
