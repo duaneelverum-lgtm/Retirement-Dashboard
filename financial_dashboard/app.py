@@ -95,6 +95,39 @@ def get_net_worth(data):
 
     return liquid_nw, total_assets, total_liabilities
 
+def get_cpp_estimate(age):
+    """Returns approximate average monthly CPP based on start age (2025 guidelines)."""
+    # 2025 Average for new recipients at age 65 is approx $803.76
+    base_65 = 803.76
+    if age < 65:
+        # Reduction of 0.6% per month (7.2% per year)
+        factor = 1.0 - (65 - age) * 0.072
+        return round(base_65 * factor, 2)
+    elif age > 65:
+        # Increase of 0.7% per month (8.4% per year)
+        factor = 1.0 + (age - 65) * 0.084
+        return round(base_65 * factor, 2)
+    return base_65
+
+def get_oas_estimate(age):
+    """Returns approximate average monthly OAS based on start age (2025 guidelines)."""
+    # 2025 Standard amount for 65-74 is approx $727.67
+    base_65 = 727.67
+    if age > 65:
+        # Increase of 0.6% per month (7.2% per year)
+        factor = 1.0 + (age - 65) * 0.072
+        return round(base_65 * factor, 2)
+    return base_65
+
+# --- Callbacks for Profile Autofill ---
+def update_cpp_amt():
+    age = st.session_state.p_cpp_start_new
+    st.session_state.p_cpp_amt_direct = get_cpp_estimate(age)
+
+def update_oas_amt():
+    age = st.session_state.p_oas_start_new
+    st.session_state.p_oas_amt_direct = get_oas_estimate(age)
+
 # --- UI Components ---
 def create_project_backup():
     """Creates a zip file of the current project directory, excluding venv and junk."""
@@ -351,13 +384,12 @@ def main():
     col_main, col_blog = st.columns([3.5, 1], gap="medium")
     
     with col_main:
-        tab_personal, tab_summary, tab_will_it_last, tab_what_if, tab_budget, tab_assets_liabilities = st.tabs([
+        tab_personal, tab_summary, tab_will_it_last, tab_what_if, tab_budget = st.tabs([
             "👤 Profile",
             "⛰️ The Big Picture", 
             "⏳ Will It Last?",
             "🚀 What If?",
-            "💰 Budget",
-            "🏦 Assets & Liabilities"
+            "💰 Financial Data"
         ])
 
 
@@ -392,14 +424,57 @@ def main():
     # --- Profile Tab ---
     with tab_personal:
         st.markdown("### 👤 Profile")
+        
+        # Custom CSS to force the toast to the center and make it prominent
+        st.markdown("""
+            <style>
+            /* TARGET THE TOAST DIRECTLY */
+            div[data-testid="stToast"] {
+                position: fixed !important;
+                top: 50% !important;
+                left: 50% !important;
+                transform: translate(-50%, -50%) !important;
+                z-index: 999999 !important;
+                width: auto !important;
+                min-width: 400px !important;
+                max-width: 80vw !important;
+                background-color: #FFFFFF !important; /* White background for a clean look */
+                color: #333333 !important; /* Dark text for readability */
+                border: 1px solid #e0e0e0 !important; /* Subtle border */
+                border-left: 6px solid #4CAF50 !important; /* Pleasant green accent */
+                border-radius: 8px !important;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important; /* Soft shadow */
+                padding: 16px !important;
+                margin: 0 !important;
+            }
+            /* Ensure the text inside is centered and readable */
+            div[data-testid="stToastText"] {
+                font-size: 1.1rem !important;
+                text-align: center !important;
+                font-weight: 500 !important;
+                color: #333333 !important;
+            }
+            /* Optional: Hide the default toast container transition if it interferes */
+            [data-testid="stToastContainer"] {
+                right: 50% !important;
+                bottom: 50% !important;
+            }
+            </style>
+        """, unsafe_allow_html=True)
+        
+        # Display Success Message if saved
+        if "profile_save_success" in st.session_state and st.session_state.profile_save_success:
+            st.toast("Please add your information to the Financial Data page next", icon="👤")
+            st.session_state.profile_save_success = False
+
         st.info("💡 **Start here.** Changes on this page will update totals across the site. Your data is not being saved.")
         
         personal = data.get("personal", {})
         gov = data.get("government", {})
         inh = data.get("inheritance", {})
 
-        # Unified Form for everything on the Profile page
-        with st.form("profile_complete_form"):
+        # Unified Container for everything on the Profile page
+        with st.container(border=True):
             st.markdown("#### Personal Details")
             col1, col2 = st.columns(2)
             with col1:
@@ -427,33 +502,47 @@ def main():
 
             st.markdown("---")
             st.markdown("#### 🇨🇦 Government Benefits")
+            
+            # 1. Define base variables first
+            g_cpp_start = gov.get("cpp_start_age", 65)
+            g_oas_start = gov.get("oas_start_age", 65)
+
+            # 2. Ensure session state has the current amounts for display
+            if "p_cpp_amt_direct" not in st.session_state:
+                st.session_state.p_cpp_amt_direct = gov.get("cpp_amount", get_cpp_estimate(g_cpp_start))
+            if "p_oas_amt_direct" not in st.session_state:
+                st.session_state.p_oas_amt_direct = gov.get("oas_amount", get_oas_estimate(g_oas_start))
+
             c_cpp1, c_cpp2 = st.columns(2)
             with c_cpp1:
-                g_cpp_start = gov.get("cpp_start_age", 65)
                 # Ensure index is safe
                 try: 
                     cpp_idx = list(range(60, 71)).index(g_cpp_start)
                 except: 
                     cpp_idx = 5 # 65
-                new_cpp_start = st.selectbox("CPP Start Age", options=list(range(60, 71)), index=cpp_idx, key="p_cpp_start_new")
+                new_cpp_start = st.selectbox("CPP Start Age", options=list(range(60, 71)), index=cpp_idx, key="p_cpp_start_new", on_change=update_cpp_amt)
             with c_cpp2:
-                g_cpp_amt = gov.get("cpp_amount", 0.0)
-                # Show the actual value here instead of None to ensure user sees it's saved
-                new_cpp_amt = st.number_input("CPP Amount ($/mo)", value=float(g_cpp_amt), step=50.0, key="p_cpp_amt_direct")
+                st.markdown(f"""
+                <div style="font-size: 14px; color: rgba(49, 51, 63, 0.6); margin-bottom: 2px;">CPP Amount ($/mo)</div>
+                <div style="font-size: 24px; font-weight: 600; color: #31333F;">${st.session_state.p_cpp_amt_direct:,.2f}</div>
+                <div style="font-size: 12px; color: rgba(49, 51, 63, 0.4); font-style: italic;">National Average (2025)</div>
+                """, unsafe_allow_html=True)
             
             st.markdown("<br>", unsafe_allow_html=True)
             c_oas1, c_oas2 = st.columns(2)
             with c_oas1:
-                g_oas_start = gov.get("oas_start_age", 65)
                 oas_opts = list(range(65, 71))
                 try:
                     oas_idx = oas_opts.index(g_oas_start)
                 except:
                     oas_idx = 0
-                new_oas_start = st.selectbox("OAS Start Age", options=oas_opts, index=oas_idx, key="p_oas_start_new")
+                new_oas_start = st.selectbox("OAS Start Age", options=oas_opts, index=oas_idx, key="p_oas_start_new", on_change=update_oas_amt)
             with c_oas2:
-                g_oas_amt = gov.get("oas_amount", 0.0)
-                new_oas_amt = st.number_input("OAS Amount ($/mo)", value=float(g_oas_amt), step=50.0, key="p_oas_amt_direct")
+                st.markdown(f"""
+                <div style="font-size: 14px; color: rgba(49, 51, 63, 0.6); margin-bottom: 2px;">OAS Amount ($/mo)</div>
+                <div style="font-size: 24px; font-weight: 600; color: #31333F;">${st.session_state.p_oas_amt_direct:,.2f}</div>
+                <div style="font-size: 12px; color: rgba(49, 51, 63, 0.4); font-style: italic;">National Average (2025)</div>
+                """, unsafe_allow_html=True)
 
             st.markdown("---")
             st.markdown("#### 💎 Inheritance / Windfall")
@@ -480,7 +569,7 @@ def main():
             st.markdown("<br>", unsafe_allow_html=True)
             _, c_save = st.columns([5, 1])
             with c_save:
-                if st.form_submit_button("Save", type="primary", use_container_width=True):
+                if st.button("Save", type="primary", use_container_width=True, key="save_profile_btn"):
                     # Save Personal
                     data["personal"] = {
                         "name": name,
@@ -492,9 +581,9 @@ def main():
                     # Save Gov
                     data["government"] = {
                         "cpp_start_age": new_cpp_start,
-                        "cpp_amount": new_cpp_amt,
+                        "cpp_amount": st.session_state.p_cpp_amt_direct,
                         "oas_start_age": new_oas_start,
-                        "oas_amount": new_oas_amt
+                        "oas_amount": st.session_state.p_oas_amt_direct
                     }
                     # Save Inheritance
                     data["inheritance"] = {
@@ -505,7 +594,7 @@ def main():
                         "sell_age": new_sell_age
                     }
                     save_data(data)
-                    st.toast("✅ Profile updated!", icon="👤")
+                    st.session_state.profile_save_success = True
                     st.rerun()
 
     # Calculate calc_age outside for use in other tabs
@@ -616,103 +705,51 @@ def main():
 
 
         # Charts
-        c1, c2 = st.columns([1, 1]) # 50/50 split to give donut room to grow
+        st.markdown("<br>", unsafe_allow_html=True) # Spacing
         
-        with c1:
-            if data["history"]:
-                df_hist = pd.DataFrame(data["history"])
-                
-                # Convert date strings to datetime and format as "Month Year"
-                df_hist['date'] = pd.to_datetime(df_hist['date'])
-                df_hist['date_label'] = df_hist['date'].dt.strftime('%b %Y')
-                
-                # Calculate growth metrics
-                first_value = df_hist['net_worth'].iloc[0]
-                current_value = net_worth # Use live calculated value to ensure alignment with top metric
-                growth = current_value - first_value
-                growth_pct = (growth / first_value * 100) if first_value != 0 else 0
-                
-                # Calculate Y-axis range
-                # Rule: Exactly the next full million above the highest value in data
-                max_val_in_data = max(current_value, df_hist['net_worth'].max())
-                target_million = float(((int(max_val_in_data) // 1000000) + 1) * 1000000)
-                y_min = 0
-                y_max = target_million * 1.1  # Add 10% buffer so the top line is visible as a grid line
-                
+        if data["history"]:
+            df_hist_g = pd.DataFrame(data["history"])
+            
+            # Convert date strings to datetime and format as "Month Year"
+            df_hist_g['date'] = pd.to_datetime(df_hist_g['date'])
+            df_hist_g['date_label'] = df_hist_g['date'].dt.strftime('%b %Y')
+            
+            # Calculate Y-axis range
+            current_value_g = net_worth
+            max_val_in_data = max(current_value_g, df_hist_g['net_worth'].max()) if not df_hist_g.empty else current_value_g
+            target_million = float(((int(max_val_in_data) // 1000000) + 1) * 1000000)
+            y_min = 0
+            y_max = target_million * 1.1
 
-                
-                # Create area chart with gradient (with dots)
-                fig_hist = go.Figure()
-                fig_hist.add_trace(go.Scatter(
-                    x=df_hist['date_label'],
-                    y=df_hist['net_worth'],
-                    mode='lines+markers',
-                    fill='tozeroy',
-                    line=dict(color='#0068c9', width=3),
-                    marker=dict(size=12, color='#0068c9'), # Increased size slightly for visibility
-                    fillcolor='rgba(0, 104, 201, 0.2)',
-                    hovertemplate='<b>%{x}</b><br>Net Worth: $%{y:,.2f}<extra></extra>'
-                ))
-                
-                fig_hist.update_layout(
-                    xaxis_title="Date",
-                    yaxis_title="Net Worth",
-                    yaxis_tickformat='$,.0f',
-                    yaxis_range=[y_min, y_max],
-                    yaxis=dict(dtick=200000), # Ensure lines at 200k, 400k, 600k, 800k, 1M, etc.
-                    hovermode='x unified',
-                    showlegend=False,
-                    margin=dict(l=0, r=40, t=30, b=0),
-                    height=300,
-                    font=dict(size=14)
-                )
-                
-                st.plotly_chart(fig_hist, use_container_width=True, config={'displayModeBar': False})
-            else:
-                st.info("No history data yet. Add transactions or snapshots to see trends.")
-
-        with c2:
-            if data["accounts"]:
-                df_acc = pd.DataFrame(data["accounts"])
-                df_acc = df_acc[df_acc["balance"] > 0]  # Only positive balances
-                if not df_acc.empty:
-                    # Group by type and sum
-                    df_grouped = df_acc.groupby('type')['balance'].sum().reset_index()
-                    # Sort by custom order: Investments, Bank, Assets, Other
-                    custom_order = ["Investments", "Bank", "Assets", "Other"]
-                    df_grouped['sort_key'] = df_grouped['type'].apply(lambda x: custom_order.index(x) if x in custom_order else 999)
-                    df_grouped = df_grouped.sort_values('sort_key')
-                    
-                    # Calculate percentages for legend
-                    total_balance = df_grouped['balance'].sum()
-                    df_grouped['label_with_pct'] = df_grouped.apply(lambda x: f"{x['type']} ({x['balance']/total_balance*100:.1f}%)", axis=1)
-                    
-                    # Custom color palette
-                    colors = ['#0068c9', '#83c9ff', '#ff2b2b', '#ffa421', '#21c354', '#a855f7', '#ec4899']
-                    
-                    fig_pie = go.Figure(data=[go.Pie(
-                        labels=df_grouped['label_with_pct'],
-                        values=df_grouped['balance'],
-                        hole=0.5,
-                        marker=dict(colors=colors),
-                        sort=False, # Respect our custom DF sort order
-                        textposition='inside',
-                        textinfo='percent', # Add percentages back to slices
-                        hovertemplate='<b>%{label}</b><br>$%{value:,.2f}<br>%{percent}<extra></extra>'
-                    )])
-                    
-                    fig_pie.update_layout(
-                        showlegend=True,
-                        margin=dict(l=10, r=0, t=30, b=0), # Align with top of line chart
-                        height=300, # Matches line chart height for center alignment
-                        legend=dict(orientation="v", yanchor="middle", y=0.5, xanchor="left", x=1.05, font=dict(size=14)) # Reverted legend alignment
-                    )
-                    
-                    st.plotly_chart(fig_pie, use_container_width=True, config={'displayModeBar': False})
-                else:
-                     st.info("Accounts have 0 balance.")
-            else:
-                st.info("No accounts created.")
+            # Create area chart with gradient (with dots)
+            fig_hist = go.Figure()
+            fig_hist.add_trace(go.Scatter(
+                x=df_hist_g['date_label'],
+                y=df_hist_g['net_worth'],
+                mode='lines+markers',
+                fill='tozeroy',
+                line=dict(color='#0068c9', width=3),
+                marker=dict(size=12, color='#0068c9'),
+                fillcolor='rgba(0, 104, 201, 0.2)',
+                hovertemplate='<b>%{x}</b><br>Net Worth: $%{y:,.2f}<extra></extra>'
+            ))
+            
+            fig_hist.update_layout(
+                xaxis_title="Date",
+                yaxis_title="Net Worth",
+                yaxis_tickformat='$,.0f',
+                yaxis_range=[y_min, y_max],
+                title_font=dict(size=24, color='#31333F'),
+                font=dict(family="sans-serif", size=14, color="#31333F"),
+                hovermode="x unified",
+                height=500, # Taller chart since it's full width
+                margin=dict(l=20, r=20, t=40, b=20)
+            )
+            
+            st.plotly_chart(fig_hist, use_container_width=True)
+            
+        else:
+            st.info("No history yet.")
 
 
 
@@ -952,20 +989,46 @@ def main():
 
 
     # --- TAB: Assets & Liabilities ---
-    with tab_assets_liabilities:
-        st.markdown("### 🏦 Assets & Liabilities")
-        st.info("💡 Please provide details for assets and liabilities on this page in order to see how it affects the big picture.")
 
-        # 1. Define Categories for Detection
+
+        
+
+    # --- TAB: Budget ---
+    # --- TAB: Financial Data ---
+    with tab_budget:
+        st.markdown("### 💰 Financial Data")
+        st.info("💡 Please provide details for your Income, Expenses, Assets, and Liabilities here. This data powers the entire dashboard.")
+
+        # ==========================================
+        # 1. INITIALIZE SESSION STATE (Budget + Assets)
+        # ==========================================
+        
+        # --- Budget Init ---
+        if "budget_list_demo" not in st.session_state:
+            existing_budget = data.get("budget", [])
+            if not existing_budget:
+                existing_budget = [
+                    {"id": "bud_demo_sample_1", "name": "Salary", "category": "Work", "amount": 0.0, "type": "Income", "frequency": "Monthly"},
+                    {"id": "bud_demo_sample_2", "name": "Rent / Mortgage", "category": "Housing", "amount": 0.0, "type": "Expense", "frequency": "Monthly"}
+                ]
+            st.session_state.budget_list_demo = existing_budget
+        
+        # Ensure default fields for Budget
+        for item in st.session_state.budget_list_demo:
+            if "name" not in item: item["name"] = ""
+            if "amount" not in item: item["amount"] = 0.0
+            if "type" not in item: item["type"] = "Expense"
+            if "frequency" not in item: item["frequency"] = "Monthly"
+            if "id" not in item: item["id"] = f"bud_demo_{int(datetime.now().timestamp())}_{random.randint(0, 1000)}"
+
+        # --- Assets/Liabilities Init ---
+        # 1. Define Detection Logic
         liab_types = ["Credit Card", "Loan", "Mortgage", "Liability"]
-
-        # 2. Gather Data
-        # Assets: Not in liab_types AND balance >= 0
+        
+        # 2. Split existing data for session state
         asset_accounts = [a for a in data["accounts"] if a.get("type") not in liab_types and a.get("balance", 0.0) >= 0]
-        # Liabilities: In liab_types OR balance < 0
         liability_accounts = [a for a in data["accounts"] if a.get("type") in liab_types or a.get("balance", 0.0) < 0]
 
-        # 3. Session State Initialization
         ss_key_assets = "assets_list_demo_combined"
         if ss_key_assets not in st.session_state:
             if not asset_accounts:
@@ -978,7 +1041,7 @@ def main():
                 liability_accounts = [{"id": "liab_sample_generic", "name": "Mortgage", "type": "Liability", "balance": 0.0}]
             st.session_state[ss_key_liab] = liability_accounts
 
-        # Ensure default fields
+        # Ensure default fields for Assets/Liabs
         for a in st.session_state[ss_key_assets]:
             if "name" not in a: a["name"] = ""
             if "balance" not in a: a["balance"] = 0.0
@@ -990,156 +1053,23 @@ def main():
             if "id" not in l: l["id"] = f"liab_demo_{int(datetime.now().timestamp())}_{random.randint(0, 1000)}"
             if "type" not in l: l["type"] = "Liability"
 
-        # 4. Unified Container
-        with st.container(border=True):
-            # --- Section: Assets ---
-            st.markdown("#### Asset List")
-            h_cols_a = st.columns([5, 3, 0.8])
-            headers_a = ["Name", "Balance", ""]
-            for col, h in zip(h_cols_a, headers_a): 
-                if h: col.markdown(f"**{h}**")
-            
-            updated_assets = []
-            to_delete_asset = None
-            subtotal_assets = 0.0
-            for idx, row in enumerate(st.session_state[ss_key_assets]):
-                r_cols_a = st.columns([5, 3, 0.8])
-                name_val = r_cols_a[0].text_input("Name", value="", placeholder=row["name"] or "Account name", key=f"a_name_cmb_{idx}", label_visibility="collapsed")
-                a_name = name_val if name_val else row["name"]
-                
-                try: curr_bal = float(row.get("balance", 0.0))
-                except: curr_bal = 0.0
-                bal_val = r_cols_a[1].number_input("Balance", value=None, placeholder=f"{curr_bal:.2f}", key=f"a_bal_cmb_{idx}", label_visibility="collapsed", format="%.2f")
-                a_bal = bal_val if bal_val is not None else curr_bal
-                
-                if r_cols_a[2].button("🗑️", key=f"a_del_cmb_{idx}"): to_delete_asset = idx
-                subtotal_assets += a_bal
-                updated_assets.append({"id": row.get("id"), "name": a_name, "institution": row.get("institution", ""), "type": row.get("type", "Investments"), "balance": a_bal})
 
-            if to_delete_asset is not None:
-                updated_assets.pop(to_delete_asset)
-                st.session_state[ss_key_assets] = updated_assets
-                st.rerun()
-            st.session_state[ss_key_assets] = updated_assets
-
-            if st.button("➕ Add Asset", key="btn_add_asset_cmb"):
-                st.session_state[ss_key_assets].append({"id": f"acc_demo_{int(datetime.now().timestamp())}", "name": "", "institution": "", "type": "Investments", "balance": 0.0})
-                st.rerun()
-
-            st.markdown("---")
-
-            # --- Section: Liabilities ---
-            st.markdown("#### Liability List")
-            h_cols_l = st.columns([5, 3, 0.8])
-            headers_l = ["Name", "Balance", ""]
-            for col, h in zip(h_cols_l, headers_l): 
-                if h: col.markdown(f"**{h}**")
-
-            updated_liabilities = []
-            to_delete_liab = None
-            subtotal_liabilities = 0.0
-            for idx, row in enumerate(st.session_state[ss_key_liab]):
-                r_cols_l = st.columns([5, 3, 0.8])
-                name_val = r_cols_l[0].text_input("Name", value="", placeholder=row["name"] or "Liability name", key=f"l_name_cmb_{idx}", label_visibility="collapsed")
-                l_name = name_val if name_val else row["name"]
-                
-                try: curr_l_bal = float(row.get("balance", 0.0))
-                except: curr_l_bal = 0.0
-                bal_val = r_cols_l[1].number_input("Balance", value=None, placeholder=f"{curr_l_bal:.2f}", key=f"l_bal_cmb_{idx}", label_visibility="collapsed", format="%.2f")
-                l_bal = bal_val if bal_val is not None else curr_l_bal
-                
-                if r_cols_l[2].button("🗑️", key=f"l_del_cmb_{idx}"): to_delete_liab = idx
-                subtotal_liabilities += abs(l_bal)
-                updated_liabilities.append({"id": row.get("id"), "name": l_name, "institution": row.get("institution", ""), "type": row.get("type", "Liability"), "balance": l_bal})
-
-            if to_delete_liab is not None:
-                updated_liabilities.pop(to_delete_liab)
-                st.session_state[ss_key_liab] = updated_liabilities
-                st.rerun()
-            st.session_state[ss_key_liab] = updated_liabilities
-
-            if st.button("➕ Add Liability", key="btn_add_liab_cmb"):
-                st.session_state[ss_key_liab].append({"id": f"liab_demo_{int(datetime.now().timestamp())}", "name": "", "institution": "", "type": "Liability", "balance": 0.0})
-                st.rerun()
-
-            # --- Unified Save Button ---
-            st.markdown("<br>", unsafe_allow_html=True)
-            _, c_save = st.columns([5, 1])
-            with c_save:
-                if st.button("Save", type="primary", key="save_assets_liab_cmb", use_container_width=True):
-                    # Combine all accounts
-                    data["accounts"] = updated_assets + updated_liabilities
-                    save_data(data)
-                    
-                    # Update Net Worth history
-                    current_nw, _, _ = get_net_worth(data)
-                    today_str = str(datetime.now().date())
-                    existing_hist = next((h for h in data["history"] if h["date"] == today_str), None)
-                    if existing_hist: existing_hist["net_worth"] = current_nw
-                    else: data["history"].append({"date": today_str, "net_worth": current_nw})
-                    
-                    # Sync session state
-                    st.session_state[ss_key_assets] = updated_assets
-                    st.session_state[ss_key_liab] = updated_liabilities
-                    
-                    # Update retirement calculation principal
-                    rc = st.session_state.get("_reset_counter", 0)
-                    st.session_state[f"hl_principal_direct_v4_{rc}"] = current_nw
-                    
-                    st.toast("✅ Assets & Liabilities saved!", icon="🏦")
-                    st.rerun()
-
-        # --- Summary (Below the container) ---
-        st.markdown("---")
-        st.subheader("Summary")
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Total Assets", f"${subtotal_assets:,.2f}")
-        c2.metric("Total Liabilities", f"${subtotal_liabilities:,.2f}", delta_color="inverse")
-        net_worth_val = subtotal_assets - subtotal_liabilities
-        c3.metric("Net Worth", f"${net_worth_val:,.2f}")
-
-
+        # ==========================================
+        # 2. RENDER UNIFIED FORM
+        # ==========================================
         
-
-    # --- TAB: Budget ---
-    # --- TAB: Budget ---
-    with tab_budget:
-        st.markdown("### Income & Expenses")
-        st.info("💡 Please provide details for income and expenses on this page in order to see how it affects the big picture.")
-
-        # Prepare Budget Data
-        if "budget_list_demo" not in st.session_state:
-            # Check if actual data exists, else use sample
-            existing_budget = data.get("budget", [])
-            if not existing_budget:
-                # Add sample data
-                existing_budget = [
-                    {"id": f"bud_demo_sample_1", "name": "Salary", "category": "Work", "amount": 0.0, "type": "Income", "frequency": "Monthly"},
-                    {"id": f"bud_demo_sample_2", "name": "Rent / Mortgage", "category": "Housing", "amount": 0.0, "type": "Expense", "frequency": "Monthly"}
-                ]
-            st.session_state.budget_list_demo = existing_budget
-        
-        # Ensure default fields
-        for item in st.session_state.budget_list_demo:
-            if "name" not in item: item["name"] = ""
-            if "amount" not in item: item["amount"] = 0.0
-            if "type" not in item: item["type"] = "Expense"
-            if "frequency" not in item: item["frequency"] = "Monthly"
-            if "id" not in item: item["id"] = f"bud_demo_{int(datetime.now().timestamp())}_{random.randint(0, 1000)}"
-
-        # Split into income and expenses
+        # Split budget into income/expenses for distinct sections
         income_items = [i for i in st.session_state.budget_list_demo if i.get("type") == "Income"]
         expense_items = [i for i in st.session_state.budget_list_demo if i.get("type") == "Expense"]
 
-        # Unified Container for all Budget entries (Income, Expenses, Annual Bucket List)
         with st.container(border=True):
-            # --- Section 1: Income ---
-            st.markdown("#### Monthly Income")
+            
+            # --- SECTION 1: INCOME ---
+            st.markdown("#### 1. Monthly Income")
             h_cols_i = st.columns([3, 2, 2, 0.8])
             headers_i = ["Source", "Notes", "Amount", ""]
             for col, h in zip(h_cols_i, headers_i): 
-                if h:
-                    col.markdown(f"**{h}**")
+                if h: col.markdown(f"**{h}**")
             
             updated_income = []
             to_delete_income = None
@@ -1147,7 +1077,6 @@ def main():
             
             for idx, row in enumerate(income_items):
                 r_cols_i = st.columns([3, 2, 2, 0.8])
-                # Click-to-clear pattern
                 name_val = r_cols_i[0].text_input("Name", value="", placeholder=row["name"] or "Income source", key=f"i_name_demo_{idx}", label_visibility="collapsed")
                 new_name = name_val if name_val else row["name"]
                 
@@ -1173,13 +1102,12 @@ def main():
 
             st.markdown("---")
             
-            # --- Section 2: Expenses ---
-            st.markdown("#### Monthly Expenses")
+            # --- SECTION 2: EXPENSES ---
+            st.markdown("#### 2. Monthly Expenses")
             h_cols_e = st.columns([3, 2, 2, 2, 0.8])
             headers_e = ["Kind", "Category", "Amount", "Frequency ⌵", ""]
             for col, h in zip(h_cols_e, headers_e): 
-                if h:
-                    col.markdown(f"**{h}**")
+                if h: col.markdown(f"**{h}**")
             
             updated_expenses = []
             to_delete_expense = None
@@ -1187,7 +1115,6 @@ def main():
 
             for idx, row in enumerate(expense_items):
                 r_cols_e = st.columns([3, 2, 2, 2, 0.8])
-                # Click-to-clear pattern
                 name_val = r_cols_e[0].text_input("Name", value="", placeholder=row["name"] or "Expense", key=f"e_name_demo_{idx}", label_visibility="collapsed")
                 new_name = name_val if name_val else row["name"]
                 
@@ -1218,8 +1145,8 @@ def main():
 
             st.markdown("---")
             
-            # --- Section 3: Annual Bucket List ---
-            st.markdown("#### 🏆 Annual Bucket List")
+            # --- SECTION 3: ANNUAL BUCKET LIST ---
+            st.markdown("#### 3. 🏆 Annual Bucket List")
             if "annual_list_demo" not in st.session_state:
                 existing_annual = data.get("annual_expenditures", [])
                 if not existing_annual:
@@ -1231,14 +1158,12 @@ def main():
             h_cols_a = st.columns([3, 2, 3.5, 1, 0.8])
             headers_a = ["Activity", "Amount", "Frequency ⌵", "Start Age", ""]
             for col, h in zip(h_cols_a, headers_a): 
-                if h:
-                    col.markdown(f"**{h}**")
+                if h: col.markdown(f"**{h}**")
             
             updated_ann = []
             to_delete_ann = None
             for idx, row in enumerate(st.session_state.annual_list_demo):
                 r_cols_a = st.columns([3, 2, 3.5, 1, 0.8])
-                # Click-to-clear pattern
                 name_val = r_cols_a[0].text_input("Name", value="", placeholder=row["name"] or "Activity", key=f"ann_n_demo_{idx}", label_visibility="collapsed")
                 a_name = name_val if name_val else row["name"]
                 
@@ -1264,36 +1189,149 @@ def main():
                 st.session_state.annual_list_demo.append({"id": f"ann_demo_{int(datetime.now().timestamp())}", "name": "", "amount": 0.0, "frequency": "One-time", "start_age": 65})
                 st.rerun()
 
-            # --- Unified Save Button ---
+            st.markdown("---")
+
+            # --- SECTION 4: ASSETS ---
+            st.markdown("#### 4. 🏦 Assets")
+            h_cols_ass = st.columns([5, 3, 0.8])
+            headers_ass = ["Name", "Balance", ""]
+            for col, h in zip(h_cols_ass, headers_ass): 
+                if h: col.markdown(f"**{h}**")
+            
+            updated_assets = []
+            to_delete_asset = None
+            subtotal_assets = 0.0
+            
+            for idx, row in enumerate(st.session_state[ss_key_assets]):
+                r_cols_ass = st.columns([5, 3, 0.8])
+                name_val = r_cols_ass[0].text_input("Name", value="", placeholder=row["name"] or "Account name", key=f"a_name_cmb_{idx}", label_visibility="collapsed")
+                a_name = name_val if name_val else row["name"]
+                
+                try: curr_bal = float(row.get("balance", 0.0))
+                except: curr_bal = 0.0
+                bal_val = r_cols_ass[1].number_input("Balance", value=None, placeholder=f"{curr_bal:.2f}", key=f"a_bal_cmb_{idx}", label_visibility="collapsed", format="%.2f")
+                a_bal = bal_val if bal_val is not None else curr_bal
+                
+                if r_cols_ass[2].button("🗑️", key=f"a_del_cmb_{idx}"): to_delete_asset = idx
+                
+                subtotal_assets += a_bal
+                updated_assets.append({"id": row.get("id"), "name": a_name, "institution": row.get("institution", ""), "type": row.get("type", "Investments"), "balance": a_bal})
+
+            if to_delete_asset is not None:
+                updated_assets.pop(to_delete_asset)
+                st.session_state[ss_key_assets] = updated_assets
+                st.rerun()
+
+            if st.button("➕ Add Asset", key="btn_add_asset_cmb"):
+                st.session_state[ss_key_assets].append({"id": f"acc_demo_{int(datetime.now().timestamp())}", "name": "", "institution": "", "type": "Investments", "balance": 0.0})
+                st.rerun()
+
+            st.markdown("---")
+
+            # --- SECTION 5: LIABILITIES ---
+            st.markdown("#### 5. 💳 Liabilities")
+            h_cols_lia = st.columns([5, 3, 0.8])
+            headers_lia = ["Name", "Balance", ""]
+            for col, h in zip(h_cols_lia, headers_lia): 
+                if h: col.markdown(f"**{h}**")
+
+            updated_liabilities = []
+            to_delete_liab = None
+            subtotal_liabilities = 0.0
+            
+            for idx, row in enumerate(st.session_state[ss_key_liab]):
+                r_cols_lia = st.columns([5, 3, 0.8])
+                name_val = r_cols_lia[0].text_input("Name", value="", placeholder=row["name"] or "Liability name", key=f"l_name_cmb_{idx}", label_visibility="collapsed")
+                l_name = name_val if name_val else row["name"]
+                
+                try: curr_l_bal = float(row.get("balance", 0.0))
+                except: curr_l_bal = 0.0
+                bal_val = r_cols_lia[1].number_input("Balance", value=None, placeholder=f"{curr_l_bal:.2f}", key=f"l_bal_cmb_{idx}", label_visibility="collapsed", format="%.2f")
+                l_bal = bal_val if bal_val is not None else curr_l_bal
+                
+                if r_cols_lia[2].button("🗑️", key=f"l_del_cmb_{idx}"): to_delete_liab = idx
+                
+                subtotal_liabilities += abs(l_bal)
+                updated_liabilities.append({"id": row.get("id"), "name": l_name, "institution": row.get("institution", ""), "type": row.get("type", "Liability"), "balance": l_bal})
+
+            if to_delete_liab is not None:
+                updated_liabilities.pop(to_delete_liab)
+                st.session_state[ss_key_liab] = updated_liabilities
+                st.rerun()
+
+            if st.button("➕ Add Liability", key="btn_add_liab_cmb"):
+                st.session_state[ss_key_liab].append({"id": f"liab_demo_{int(datetime.now().timestamp())}", "name": "", "institution": "", "type": "Liability", "balance": 0.0})
+                st.rerun()
+
+
+            # ==========================================
+            # 3. UNIFIED SAVE BUTTON
+            # ==========================================
             st.markdown("<br>", unsafe_allow_html=True)
             _, c_save_all = st.columns([5, 1])
             with c_save_all:
-                if st.button("Save", type="primary", key="btn_save_budget_all_demo", use_container_width=True):
-                    # Combine Income and Expenses back into data["budget"]
+                if st.button("Save", type="primary", key="btn_master_save_finance", use_container_width=True):
+                    # 1. Save Budget (Income + Expenses)
                     data["budget"] = updated_income + updated_expenses
+                    
+                    # 2. Save Annual Items
                     data["annual_expenditures"] = updated_ann
+                    
+                    # 3. Save Accounts (Assets + Liabilities)
+                    data["accounts"] = updated_assets + updated_liabilities
+                    
+                    # 4. Persist to Disk
                     save_data(data)
                     
-                    # Sync session lists
+                    # 5. Sync ALL Session States
                     st.session_state.budget_list_demo = updated_income + updated_expenses
                     st.session_state.annual_list_demo = updated_ann
+                    st.session_state[ss_key_assets] = updated_assets
+                    st.session_state[ss_key_liab] = updated_liabilities
                     
-                    # Metrics triggers (for other tabs)
+                    # 6. Trigger Metrics Updates
                     rc = st.session_state.get("_reset_counter", 0)
                     st.session_state[f"hl_income_direct_v4_{rc}"] = subtotal_income
                     st.session_state[f"hl_expenses_direct_v4_{rc}"] = sub_exp_monthly
                     
-                    st.toast("✅ Budget saved!", icon="💰")
+                    # Update Net Worth history
+                    current_nw = subtotal_assets - subtotal_liabilities
+                    today_str = str(datetime.now().date())
+                    existing_hist = next((h for h in data["history"] if h["date"] == today_str), None)
+                    if existing_hist: existing_hist["net_worth"] = current_nw
+                    else: data["history"].append({"date": today_str, "net_worth": current_nw})
+                    
+                    st.session_state[f"hl_principal_direct_v4_{rc}"] = current_nw
+                    
+                    # 7. Success Banner
+                    st.toast("✅ Financial Data Saved Successfully!", icon="💾")
+                    
+                    # Optional: Force Rerun to update everything (Metrics, Charts) immediately
                     st.rerun()
 
-        # --- Budget Summary (Below the container) ---
+        # ==========================================
+        # 4. SUMMARY SECTION (Below Container)
+        # ==========================================
         st.markdown("---")
-        st.subheader("Budget Summary")
+        st.subheader("Results Summary")
+        
+        # Row 1: Cashflow
+        st.markdown("##### Monthly Cashflow")
         c1, c2, c3 = st.columns(3)
         c1.metric("Total Income", f"${subtotal_income:,.2f}")
         c2.metric("Total Expenses", f"${sub_exp_monthly:,.2f}", delta_color="inverse")
         net_cash_live = subtotal_income - sub_exp_monthly
-        c3.metric("Net Cashflow", f"${net_cash_live:,.2f}")
+        c3.metric("Net Cashflow", f"${net_cash_live:,.2f}", delta=f"{'Surplus' if net_cash_live >= 0 else 'Deficit'}", delta_color="normal" if net_cash_live >= 0 else "inverse")
+        
+        st.divider()
+        
+        # Row 2: Net Worth
+        st.markdown("##### Net Worth")
+        n1, n2, n3 = st.columns(3)
+        n1.metric("Total Assets", f"${subtotal_assets:,.2f}")
+        n2.metric("Total Liabilities", f"${subtotal_liabilities:,.2f}", delta_color="inverse")
+        net_worth_val = subtotal_assets - subtotal_liabilities
+        n3.metric("Total Net Worth", f"${net_worth_val:,.2f}")
 
         
 
@@ -1547,19 +1585,6 @@ def main():
                 st.markdown("<br>", unsafe_allow_html=True) # Spacer
                 st.markdown("##### Market Variables")
                 
-                # --- CSS to force Blue Sliders ---
-                st.markdown("""
-                <style>
-                /* Force blue sliders for this scope */
-                div.stSlider > div[data-baseweb="slider"] > div > div > div[role="slider"]{
-                    background-color: #0068c9 !important;
-                }
-                div.stSlider > div[data-baseweb="slider"] > div > div > div > div {
-                        background-color: #0068c9 !important;
-                }
-                </style>
-                """, unsafe_allow_html=True)
-
                 inflation = st.slider("Inflation (%)", 0.0, 10.0, 3.0, 0.1, key="hl_inflation")
                 annual_return = st.slider("Annual Return (%)", 0.0, 15.0, 5.0, 0.1, key="hl_return")
 
