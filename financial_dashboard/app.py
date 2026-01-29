@@ -407,7 +407,7 @@ def main():
         tab_personal, tab_summary, tab_will_it_last, tab_budget = st.tabs([
             "👤 Profile",
             "⛰️ The Big Picture", 
-            "⏳ Will It Last?",
+            "⏳ How Long Will It Last?",
             "💰 Financial Data"
         ])
 
@@ -1359,7 +1359,7 @@ def main():
 
     # --- TAB: How Long Will It Last? ---
     with tab_will_it_last:
-        st.markdown("### ⏳ Will It Last?")
+        st.markdown("### ⏳ How Long Will It Last?")
         st.info("💡 Adjust the market variables to see how your investments will be affected.")
         # Using columns to create "Left Panel" (Inputs) and "Right Panel" (Results)
         # Added spacer column in the middle for padding
@@ -1804,7 +1804,7 @@ def main():
                 if "id" not in s: s["id"] = f"scen_demo_{int(datetime.now().timestamp())}_{random.randint(0, 1000)}"
 
             # Header
-            h_cols = st.columns([2, 1, 2.5, 2, 0.8])
+            h_cols = st.columns([2, 1.3, 2.2, 2, 0.8])
             headers = ["Description", "Age", "Cost", "Frequency ⌵", ""]
             for col, h in zip(h_cols, headers):
                 if h:
@@ -1814,7 +1814,7 @@ def main():
             to_delete = None
             
             for idx, row in enumerate(st.session_state.scenarios_list_demo):
-                r_cols = st.columns([2, 1, 2.5, 2, 0.8])
+                r_cols = st.columns([2, 1.3, 2.2, 2, 0.8])
                 
                 # Force type to "Cost" since we removed the selector
                 new_type = "Cost"
@@ -2050,7 +2050,7 @@ def main():
                 line_dash="dot",
                 line_color="rgba(0,0,0,0.3)",
                 annotation_text="Retire Age",
-                annotation_position="top left"
+                annotation_position="bottom left"
             )
             
         st.plotly_chart(fig_comp, use_container_width=True)
