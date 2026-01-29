@@ -1037,8 +1037,8 @@ def main():
                     if "id" not in a: a["id"] = f"acc_demo_{int(datetime.now().timestamp())}_{random.randint(0, 1000)}"
 
                 # Header
-                h_cols = st.columns([3, 3, 3, 0.8])
-                headers = ["Name", "Institution", "Balance", ""]
+                h_cols = st.columns([5, 3, 0.8])
+                headers = ["Name", "Balance", ""]
                 for col, h in zip(h_cols, headers):
                     if h:
                         col.markdown(f"**{h}**")
@@ -1047,14 +1047,14 @@ def main():
                 to_delete_asset = None
                 
                 for a_idx, a_row in enumerate(st.session_state[ss_key]):
-                    r_cols = st.columns([3, 3, 3, 0.8])
+                    r_cols = st.columns([5, 3, 0.8])
                     
                     # Click-to-clear pattern
                     name_val = r_cols[0].text_input("Name", value="", placeholder=a_row["name"] or "Account name", key=f"a_name_demo_{asset_type}_{a_idx}", label_visibility="collapsed")
                     a_name = name_val if name_val else a_row["name"]
                     
-                    inst_val = r_cols[1].text_input("Inst", value="", placeholder=a_row.get("institution", "") or "Institution", key=f"a_inst_demo_{asset_type}_{a_idx}", label_visibility="collapsed")
-                    a_inst = inst_val if inst_val else a_row.get("institution", "")
+                    # Institution removed from UI, preserve existing data
+                    a_inst = a_row.get("institution", "")
                     
                     # Implicitly use the current section type since column was removed
                     a_type = asset_type
@@ -1064,10 +1064,10 @@ def main():
                         curr_bal = float(a_row.get("balance", 0.0))
                     except:
                         curr_bal = 0.0
-                    bal_val = r_cols[2].number_input("Balance", value=None, placeholder=f"{curr_bal:.2f}", key=f"a_bal_demo_{asset_type}_{a_idx}", label_visibility="collapsed", format="%.2f")
+                    bal_val = r_cols[1].number_input("Balance", value=None, placeholder=f"{curr_bal:.2f}", key=f"a_bal_demo_{asset_type}_{a_idx}", label_visibility="collapsed", format="%.2f")
                     a_bal = bal_val if bal_val is not None else curr_bal
                     
-                    if r_cols[3].button("🗑️", key=f"a_del_demo_{asset_type}_{a_idx}"):
+                    if r_cols[2].button("🗑️", key=f"a_del_demo_{asset_type}_{a_idx}"):
                         to_delete_asset = a_idx
 
                     updated_type_list.append({
@@ -1195,8 +1195,8 @@ def main():
                     if "id" not in l: l["id"] = f"liab_demo_{int(datetime.now().timestamp())}_{random.randint(0, 1000)}"
 
                 # Header
-                h_cols_l = st.columns([3, 3, 3, 0.8])
-                headers_l = ["Name", "Institution", "Balance", ""]
+                h_cols_l = st.columns([5, 3, 0.8])
+                headers_l = ["Name", "Balance", ""]
                 for col, h in zip(h_cols_l, headers_l):
                     if h:
                         col.markdown(f"**{h}**")
@@ -1205,14 +1205,14 @@ def main():
                 to_delete_liab = None
                 
                 for l_idx, l_row in enumerate(st.session_state[ss_key_liab]):
-                    r_cols_l = st.columns([3, 3, 3, 0.8])
+                    r_cols_l = st.columns([5, 3, 0.8])
                     
                     # Click-to-clear pattern
                     name_val = r_cols_l[0].text_input("Name", value="", placeholder=l_row["name"] or "Liability name", key=f"l_name_demo_{l_type}_{l_idx}", label_visibility="collapsed")
                     l_name = name_val if name_val else l_row["name"]
                     
-                    inst_val = r_cols_l[1].text_input("Inst", value="", placeholder=l_row.get("institution", "") or "Institution", key=f"l_inst_demo_{l_type}_{l_idx}", label_visibility="collapsed")
-                    l_inst = inst_val if inst_val else l_row.get("institution", "")
+                    # Institution removed from UI
+                    l_inst = l_row.get("institution", "")
                     
                     # Implicitly use the current section type since column was removed
                     l_type_val = l_type
@@ -1221,10 +1221,10 @@ def main():
                         curr_l_bal = float(l_row.get("balance", 0.0))
                     except:
                         curr_l_bal = 0.0
-                    bal_val = r_cols_l[2].number_input("Balance", value=None, placeholder=f"{curr_l_bal:.2f}", key=f"l_bal_demo_{l_type}_{l_idx}", label_visibility="collapsed", format="%.2f")
+                    bal_val = r_cols_l[1].number_input("Balance", value=None, placeholder=f"{curr_l_bal:.2f}", key=f"l_bal_demo_{l_type}_{l_idx}", label_visibility="collapsed", format="%.2f")
                     l_bal = bal_val if bal_val is not None else curr_l_bal
                     
-                    if r_cols_l[3].button("🗑️", key=f"l_del_demo_{l_type}_{l_idx}"):
+                    if r_cols_l[2].button("🗑️", key=f"l_del_demo_{l_type}_{l_idx}"):
                         to_delete_liab = l_idx
 
                     updated_liab_list.append({
