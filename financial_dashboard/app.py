@@ -399,7 +399,7 @@ def main():
                 city = city_input if city_input else personal.get("city", "")
             
             with col2:
-                ret_age_input = st.number_input("Target Retirement Age", value=None, min_value=0, max_value=120, placeholder=str(personal.get("retirement_age", 65)))
+                ret_age_input = st.number_input("Target Retirement Age", value=None, min_value=0, max_value=120, placeholder="55" if not personal.get("retirement_age") else str(personal.get("retirement_age")))
                 ret_age = ret_age_input if ret_age_input is not None else personal.get("retirement_age")
                 
                 life_exp_input = st.number_input("Plan Until Age (Life Expectancy)", value=None, min_value=0, max_value=120, placeholder=str(personal.get("life_expectancy", 95)))
@@ -469,7 +469,7 @@ def main():
                 new_cpp_start = st.selectbox("CPP Start Age", options=list(range(60, 71)), index=list(range(60, 71)).index(g_cpp_start), key="p_cpp_start")
             with c_cpp2:
                 g_cpp_amt = gov.get("cpp_amount", 0.0)
-                new_cpp_amt_input = st.number_input("CPP Amount ($/mo)", value=None, step=50.0, placeholder="1,200.00" if g_cpp_amt == 0 else f"{float(g_cpp_amt):.2f}")
+                new_cpp_amt_input = st.number_input("CPP Amount ($/mo)", value=None, step=50.0, placeholder="800.00" if g_cpp_amt == 0 else f"{float(g_cpp_amt):.2f}")
                 new_cpp_amt = new_cpp_amt_input if new_cpp_amt_input is not None else float(g_cpp_amt)
             
             st.markdown("<br>", unsafe_allow_html=True)
