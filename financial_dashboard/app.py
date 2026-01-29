@@ -1533,18 +1533,21 @@ def main():
         
         with c_inputs:
             st.markdown("#### Financial Inputs")
+            
+            # Use calculated defaults directly (Read-Only View)
+            monthly_income = default_income
+            monthly_expenses = default_expenses
+            principal = liquid_nw
 
-            # 1. Income (Defaults to Budget Total)
-            monthly_income_input = st.number_input("Total Monthly Income (Base)", value=None, placeholder=f"{default_income:.2f}", step=100.0, key="hl_income_direct_v4", help="Your base recurring income (excluding CPP/OAS)")
-            monthly_income = monthly_income_input if monthly_income_input is not None else float(default_income)
-
-            # 2. Expenses (Defaults to Budget Total)
-            monthly_expenses_input = st.number_input("Monthly Expenses", value=None, placeholder=f"{default_expenses:.2f}", step=100.0, key="hl_expenses_direct_v4")
-            monthly_expenses = monthly_expenses_input if monthly_expenses_input is not None else float(default_expenses)
-
-            # 3. Principal (Defaults to Net Worth)
-            principal_input = st.number_input("Investments", value=None, placeholder=f"{liquid_nw:.0f}", step=1000.0, key="hl_principal_direct_v4")
-            principal = principal_input if principal_input is not None else float(liquid_nw)
+            st.markdown(f"""
+            <div style="font-size:14px; margin-bottom: 5px;">
+            <b>Total Monthly Income:</b> ${monthly_income:,.2f}<br>
+            <b>Monthly Expenses:</b> ${monthly_expenses:,.2f}<br>
+            <b>Investments:</b> ${principal:,.0f}
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.caption("Change these values on the **Budget** & **Assets** tabs.")
 
         with c_assump:
             st.markdown("#### Assumptions")
