@@ -373,7 +373,7 @@ def main():
             st.toast("✅ Profile details saved!", icon="👤")
 
         st.markdown("### 👤 Profile")
-        st.info("💡 **Start here.** Changes on this page will update totals across the site. Your data is private. It only lasts for this session. Please use the **Clear Session** button to reset, or close your browser.")
+        st.info("💡 **Start here.** Changes on this page will update totals across the site. Your data lasts only for this session.")
         
         personal = data.get("personal", {})
         
