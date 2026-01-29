@@ -408,7 +408,7 @@ def main():
             
             _, c_save = st.columns([5, 1])
             with c_save:
-                if st.form_submit_button("Save Details", type="primary", use_container_width=True):
+                if st.form_submit_button("Save", type="primary", use_container_width=True):
                     # Calculate age
                     calc_age = "---"
                     if dob:
@@ -495,7 +495,7 @@ def main():
             
             _, c_save = st.columns([5, 1])
             with c_save:
-                if st.form_submit_button("Save Benefits", type="primary", use_container_width=True):
+                if st.form_submit_button("Save", type="primary", use_container_width=True):
                     data["government"] = {
                         "cpp_start_age": new_cpp_start,
                         "cpp_amount": new_cpp_amt,
@@ -555,7 +555,7 @@ def main():
             
             _, c_save = st.columns([5, 1])
             with c_save:
-                if st.form_submit_button("Save Inheritance", type="primary", use_container_width=True):
+                if st.form_submit_button("Save", type="primary", use_container_width=True):
                     data["inheritance"] = {
                         "age": new_inh_age,
                         "amount": new_inh_amt,
@@ -1098,7 +1098,7 @@ def main():
                 
                 _, c_save = st.columns([5, 1])
                 with c_save:
-                    if st.button("Save Changes", type="primary", key=f"save_demo_{asset_type}", use_container_width=True):
+                    if st.button("Save", type="primary", key=f"save_demo_{asset_type}", use_container_width=True):
                         new_type_accounts = st.session_state[ss_key]
                         original_ids_in_scope = set(a.get("id") for a in type_accounts if a.get("id"))
                         other_accounts = [a for a in data["accounts"] if a.get("id") not in original_ids_in_scope]
@@ -1255,7 +1255,7 @@ def main():
                 
                 _, c_save = st.columns([5, 1])
                 with c_save:
-                    if st.button("Save Changes", type="primary", key=f"save_liab_demo_{l_type}", use_container_width=True):
+                    if st.button("Save", type="primary", key=f"save_liab_demo_{l_type}", use_container_width=True):
                         new_accounts = st.session_state[ss_key_liab]
                         original_ids = set(a.get("id") for a in type_accounts if a.get("id"))
                         other_accounts = [a for a in data["accounts"] if a.get("id") not in original_ids]
@@ -1348,7 +1348,7 @@ def main():
             
             _, c_save = st.columns([5, 1])
             with c_save:
-                if st.button("Save Changes", type="primary", key="btn_save_income_demo", use_container_width=True):
+                if st.button("Save", type="primary", key="btn_save_income_demo", use_container_width=True):
                     data["budget"] = updated_income + expense_items
                     save_data(data)
                     rc = st.session_state.get("_reset_counter", 0)
@@ -1403,7 +1403,7 @@ def main():
             
             _, c_save = st.columns([5, 1])
             with c_save:
-                if st.button("Save Changes", type="primary", key="btn_save_expenses_demo_new", use_container_width=True):
+                if st.button("Save", type="primary", key="btn_save_expenses_demo_new", use_container_width=True):
                     data["budget"] = income_items + updated_expenses
                     save_data(data)
                     rc = st.session_state.get("_reset_counter", 0)
@@ -1458,7 +1458,7 @@ def main():
 
             _, c_save = st.columns([5, 1])
             with c_save:
-                if st.button("Save Changes", type="primary", key="btn_save_ann_demo_new", use_container_width=True):
+                if st.button("Save", type="primary", key="btn_save_ann_demo_new", use_container_width=True):
                     data["annual_expenditures"] = updated_ann
                     save_data(data)
                     st.success("Annual expenditures saved!")
@@ -1478,7 +1478,7 @@ def main():
     # --- TAB: How Long Will It Last? ---
     with tab_will_it_last:
         st.markdown("### ⏳ Will It Last?")
-        st.info("💡 Financial inputs are taken from information you have provided on other pages.")
+        st.info("💡 Adjust the market variables to see how your investments will be affected.")
         # Using columns to create "Left Panel" (Inputs) and "Right Panel" (Results)
         # Added spacer column in the middle for padding
         col_main_left, col_spacer, col_main_right = st.columns([1, 0.2, 2])
@@ -1974,7 +1974,7 @@ def main():
             st.write("")
             _, c_save = st.columns([5, 1])
             with c_save:
-                if st.button("Save Changes", type="primary", key="btn_save_scenarios_demo", use_container_width=True):
+                if st.button("Save", type="primary", key="btn_save_scenarios_demo", use_container_width=True):
                     data["scenarios"] = st.session_state.scenarios_list_demo
                     save_data(data)
                     st.success("Scenarios saved!")
