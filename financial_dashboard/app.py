@@ -1549,9 +1549,25 @@ def main():
         with c_assump:
             st.markdown("#### Assumptions")
             
+            # --- CSS to force Blue Sliders ---
+            st.markdown("""
+            <style>
+            /* Force blue sliders for this scope */
+            div.stSlider > div[data-baseweb="slider"] > div > div > div[role="slider"]{
+                background-color: #0068c9 !important;
+            }
+            div.stSlider > div[data-baseweb="slider"] > div > div > div > div {
+                 background-color: #0068c9 !important;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+            
+            inflation = st.slider("Inflation (%)", 0.0, 10.0, 3.0, 0.1, key="hl_inflation")
+            annual_return = st.slider("Annual Return (%)", 0.0, 15.0, 5.0, 0.1, key="hl_return")
+            
             # Use columns or simple text for the permanent table
             st.markdown(f"""
-            <div style="font-size:14px; margin-bottom: 5px;">
+            <div style="font-size:14px; margin-bottom: 5px; margin-top: 15px;">
             <b>CPP:</b> ${cpp_amount:,.2f}/mo at age {cpp_start_age}<br>
             <b>OAS:</b> ${oas_amount:,.2f}/mo at age {oas_start_age}
             </div>
@@ -1570,9 +1586,7 @@ def main():
 
 
 
-        # Get Market Variables (defined by sliders rendered later in the layout)
-        inflation = st.session_state.get("hl_inflation", 3.0)
-        annual_return = st.session_state.get("hl_return", 5.0)
+# NO_OP - Searching first
 
         # Logic Calculation (Real-time)
         if (principal or 0.0) >= 0: # Allow 0 expenses or income
@@ -1790,9 +1804,6 @@ def main():
                     st.plotly_chart(fig_proj, use_container_width=True)
                 with c_vars:
                     st.markdown("<br><br>", unsafe_allow_html=True) # Align with graph area
-                    st.markdown("##### Market Variables")
-                    inflation = st.slider("Inflation (%)", 0.0, 10.0, 3.0, 0.1, key="hl_inflation")
-                    annual_return = st.slider("Annual Return (%)", 0.0, 15.0, 5.0, 0.1, key="hl_return")
  
             st.markdown("---")
             
