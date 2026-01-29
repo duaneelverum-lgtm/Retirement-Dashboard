@@ -384,19 +384,18 @@ def main():
     # --- TAB: Profile Details ---
     # --- Profile Tab ---
     with tab_personal:
-        if st.session_state.get("show_personal_results"):
-            st.toast("✅ Profile details saved!", icon="👤")
-
         st.markdown("### 👤 Profile")
         st.info("💡 **Start here.** Changes on this page will update totals across the site. Your data is not being saved.")
         
         personal = data.get("personal", {})
-        
-        # Form for input
-        with st.form("personal_details_form"):
+        gov = data.get("government", {})
+        inh = data.get("inheritance", {})
+
+        # Unified Form for everything on the Profile page
+        with st.form("profile_complete_form"):
+            st.markdown("#### Personal Details")
             col1, col2 = st.columns(2)
             with col1:
-                # Click-to-clear: empty value, placeholder shows saved data
                 name_input = st.text_input("Full Name", value="", placeholder=personal.get("name", "Enter your name"))
                 name = name_input if name_input else personal.get("name", "")
                 
@@ -409,7 +408,6 @@ def main():
                 
                 dob = st.date_input("Date of Birth", value=dob_val, min_value=datetime(1900, 1, 1).date(), max_value=datetime.now().date())
                 
-                # Click-to-clear city field
                 city_input = st.text_input("Current City", value="", placeholder=personal.get("city", "Enter your city"))
                 city = city_input if city_input else personal.get("city", "")
             
@@ -419,17 +417,64 @@ def main():
                 
                 life_exp_input = st.number_input("Plan Until Age (Life Expectancy)", value=None, min_value=0, max_value=120, placeholder=str(personal.get("life_expectancy", 95)))
                 life_exp = life_exp_input if life_exp_input is not None else personal.get("life_expectancy")
+
+            st.markdown("---")
+            st.markdown("#### 🇨🇦 Government Benefits")
+            c_cpp1, c_cpp2 = st.columns(2)
+            with c_cpp1:
+                g_cpp_start = gov.get("cpp_start_age", 65)
+                # Ensure index is safe
+                try: 
+                    cpp_idx = list(range(60, 71)).index(g_cpp_start)
+                except: 
+                    cpp_idx = 5 # 65
+                new_cpp_start = st.selectbox("CPP Start Age", options=list(range(60, 71)), index=cpp_idx, key="p_cpp_start_new")
+            with c_cpp2:
+                g_cpp_amt = gov.get("cpp_amount", 0.0)
+                # Show the actual value here instead of None to ensure user sees it's saved
+                new_cpp_amt = st.number_input("CPP Amount ($/mo)", value=float(g_cpp_amt), step=50.0, key="p_cpp_amt_direct")
             
+            st.markdown("<br>", unsafe_allow_html=True)
+            c_oas1, c_oas2 = st.columns(2)
+            with c_oas1:
+                g_oas_start = gov.get("oas_start_age", 65)
+                oas_opts = list(range(65, 71))
+                try:
+                    oas_idx = oas_opts.index(g_oas_start)
+                except:
+                    oas_idx = 0
+                new_oas_start = st.selectbox("OAS Start Age", options=oas_opts, index=oas_idx, key="p_oas_start_new")
+            with c_oas2:
+                g_oas_amt = gov.get("oas_amount", 0.0)
+                new_oas_amt = st.number_input("OAS Amount ($/mo)", value=float(g_oas_amt), step=50.0, key="p_oas_amt_direct")
+
+            st.markdown("---")
+            st.markdown("#### 💎 Inheritance / Windfall")
+            i_col1, i_col2 = st.columns(2)
+            with i_col1:
+                i_age = inh.get("age", 0)
+                i_amt = inh.get("amount", 0.0)
+                new_inh_age = st.number_input("Inheritance Age", min_value=0, max_value=100, value=int(i_age), step=1, key="p_inh_age_direct")
+                new_inh_amt = st.number_input("Amount ($)", value=float(i_amt), step=1000.0, key="p_inh_amt_direct")
+            
+            with i_col2:
+                i_type = inh.get("type", "Cash / Investments")
+                new_inh_type = st.selectbox("Type", ["Cash / Investments", "Property / House"], index=0 if i_type == "Cash / Investments" else 1, key="p_inh_type_new")
+                
+                i_sell = inh.get("sell_property", False)
+                i_sell_age = inh.get("sell_age", 0)
+                new_sell_prop = st.checkbox("Plan to sell this property?", value=i_sell, key="p_sell_prop_check") if new_inh_type == "Property / House" else False
+                
+                new_sell_age = 0
+                if new_inh_type == "Property / House" and new_sell_prop:
+                    tgt_val = i_sell_age if i_sell_age >= new_inh_age else new_inh_age + 5
+                    new_sell_age = st.number_input("Sell Age", min_value=new_inh_age, max_value=100, value=int(tgt_val), step=1, key="p_inh_sell_age_direct")
+
+            st.markdown("<br>", unsafe_allow_html=True)
             _, c_save = st.columns([5, 1])
             with c_save:
-                if st.form_submit_button("Save", type="primary", use_container_width=True):
-                    # Calculate age
-                    calc_age = "---"
-                    if dob:
-                        today = datetime.now().date()
-                        calc_age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
-                    
-                    # Save to data
+                if st.form_submit_button("Save Profile", type="primary", use_container_width=True):
+                    # Save Personal
                     data["personal"] = {
                         "name": name,
                         "dob": str(dob) if dob else None,
@@ -437,13 +482,23 @@ def main():
                         "retirement_age": ret_age,
                         "life_expectancy": life_exp
                     }
+                    # Save Gov
+                    data["government"] = {
+                        "cpp_start_age": new_cpp_start,
+                        "cpp_amount": new_cpp_amt,
+                        "oas_start_age": new_oas_start,
+                        "oas_amount": new_oas_amt
+                    }
+                    # Save Inheritance
+                    data["inheritance"] = {
+                        "age": new_inh_age,
+                        "amount": new_inh_amt,
+                        "type": new_inh_type,
+                        "sell_property": new_sell_prop,
+                        "sell_age": new_sell_age
+                    }
                     save_data(data)
-                    
-                    # Store in session state for immediate display
-                    st.session_state["show_personal_results"] = True
-                    st.session_state["saved_personal_data"] = data["personal"]
-                    st.session_state["calculated_age"] = calc_age
-                    
+                    st.toast("✅ Profile updated!", icon="👤")
                     st.rerun()
 
     # Calculate calc_age outside for use in other tabs
@@ -464,123 +519,6 @@ def main():
     planned_life_exp_val = data.get("personal", {}).get("life_expectancy")
     planned_life_exp = planned_life_exp_val if planned_life_exp_val is not None else 95 # Safe default for charts
     
-    # --- Government Benefits Section (Moved to Profile) ---
-    with tab_personal:
-        st.markdown("---")
-        st.markdown("### 🇨🇦 Government Benefits")
-        
-        gov = data.get("government", {})
-        
-        # Display saved results if they exist
-        if st.session_state.get("show_gov_results"):
-            st.toast("✅ Government benefits saved!", icon="🇨🇦")
-        
-        with st.form("gov_benefits_form"):
-            # CPP Section
-            st.markdown("**CPP (Canada Pension Plan)**")
-            c_cpp1, c_cpp2 = st.columns(2)
-            with c_cpp1:
-                g_cpp_start = gov.get("cpp_start_age", 65)
-                new_cpp_start = st.selectbox("CPP Start Age", options=list(range(60, 71)), index=list(range(60, 71)).index(g_cpp_start), key="p_cpp_start")
-            with c_cpp2:
-                g_cpp_amt = gov.get("cpp_amount", 0.0)
-                new_cpp_amt_input = st.number_input("CPP Amount ($/mo)", value=None, step=50.0, placeholder="800.00" if g_cpp_amt == 0 else f"{float(g_cpp_amt):.2f}", key="p_cpp_amt_input")
-                new_cpp_amt = new_cpp_amt_input if new_cpp_amt_input is not None else float(g_cpp_amt)
-            
-            st.markdown("<br>", unsafe_allow_html=True)
-
-            # OAS Section
-            st.markdown("**OAS (Old Age Security)**")
-            c_oas1, c_oas2 = st.columns(2)
-            with c_oas1:
-                g_oas_start = gov.get("oas_start_age", 65)
-                oas_opts = list(range(65, 71))
-                try:
-                    oas_idx = oas_opts.index(g_oas_start)
-                except ValueError:
-                    oas_idx = 0
-                new_oas_start = st.selectbox("OAS Start Age", options=oas_opts, index=oas_idx, key="p_oas_start")
-            with c_oas2:
-                g_oas_amt = gov.get("oas_amount", 0.0)
-                new_oas_amt_input = st.number_input("OAS Amount ($/mo)", value=None, step=50.0, placeholder="713.00" if g_oas_amt == 0 else f"{float(g_oas_amt):.2f}", key="p_oas_amt_input")
-                new_oas_amt = new_oas_amt_input if new_oas_amt_input is not None else float(g_oas_amt)
-            
-            st.markdown("<br>", unsafe_allow_html=True)
-            
-            _, c_save = st.columns([5, 1])
-            with c_save:
-                if st.form_submit_button("Save", type="primary", use_container_width=True):
-                    data["government"] = {
-                        "cpp_start_age": new_cpp_start,
-                        "cpp_amount": new_cpp_amt,
-                        "oas_start_age": new_oas_start,
-                        "oas_amount": new_oas_amt
-                    }
-                    save_data(data)
-                    st.success("Government benefits saved!")
-                    
-                    # Store in session state for immediate display
-                    st.session_state["show_gov_results"] = True
-                    st.session_state["saved_gov_data"] = data["government"]
-                    
-                    st.rerun()
-
-    # --- Inheritance Section (Moved to Profile) ---
-    with tab_personal:
-        st.markdown("---")
-        st.markdown("### 💎 Inheritance / Windfall")
-        
-        inh = data.get("inheritance", {})
-        
-        with st.form("inheritance_form"):
-            c1, c2 = st.columns(2)
-            with c1:
-                # Defaults
-                i_age = inh.get("age", 0)
-                i_amt = inh.get("amount", 0.0)
-                
-                # Age input also requested to be cleared? "where I'm entering dollar amounts... or inheritance age"
-                # USER TESTING: Default to None with saved value as placeholder
-                new_inh_age_input = st.number_input("Inheritance Age", min_value=0, max_value=100, value=None, step=1, help="Age you expect to receive this.", placeholder=str(int(i_age)), key="p_inh_age_input")
-                new_inh_age = new_inh_age_input if new_inh_age_input is not None else int(i_age)
-                
-                # USER TESTING: Default to None with saved value as placeholder
-                new_inh_amt_input = st.number_input("Amount ($)", value=None, step=1000.0, placeholder="500,000.00" if i_amt == 0 else f"{float(i_amt):.2f}", key="p_inh_amt_input")
-                new_inh_amt = new_inh_amt_input if new_inh_amt_input is not None else float(i_amt)
-            
-            with c2:
-                i_type = inh.get("type", "Cash / Investments")
-                new_inh_type = st.selectbox("Type", ["Cash / Investments", "Property / House"], index=0 if i_type == "Cash / Investments" else 1)
-                
-                # Logic for Property
-                i_sell = inh.get("sell_property", False)
-                i_sell_age = inh.get("sell_age", 0)
-                
-                new_sell_prop = False
-                new_sell_age = 0
-                
-                if new_inh_type == "Property / House":
-                    new_sell_prop = st.checkbox("Plan to sell this property?", value=i_sell)
-                    if new_sell_prop:
-                        tgt_val = i_sell_age if i_sell_age >= new_inh_age else new_inh_age + 5
-                        sell_age_input = st.number_input("Sell Age", min_value=new_inh_age, max_value=100, value=None, step=1, placeholder=str(int(tgt_val)), key="p_inh_sell_age_input")
-                        new_sell_age = sell_age_input if sell_age_input is not None else int(tgt_val)
-                    else:
-                        st.caption("Value will add to Net Worth but NOT to liquid spendable balance.")
-            
-            _, c_save = st.columns([5, 1])
-            with c_save:
-                if st.form_submit_button("Save", type="primary", use_container_width=True):
-                    data["inheritance"] = {
-                        "age": new_inh_age,
-                        "amount": new_inh_amt,
-                        "type": new_inh_type,
-                        "sell_property": new_sell_prop,
-                        "sell_age": new_sell_age
-                    }
-                    save_data(data)
-                    st.success("Inheritance plan saved!")
-                    st.rerun()
 
     # --- Pre-calculate Budget Totals ---
     current_budget_global = data.get("budget", [])
