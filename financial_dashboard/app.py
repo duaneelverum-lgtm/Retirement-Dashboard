@@ -28,16 +28,38 @@ os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
 
 # --- Data Handling ---
 def load_data():
-    # Return empty structure for Demo to ensure fields are clear
+    # Return pre-populated structure for Demo with User Requested Defaults
     return {
-        "accounts": [],
+        "accounts": [
+            {"id": "demo_acc_1", "name": "High Interest Savings", "type": "Bank", "balance": 50000.0},
+            {"id": "demo_acc_2", "name": "RRSP / Investment Portfolio", "type": "Investments", "balance": 150000.0},
+            {"id": "demo_acc_3", "name": "Primary Residence", "type": "Asset", "balance": 700000.0},
+            {"id": "demo_acc_4", "name": "Mortgage", "type": "Liability", "balance": -500000.0}
+        ],
         "transactions": [],
         "history": [],
-        "personal": {},
-        "budget": [],
+        "personal": {
+            "name": "Alex",
+            "dob": "1981-01-01", # Approx Age 45
+            "retirement_age": 55,
+            "life_expectancy": 95
+        },
+        "budget": [
+            {"id": "demo_inc_1", "name": "Employment Income", "amount": 5000.0, "frequency": "Monthly", "type": "Income"},
+            {"id": "demo_exp_1", "name": "Core Living Expenses", "amount": 4000.0, "frequency": "Monthly", "type": "Expense"}
+        ],
         "annual_expenditures": [],
-        "government": {},
-        "inheritance": {},
+        "government": {
+            "cpp_start_age": 70,
+            "cpp_amount": 1100.0,
+            "oas_start_age": 65,
+            "oas_amount": 713.0
+        },
+        "inheritance": {
+            "age": 65,
+            "amount": 500000.0,
+            "type": "Cash / Investments"
+        },
         "scenarios": []
     }
 
