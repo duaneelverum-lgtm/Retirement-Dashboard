@@ -355,6 +355,11 @@ def main():
             right: 15px !important;
             top: 15px !important;
         }
+        /* Increase Font Size for Tabs */
+        .stTabs [data-baseweb="tab-list"] button [data-testid="stMarkdownContainer"] p {
+            font-size: 1.25rem !important;
+            font-weight: 600 !important;
+        }
         </style>
     """, unsafe_allow_html=True)
 
@@ -486,7 +491,7 @@ def main():
             st.toast("Please add your information to the Financial Data page next", icon="👤")
             st.session_state.profile_save_success = False
 
-        st.info("💡 **Start here.** Changes on this page will update totals across the site. Your data is not being saved.")
+        st.info("💡 **Tip:** Start here. Changes on this page will update totals across the site. Your data is not being saved.")
         
         personal = data.get("personal", {})
         gov = data.get("government", {})
@@ -662,7 +667,7 @@ def main():
     # --- TAB: Summary/Big Picture ---
     with tab_summary:
         st.markdown("### ⛰️ The Big Picture")
-        st.info("💡 Please fill out the Profile, Budget, and Assets & Liabilities pages to see the big picture.")
+        st.info("💡 **Tip:** Please fill out the Profile, Budget, and Assets & Liabilities pages to see the big picture.")
         net_worth, assets, liabilities = get_net_worth(data)
         
         # --- Auto-Update Today's History ---
@@ -773,9 +778,11 @@ def main():
 
 
 
-        # --- NEW SECTION: When can I stop working? ---
+        # --- NEW SECTION: How'm I Doing? ---
         st.markdown("---")
-        st.subheader("🎯 Will It Last?")
+        st.subheader("How'm I Doing?")
+        
+        status_mode = st.pills("Current Status", ["I am still working", "I am retired"], default="I am still working", label_visibility="collapsed")
         
         # Calculate values first
         # Explicit check: User requested Annual Income from Budget Tab * 12
@@ -793,218 +800,70 @@ def main():
         # Show helpful message if no budget data entered yet
         if annual_income == 0 and target_spend == 0:
             st.info("💡 **Tip:** Enter your income and expenses in the **Budget** tab to see personalized retirement projections here.")
-        
-        # Calculation logic
-        is_retired_calc = (calc_age >= planned_ret_age)
-        gap = target_nest_egg - net_worth
-        years_to_ret = max(0, planned_ret_age - calc_age)
-        months_to_ret = years_to_ret * 12
-        
-        # Projected Future Wealth (Current NW + Savings @ 5% return)
-        r = 0.05 / 12
-        pmt = net_cashflow_global
-        
-        if years_to_ret > 0:
-            future_wealth = (net_worth * (1+r)**months_to_ret) + (pmt * (((1+r)**months_to_ret - 1) / r))
-        else:
-            future_wealth = net_worth
-            
-        final_gap = target_nest_egg - future_wealth
-        
-        # Calculate natural retirement timeline first (Including 3% Inflation + Annual Bucket List)
-        inf_rate = 0.03 / 12 # 3% annual inflation
-        annual_exp_plan = data.get("annual_expenditures", [])
-        
-        if not is_retired_calc and net_cashflow_global > 0:
-            temp_nw = net_worth
-            curr_target = target_nest_egg
-            years_until_retire = 0
-            while temp_nw < curr_target and years_until_retire < 100:
-                y_idx = years_until_retire
-                sim_age = calc_age + y_idx
-                
-                # Monthly loop for high accuracy
-                for mm in range(12):
-                    temp_nw += (temp_nw * r)
-                    temp_nw += (pmt / 1) # Monthly savings
-                
-                # Subtract Annual Expenditures
-                for exp in annual_exp_plan:
-                    e_amt = exp.get("amount", 0.0)
-                    e_freq = exp.get("frequency", "One-time")
-                    e_start = exp.get("start_age", 65)
-                    
-                    should_apply = False
-                    if e_freq == "One-time" and sim_age == e_start: should_apply = True
-                    elif e_freq == "Every Year" and sim_age >= e_start: should_apply = True
-                    elif e_freq == "Every 2 Years" and sim_age >= e_start and (sim_age - e_start) % 2 == 0: should_apply = True
-                    elif e_freq == "Every 5 Years" and sim_age >= e_start and (sim_age - e_start) % 5 == 0: should_apply = True
-                    elif e_freq == "Every 10 Years" and sim_age >= e_start and (sim_age - e_start) % 10 == 0: should_apply = True
-                    
-                    if should_apply:
-                        temp_nw -= e_amt
 
-                # Adjust target nest egg for inflation (expenses grow)
-                curr_target = curr_target * (1.03) 
-                years_until_retire += 1
-        else:
-            years_until_retire = 0
-        
-        # Sentence 1: Annual income + natural retirement timeline + nest egg
-        if not is_retired_calc:
-            # Construct standard sentence parts so data is always visible
-            start_text = f"With your annual income level of <strong>${annual_income:,.0f}</strong>"
-            
-            if net_cashflow_global > 0 and years_until_retire > 0 and years_until_retire < 100:
-                 mid_text = f", and considering your current expenses and assets, you can retire in approximately <strong>{years_until_retire} years</strong> (at age <strong>{calc_age + years_until_retire}</strong>)."
-            elif net_cashflow_global <= 0:
-                 mid_text = ", your expenses currently exceed your income."
-            else:
-                 if target_spend == 0:
-                    mid_text = ", please enter your monthly expenses in the Budget tab to see when you can retire."
-                 elif net_worth >= target_nest_egg:
-                    mid_text = ", you have already reached your financial independence number!"
-                 else:
-                    mid_text = ", you are working toward your retirement goal."
-            
-            nest_egg_text = ""
-            if target_nest_egg >= 0:
-                 pension_note = f" (after ${passive_income:,.0f} benefits)" if passive_income > 0 else ""
-                 nest_egg_text = f" To sustain your <strong>${target_spend:,.0f}/mo</strong> lifestyle{pension_note}, you need a Net Worth of <strong>${target_nest_egg:,.0f}</strong>."
-            
-            full_sentence = start_text + mid_text + nest_egg_text
-            
-            if net_cashflow_global <= 0:
-                 # Display as warning but include ALL data
-                st.markdown(f"""
-                <div style="background-color: #fff4e5; padding: 15px; border-radius: 5px; border-left: 5px solid #ffa421; color: #663c00; margin-bottom: 10px;">
-                ⚠️ {full_sentence}
-                </div>
-                """, unsafe_allow_html=True)
-            else:
-                 # Display as normal paragraph
-                st.markdown(f"""
-                <p style='margin: 0; padding: 0; line-height: 1.6;'>
-                {full_sentence}
-                </p>
-                """, unsafe_allow_html=True)
-                st.write("")  # Add space after first paragraph
+        if status_mode == "I am still working":
 
-        elif is_retired_calc:
-            st.success("🎉 Congratulations. You've already stopped working.")
-        
-        # Sentence 2: Target retirement scenario
-        # Sentence 2: Target retirement scenario
-        if not is_retired_calc:
-            # Use a default target of 10 years or the calculated years, whichever is smaller
-            target_years = min(10, max(1, years_to_ret)) if years_to_ret > 0 else 10
-            target_age = calc_age + target_years
+            st.markdown("#### How much should I be saving?")
+             
+            # Standard Savings Logic (Re-indented)
+            years_to_ret = max(0, planned_ret_age - calc_age)
+            months_to_ret = years_to_ret * 12
+            r = 0.05 / 12
+            pmt = net_cashflow_global # Current monthly savings
+
+            # Projected Future Wealth
+            if years_to_ret > 0:
+                future_wealth = (net_worth * (1+r)**months_to_ret) + (pmt * (((1+r)**months_to_ret - 1) / r))
+            else:
+                future_wealth = net_worth
+                
+            final_gap = target_nest_egg - future_wealth # Gap at Planned Retirement Age
+
+            # Calculate EXTRA monthly savings needed to close the gap
+            extra_monthly_savings_needed = 0
+            if final_gap > 0 and months_to_ret > 0:
+                 # Future Value of an annuity: FV = PMT * (((1+r)^n - 1) / r)
+                 # We need FV = final_gap
+                 # So PMT = final_gap * r / ((1+r)^n - 1)
+                 extra_monthly_savings_needed = final_gap * r / ((1+r)**months_to_ret - 1)
+            
+            # --- Display Logic ---
+            st.markdown(f"To retire at age **{planned_ret_age}** with your desired spending of **${target_spend:,.0f}/mo**...")
+            
+            if final_gap > 0:
+                 st.info(f"You need to save an additional **${extra_monthly_savings_needed:,.0f} / month**.")
+                 st.caption(f"This is on top of your current monthly surplus of ${net_cashflow_global:,.0f}.")
+            else:
+                 st.success(f"✅ You are ON TRACK. You don't need to save any extra money.")
+                 st.caption(f"Your current plan exceeds your goal by ${abs(final_gap):,.0f}.")
+
+        else:
+            # --- RETIRED LOGIC ---
+            st.markdown("#### How much more money can I spend?")
+            
+            # Simple 4% Rule Reverse Check (or customized)
+            # Safe withdrawal from current assets
+            safe_annual_draw = net_worth * withdraw_rate
+            safe_monthly_draw = safe_annual_draw / 12
+            
+            total_monthly_spending_power = safe_monthly_draw + passive_income
+            current_spend = target_spend
+            
+            surplus = total_monthly_spending_power - current_spend
+            
+            if surplus > 0:
+                st.success(f"You can safely spend an additional **${surplus:,.0f} / month** above your current budget.")
+            else:
+                st.error(f"You are currently overspending your safe withdrawal rate by **${abs(surplus):,.0f} / month**.")
             
             st.markdown(f"""
-            <p style='margin: 0; padding: 0; line-height: 1.6;'>
-            If you wanted to retire in <strong>{target_years} years</strong> (at age <strong>{target_age}</strong>), you could...
-            </p>
-            """, unsafe_allow_html=True)
-            
-            target_months = target_years * 12
-            
-            # Recalculate based on target years
-            target_future_wealth = (net_worth * (1+r)**target_months) + (pmt * (((1+r)**target_months - 1) / r))
-            target_gap = target_nest_egg - target_future_wealth
-        
-            st.write("")  # Small spacer before scenario cards
-            
-            # Scenarios cards
-            s1, s2, s3, s4 = st.columns(4)
-            
-            # 1. Win the Lottery
-            with s1:
-                # Calculate what lump sum is needed today to retire in target_years
-                lump_sum_needed = max(0.0, target_gap)
-                
-                # If gap is 0, show "On Track"
-                if target_spend > 0 and target_gap <= 0:
-                    lump_content = f'<div><div style="font-weight: bold; font-size: 24px; color: #21c354; margin-top: 10px;">ON TRACK</div><div style="font-size: 13px; color: #555; margin-top: 5px;">You\'ve already met this target!</div></div>'
-                elif target_spend == 0:
-                    lump_content = f'<div><div style="font-size: 13px; color: #999; margin-top: 10px;">Please enter expenses in the Budget tab.</div></div>'
-                else:
-                    lump_content = f'<div><div style="font-size: 13px; color: #555;">To retire in {target_years} years, you\'d need a one-time investment of:</div><div style="font-weight: bold; font-size: 18px; color: #0068c9;">${lump_sum_needed:,.0f}</div><div style="font-size: 11px; color: #888; margin-top: 5px;">Added to your current assets today.</div></div>'
-
-                st.markdown(f"""
-                <div style="background-color: #f0f2f6; padding: 20px; border-radius: 10px; height: 240px; text-align: center; border: 1px solid #ddd;">
-                    <div style="font-size: 24px;">🎰</div>
-                    <div style="font-weight: bold; margin-bottom: 5px; color: black;">Win the Lottery</div>
-                    {lump_content}
-                </div>
-                """, unsafe_allow_html=True)
-            
-            # 2. Get a Career Boost
-            with s2:
-                if target_months > 0 and target_gap > 0:
-                    extra_monthly = (target_gap * r) / ((1+r)**target_months - 1)
-                else:
-                    extra_monthly = 0
-                
-                if target_spend > 0 and target_gap <= 0:
-                    boost_content = f'<div><div style="font-weight: bold; font-size: 24px; color: #21c354; margin-top: 10px;">ON TRACK</div><div style="font-size: 13px; color: #555; margin-top: 5px;">No extra income needed!</div></div>'
-                elif target_spend == 0:
-                    boost_content = f'<div><div style="font-size: 13px; color: #999; margin-top: 10px;">Data needed.</div></div>'
-                else:
-                    boost_content = f'<div><div style="font-size: 13px; color: #555;">Invest an additional</div><div style="font-weight: bold; font-size: 18px; color: #21c354;">${max(0.0, extra_monthly):,.0f}/mo</div><div style="font-size: 11px; color: #888; margin-top: 5px;">Your current monthly surplus is <b>${net_cashflow_global:,.2f}</b>.</div></div>'
-
-                st.markdown(f"""
-                <div style="background-color: #f0f2f6; padding: 20px; border-radius: 10px; height: 240px; text-align: center; border: 1px solid #ddd;">
-                    <div style="font-size: 24px;">📈</div>
-                    <div style="font-weight: bold; margin-bottom: 5px; color: black;">Get a Career Boost</div>
-                    {boost_content}
-                </div>
-                """, unsafe_allow_html=True)
-
-            # 3. Retire Later
-            with s3:
-                found_age = planned_ret_age
-                temp_wealth = future_wealth
-                # Adjust target for inflation in the "Retire Later" logic too
-                retire_later_target = target_nest_egg * (1.03**(found_age - planned_ret_age))
-                
-                while temp_wealth < retire_later_target and found_age < 100:
-                    found_age += 1
-                    temp_wealth = (temp_wealth * (1+r)**12) + (pmt * (((1+r)**12 - 1) / r))
-                    retire_later_target *= 1.03
-                
-                if target_spend > 0 and target_gap <= 0:
-                    later_content = f'<div><div style="font-weight: bold; font-size: 24px; color: #21c354; margin-top: 10px;">ON TRACK</div><div style="font-size: 13px; color: #555; margin-top: 5px;">Current age: {planned_ret_age}</div></div>'
-                elif target_spend == 0:
-                    later_content = f'<div><div style="font-size: 13px; color: #999; margin-top: 10px;">Data needed.</div></div>'
-                else:
-                    later_content = f'<div><div style="font-size: 13px; color: #555;">Hit your goal with current savings by retiring at age</div><div style="font-weight: bold; font-size: 18px; color: #ffa421;">{found_age}</div><div style="font-size: 11px; color: #888; margin-top: 5px;">Based on current <b>${net_worth:,.0f}</b> assets.</div></div>'
-
-                st.markdown(f"""
-                <div style="background-color: #f0f2f6; padding: 20px; border-radius: 10px; height: 240px; text-align: center; border: 1px solid #ddd;">
-                    <div style="font-size: 24px;">⏳</div>
-                    <div style="font-weight: bold; margin-bottom: 5px; color: black;">Retire Later</div>
-                    {later_content}
-                </div>
-                """, unsafe_allow_html=True)
-
-            # 4. Spend Less
-            with s4:
-                safe_spend = (future_wealth * withdraw_rate) / 12
-                
-                if target_spend > 0 and target_gap <= 0:
-                    less_content = f'<div><div style="font-weight: bold; font-size: 24px; color: #21c354; margin-top: 10px;">ON TRACK</div><div style="font-size: 13px; color: #555; margin-top: 5px;">No spending cuts needed!</div></div>'
-                elif target_spend == 0:
-                    less_content = f'<div><div style="font-size: 13px; color: #999; margin-top: 10px;">Data needed.</div></div>'
-                else:
-                    less_content = f'<div><div style="font-size: 13px; color: #555;">A safe monthly amount is</div><div style="font-weight: bold; font-size: 18px; color: #ff2b2b;">${max(0.0, safe_spend):,.0f}/mo</div><div style="font-size: 11px; color: #888; margin-top: 5px;">Requires <b>${abs(safe_spend - total_expenses_global):,.0f} {"more" if (safe_spend - total_expenses_global) > 0 else "less"}</b> than current.</div></div>'
-
-                st.markdown(f"""
-                <div style="background-color: #f0f2f6; padding: 20px; border-radius: 10px; height: 240px; text-align: center; border: 1px solid #ddd;">
-                    <div style="font-size: 24px;">📉</div>
-                    <div style="font-weight: bold; margin-bottom: 5px; color: black;">Spend Less</div>
-                    {less_content}
-                </div>
-                """, unsafe_allow_html=True)
+            **Breakdown:**
+            - Current Net Worth: **${net_worth:,.0f}**
+            - Safe Monthly Withdrawal (4%): **${safe_monthly_draw:,.0f}**
+            - Monthly Pension Benefits: **${passive_income:,.0f}**
+            - **Total Safe Spending Power: ${total_monthly_spending_power:,.0f}**
+            - *Your Current Spending: ${current_spend:,.0f}*
+            """)
             
 
 
@@ -1017,11 +876,12 @@ def main():
     # --- TAB: Financial Data ---
     with tab_budget:
         st.markdown("### 💰 Financial Data")
-        st.info("💡 Please provide details for your Income, Expenses, Assets, and Liabilities here. This data powers the entire dashboard.")
+        st.info("💡 **Tip:** Please provide financial information here. This data powers the entire dashboard.")
 
         # ==========================================
         # 1. INITIALIZE SESSION STATE (Budget + Assets)
         # ==========================================
+
         
         # --- Budget Init ---
         if "budget_list_demo" not in st.session_state:
@@ -1360,7 +1220,7 @@ def main():
     # --- TAB: How Long Will It Last? ---
     with tab_will_it_last:
         st.markdown("### ⏳ How Long Will It Last?")
-        st.info("💡 Adjust the market variables to see how your investments will be affected.")
+        st.info("💡 **Tip:** Adjust the market variables to see how your investments will be affected.")
         # Using columns to create "Left Panel" (Inputs) and "Right Panel" (Results)
         # Added spacer column in the middle for padding
         col_main_left, col_spacer, col_main_right = st.columns([1, 0.2, 2])
@@ -1702,7 +1562,7 @@ def main():
             
             # Reverse Calculator Section
             st.subheader("Reverse Calculator")
-            st.info("💡 Check to see how much more money you can withdraw")
+            st.info("💡 **Tip:** Check to see how much more money you can withdraw")
             
             with st.container():
                 col_rev_1, col_rev_2 = st.columns([1, 3])
@@ -1772,7 +1632,7 @@ def main():
         st.write("") # Padding
         
         st.markdown("### 🚀 What If Scenarios")
-        st.info("💡 Enter big ticket items below and see how these choices affect your net worth on the graph.")
+        st.info("💡 **Tip:** Enter big ticket items below and see how these choices affect your net worth on the graph.")
         
         # Unified Container for all Scenarios
         with st.container(border=True):

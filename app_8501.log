@@ -119,3 +119,77 @@ Traceback (most recent call last):
          ^
 IndentationError: unindent does not match any outer indentation level
 2026-01-29 09:27:24.317 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-01-29 11:13:49.981 Uncaught app execution
+Traceback (most recent call last):
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/exec_code.py", line 128, in exec_func_with_error_handling
+    result = func()
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/script_runner.py", line 669, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+  File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/app.py", line 1987, in <module>
+    main()
+  File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/app.py", line 893, in main
+    {later_content}
+NameError: name 'later_content' is not defined
+2026-01-29 11:14:22.837 Uncaught app execution
+Traceback (most recent call last):
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/exec_code.py", line 128, in exec_func_with_error_handling
+    result = func()
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/script_runner.py", line 669, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+  File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/app.py", line 1987, in <module>
+    main()
+  File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/app.py", line 893, in main
+    {later_content}
+NameError: name 'later_content' is not defined
+2026-01-29 11:15:36.500 Script compilation error
+Traceback (most recent call last):
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/script_runner.py", line 571, in _run_script
+    code = self._script_cache.get_bytecode(script_path)
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/script_cache.py", line 72, in get_bytecode
+    filebody = magic.add_magic(filebody, script_path)
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/magic.py", line 45, in add_magic
+    tree = ast.parse(code, script_path, "exec")
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/ast.py", line 50, in parse
+    return compile(source, filename, mode, flags,
+  File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/app.py", line 800
+    if status_mode == "I am still working":
+    ^
+IndentationError: expected an indented block
+2026-01-29 11:15:36.634 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-01-29 11:16:17.726 Script compilation error
+Traceback (most recent call last):
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/script_runner.py", line 571, in _run_script
+    code = self._script_cache.get_bytecode(script_path)
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/script_cache.py", line 72, in get_bytecode
+    filebody = magic.add_magic(filebody, script_path)
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/magic.py", line 45, in add_magic
+    tree = ast.parse(code, script_path, "exec")
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/ast.py", line 50, in parse
+    return compile(source, filename, mode, flags,
+  File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/app.py", line 800
+    if status_mode == "I am still working":
+    ^
+IndentationError: expected an indented block
+2026-01-29 11:16:17.728 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-01-29 11:18:19.851 Uncaught app execution
+Traceback (most recent call last):
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/exec_code.py", line 128, in exec_func_with_error_handling
+    result = func()
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/script_runner.py", line 669, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+  File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/app.py", line 1949, in <module>
+    main()
+  File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/app.py", line 855, in main
+    {later_content}
+NameError: name 'later_content' is not defined
+2026-01-29 11:18:23.077 Uncaught app execution
+Traceback (most recent call last):
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/exec_code.py", line 128, in exec_func_with_error_handling
+    result = func()
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/script_runner.py", line 669, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+  File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/app.py", line 1949, in <module>
+    main()
+  File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/app.py", line 855, in main
+    {later_content}
+NameError: name 'later_content' is not defined
