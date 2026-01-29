@@ -1599,10 +1599,11 @@ def main():
                 
                 # Base Income Logic (Salary vs Pension)
                 # Salary stops at planned_ret_age regardless of current status
-                effective_income = curr_income 
-                
-                if sim_age_years >= planned_ret_age:
-                    effective_income = 0.0 # Salary stops officially at this age
+                # Salary/Work Income stops at planned_ret_age ONLY IF it's in the future.
+                # If user is already retired, we assume Budget Income is their recurring retirement income.
+                effective_income = float(curr_income)
+                if float(planned_ret_age) > float(current_age) and sim_age_years >= float(planned_ret_age):
+                    effective_income = 0.0 
                 
                 # Pension Triggers
                 if sim_age_months >= (cpp_start_age * 12):
@@ -1733,6 +1734,17 @@ def main():
             # Display Graph and Sliders side-by-side
             c_graph, c_vars = st.columns([3, 1])
             with c_graph:
+                # Add vertical marker for Retirement
+                if planned_ret_age > current_age:
+                    fig_proj.add_vline(
+                        x=planned_ret_age, 
+                        line_width=2, 
+                        line_dash="dash", 
+                        line_color="rgba(0,0,0,0.3)",
+                        annotation_text="Retire Age", 
+                        annotation_position="top left"
+                    )
+
                 st.plotly_chart(fig_proj, use_container_width=True)
             with c_vars:
                 st.markdown("<br>", unsafe_allow_html=True) # Spacer
@@ -1817,14 +1829,14 @@ def main():
                 st.markdown("#### Financial Inputs")
                 st.markdown(f"""
                 <div style="font-size:14px; margin-bottom: 5px;">
-                <b>Total Monthly Income:</b> ${total_income_global:,.2f}<br>
+                <b>Work Income / Salary:</b> ${total_income_global:,.2f}<br>
                 <b>Base Monthly Expenses:</b> ${base_monthly_expenses:,.2f}<br>
                 <b>Annuals (Averaged):</b> ${avg_annual_monthly:,.2f}<br>
                 <hr style="margin: 5px 0; opacity: 0.3;">
                 <b>Investments:</b> ${principal:,.0f}
                 </div>
                 """, unsafe_allow_html=True)
-                st.caption("Adjust values on the **Budget** & **Assets** tabs.")
+                st.caption("Work income stops at retirement age. Adjust on **Budget** & **Assets** tabs.")
 
             with c_assump_btm:
                 st.markdown("#### Assumptions")
@@ -2039,8 +2051,9 @@ def main():
                 sim_age_mo = (curr_age_sim * 12) + m
                 sim_age_yr = sim_age_mo / 12.0
                 
-                eff_inc = c_inc
-                if sim_age_yr >= planned_ret_age: eff_inc = 0.0
+                eff_inc = float(c_inc)
+                if float(planned_ret_age) > float(curr_age_sim) and sim_age_yr >= float(planned_ret_age): 
+                    eff_inc = 0.0
                 
                 # Pensions
                 if sim_age_mo >= (cpp_start_age * 12): eff_inc += cpp_amount
@@ -2182,6 +2195,17 @@ def main():
             font=dict(size=14)
         )
         
+        # Add Retirement line
+        if planned_ret_age > calc_age:
+            fig_comp.add_vline(
+                x=planned_ret_age,
+                line_width=2,
+                line_dash="dot",
+                line_color="rgba(0,0,0,0.3)",
+                annotation_text="Retire Age",
+                annotation_position="top left"
+            )
+            
         st.plotly_chart(fig_comp, use_container_width=True)
         
         # Summary Metrics
