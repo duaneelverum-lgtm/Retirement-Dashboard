@@ -1005,118 +1005,111 @@ def main():
         asset_header_placeholder.markdown(f"### Assets — ${total_assets_val:,.2f}")
         st.info("💡 Please provide details for assets on this page in order to see how it affects the big picture.")
         
-        # Fixed categories to allow adding data even when empty
-        types = ["Investments", "Assets", "Cash", "Other"]
+        # 3. Single Assets Expander
+        asset_type_display = "Assets"
         
-        for asset_type in types:
-            type_accounts = [a for a in asset_accounts if a["type"] == asset_type]
-            type_total = sum(a["balance"] for a in type_accounts)
+        with st.expander(f"**{asset_type_display}** — ${total_assets_val:,.2f}", expanded=True):
+            ss_key_assets = "assets_list_demo_combined"
             
-            with st.expander(f"**{asset_type}** — ${type_total:,.2f}", expanded=False):
-                # Custom Row-Based Editor for Assets
-                ss_key = f"assets_list_demo_{asset_type}"
-                if ss_key not in st.session_state:
-                    # If existing data is empty for this type, add a sample
-                    if not type_accounts:
-                        sample_name = "Sample Account"
-                        if asset_type == "Investments": sample_name = "RRSP"
-                        elif asset_type == "Cash": sample_name = "Emergency Fund"
-                        elif asset_type == "Assets": sample_name = "Car"
-                        
-                        type_accounts = [
-                            {"id": f"acc_sample_{asset_type}", "name": sample_name, "institution": "Bank", "type": asset_type, "balance": 1000.0}
-                        ]
-                    st.session_state[ss_key] = type_accounts
+            if ss_key_assets not in st.session_state:
+                # If existing data is empty, add a sample
+                if not asset_accounts:
+                    asset_accounts = [
+                        {"id": "acc_sample_gen", "name": "Savings Account", "institution": "Bank", "type": "Bank", "balance": 1000.0}
+                    ]
+                st.session_state[ss_key_assets] = asset_accounts
+            
+            # Ensure default fields
+            for a in st.session_state[ss_key_assets]:
+                if "name" not in a: a["name"] = ""
+                if "institution" not in a: a["institution"] = ""
+                if "type" not in a: a["type"] = "Investments"
+                if "balance" not in a: a["balance"] = 0.0
+                if "id" not in a: a["id"] = f"acc_demo_{int(datetime.now().timestamp())}_{random.randint(0, 1000)}"
+
+            # Header
+            h_cols = st.columns([5, 3, 0.8])
+            headers = ["Name", "Balance", ""]
+            for col, h in zip(h_cols, headers):
+                if h:
+                    col.markdown(f"**{h}**")
+            
+            # Rows
+            updated_asset_list = []
+            to_delete_asset = None
+            
+            for a_idx, a_row in enumerate(st.session_state[ss_key_assets]):
+                r_cols = st.columns([5, 3, 0.8])
                 
-                # Ensure default fields
-                for a in st.session_state[ss_key]:
-                    if "name" not in a: a["name"] = ""
-                    if "institution" not in a: a["institution"] = ""
-                    if "type" not in a: a["type"] = asset_type
-                    if "balance" not in a: a["balance"] = 0.0
-                    if "id" not in a: a["id"] = f"acc_demo_{int(datetime.now().timestamp())}_{random.randint(0, 1000)}"
-
-                # Header
-                h_cols = st.columns([5, 3, 0.8])
-                headers = ["Name", "Balance", ""]
-                for col, h in zip(h_cols, headers):
-                    if h:
-                        col.markdown(f"**{h}**")
-                # Rows
-                updated_type_list = []
-                to_delete_asset = None
+                # Name
+                name_val = r_cols[0].text_input("Name", value="", placeholder=a_row["name"] or "Account name", key=f"a_name_cmb_{a_idx}", label_visibility="collapsed")
+                a_name = name_val if name_val else a_row["name"]
                 
-                for a_idx, a_row in enumerate(st.session_state[ss_key]):
-                    r_cols = st.columns([5, 3, 0.8])
-                    
-                    # Click-to-clear pattern
-                    name_val = r_cols[0].text_input("Name", value="", placeholder=a_row["name"] or "Account name", key=f"a_name_demo_{asset_type}_{a_idx}", label_visibility="collapsed")
-                    a_name = name_val if name_val else a_row["name"]
-                    
-                    # Institution removed from UI, preserve existing data
-                    a_inst = a_row.get("institution", "")
-                    
-                    # Implicitly use the current section type since column was removed
-                    a_type = asset_type
-                    
-                    # Handle balance safely with click-to-clear
-                    try:
-                        curr_bal = float(a_row.get("balance", 0.0))
-                    except:
-                        curr_bal = 0.0
-                    bal_val = r_cols[1].number_input("Balance", value=None, placeholder=f"{curr_bal:.2f}", key=f"a_bal_demo_{asset_type}_{a_idx}", label_visibility="collapsed", format="%.2f")
-                    a_bal = bal_val if bal_val is not None else curr_bal
-                    
-                    if r_cols[2].button("🗑️", key=f"a_del_demo_{asset_type}_{a_idx}"):
-                        to_delete_asset = a_idx
+                # Balance
+                try:
+                    curr_bal = float(a_row.get("balance", 0.0))
+                except:
+                    curr_bal = 0.0
+                bal_val = r_cols[1].number_input("Balance", value=None, placeholder=f"{curr_bal:.2f}", key=f"a_bal_cmb_{a_idx}", label_visibility="collapsed", format="%.2f")
+                a_bal = bal_val if bal_val is not None else curr_bal
+                
+                # Delete
+                if r_cols[2].button("🗑️", key=f"a_del_cmb_{a_idx}"):
+                    to_delete_asset = a_idx
 
-                    updated_type_list.append({
-                        "id": a_row.get("id"),
-                        "name": a_name,
-                        "institution": a_inst,
-                        "type": a_type,
-                        "balance": a_bal
-                    })
+                updated_asset_list.append({
+                    "id": a_row.get("id"),
+                    "name": a_name,
+                    "institution": a_row.get("institution", ""),
+                    "type": a_row.get("type", "Investments"),
+                    "balance": a_bal
+                })
 
-                if to_delete_asset is not None:
-                    updated_type_list.pop(to_delete_asset)
-                    st.session_state[ss_key] = updated_type_list
+            if to_delete_asset is not None:
+                updated_asset_list.pop(to_delete_asset)
+                st.session_state[ss_key_assets] = updated_asset_list
+                st.rerun()
+
+            st.session_state[ss_key_assets] = updated_asset_list
+
+            # Add Button
+            if st.button("➕ Add Account", key="btn_add_asset_cmb"):
+                st.session_state[ss_key_assets].append({
+                    "id": f"acc_demo_{int(datetime.now().timestamp())}",
+                    "name": "",
+                    "institution": "",
+                    "type": "Investments",
+                    "balance": 0.0
+                })
+                st.rerun()
+            
+            _, c_save = st.columns([5, 1])
+            with c_save:
+                if st.button("Save", type="primary", key="save_assets_cmb", use_container_width=True):
+                    new_assets = st.session_state[ss_key_assets]
+                    
+                    # Logic: Gather accounts that are NOT assets
+                    def is_asset(acc):
+                        return acc.get("type") not in liab_types and acc.get("balance", 0.0) >= 0
+                    
+                    managed_ids = set(a.get("id") for a in st.session_state[ss_key_assets] if a.get("id"))
+                    non_asset_accounts = [a for a in data["accounts"] if not is_asset(a)]
+                    
+                    data["accounts"] = non_asset_accounts + new_assets
+                    
+                    current_nw, _, _ = get_net_worth(data)
+                    today_str = str(datetime.now().date())
+                    existing_hist = next((h for h in data["history"] if h["date"] == today_str), None)
+                    if existing_hist:
+                        existing_hist["net_worth"] = current_nw
+                    else:
+                        data["history"].append({"date": today_str, "net_worth": current_nw})
+                    
+                    save_data(data)
+                    rc = st.session_state.get("_reset_counter", 0)
+                    st.session_state[f"hl_principal_direct_v4_{rc}"] = current_nw
+                    st.success("Assets updated!")
                     st.rerun()
-
-                st.session_state[ss_key] = updated_type_list
-
-                # Add Button
-                if st.button("➕ Add Account", key=f"btn_add_asset_demo_{asset_type}"):
-                    st.session_state[ss_key].append({
-                        "id": f"acc_demo_{int(datetime.now().timestamp())}",
-                        "name": "",
-                        "institution": "",
-                        "type": asset_type,
-                        "balance": 0.0
-                    })
-                    st.rerun()
-                
-                _, c_save = st.columns([5, 1])
-                with c_save:
-                    if st.button("Save", type="primary", key=f"save_demo_{asset_type}", use_container_width=True):
-                        new_type_accounts = st.session_state[ss_key]
-                        original_ids_in_scope = set(a.get("id") for a in type_accounts if a.get("id"))
-                        other_accounts = [a for a in data["accounts"] if a.get("id") not in original_ids_in_scope]
-                        data["accounts"] = other_accounts + new_type_accounts
-                        
-                        current_nw, _, _ = get_net_worth(data)
-                        today_str = str(datetime.now().date())
-                        existing_hist = next((h for h in data["history"] if h["date"] == today_str), None)
-                        if existing_hist:
-                            existing_hist["net_worth"] = current_nw
-                        else:
-                            data["history"].append({"date": today_str, "net_worth": current_nw})
-                        
-                        save_data(data)
-                        rc = st.session_state.get("_reset_counter", 0)
-                        st.session_state[f"hl_principal_direct_v4_{rc}"] = current_nw
-                        st.success(f"{asset_type} updated!")
-                        st.rerun()
         
         # Global "Add Account" could be here if needed, but typically users can add rows in any category editor
         # provided they set the type correctly.
