@@ -294,6 +294,14 @@ def main():
             background-color: #b3e5fc !important;
             border-color: #01579b !important;
         }
+        /* Remove plus/minus buttons from number inputs */
+        button[data-testid="stNumberInputStepUp"],
+        button[data-testid="stNumberInputStepDown"] {
+            display: none !important;
+        }
+        div[data-testid="stNumberInput"] input {
+            padding-right: 1rem !important;
+        }
         </style>
     """, unsafe_allow_html=True)
 
@@ -343,14 +351,13 @@ def main():
     col_main, col_blog = st.columns([3.5, 1], gap="medium")
     
     with col_main:
-        tab_summary, tab_will_it_last, tab_what_if, tab_personal, tab_budget, tab_details, tab_liabilities = st.tabs([
+        tab_personal, tab_summary, tab_will_it_last, tab_what_if, tab_budget, tab_assets_liabilities = st.tabs([
+            "👤 Profile",
             "⛰️ The Big Picture", 
             "⏳ Will It Last?",
             "🚀 What If?",
-            "👤 Profile",
             "💰 Budget",
-            "🏦 Assets", 
-            "💳 Liabilities"
+            "🏦 Assets & Liabilities"
         ])
 
 
@@ -473,7 +480,7 @@ def main():
             st.markdown("<br>", unsafe_allow_html=True)
             _, c_save = st.columns([5, 1])
             with c_save:
-                if st.form_submit_button("Save Profile", type="primary", use_container_width=True):
+                if st.form_submit_button("Save", type="primary", use_container_width=True):
                     # Save Personal
                     data["personal"] = {
                         "name": name,
@@ -547,7 +554,7 @@ def main():
     # --- TAB: Summary/Big Picture ---
     with tab_summary:
         st.markdown("### ⛰️ The Big Picture")
-        st.info("💡 Please fill out the Profile, Budget, Assets and Liabilities pages to see the big picture.")
+        st.info("💡 Please fill out the Profile, Budget, and Assets & Liabilities pages to see the big picture.")
         net_worth, assets, liabilities = get_net_worth(data)
         
         # --- Auto-Update Today's History ---
@@ -574,10 +581,9 @@ def main():
              df_hist_metrics['date'] = pd.to_datetime(df_hist_metrics['date'])
              df_hist_metrics['date_label'] = df_hist_metrics['date'].dt.strftime('%b %Y')
              
+             # Calculate Growth
              first_value = df_hist_metrics['net_worth'].iloc[0]
-             current_value = net_worth
-             growth = current_value - first_value
-             growth_pct = (growth / first_value * 100) if first_value != 0 else 0
+             growth = net_worth - first_value
              
              # DISPLAY METRICS (Full Page Width)
              # CSS to force st.metric to wrap and use specific size
@@ -596,17 +602,16 @@ def main():
              </style>
              """, unsafe_allow_html=True)
 
+             col_metric1, col_metric2, col_metric3, col_metric4 = st.columns(4, gap="large")
+             col_metric1.metric("Total Assets", f"${assets:,.2f}")
+             col_metric2.metric("Total Liabilities", f"${liabilities:,.2f}")
+             
              if len(df_hist_metrics) > 1:
-                col_metric1, col_metric2, col_metric3, col_metric4 = st.columns(4, gap="large")
-                col_metric1.metric("Current Net Worth", f"${current_value:,.2f}", f"${growth:,.2f}")
-                col_metric2.metric("Growth", f"{growth_pct:+.1f}%", f"since {df_hist_metrics['date_label'].iloc[0]}")
-                col_metric3.metric("Total Assets", f"${assets:,.2f}")
-                col_metric4.metric("Guilt Free Spending", f"${net_cashflow_global:,.2f}")
+                 col_metric3.metric("Net Worth", f"${net_worth:,.2f}", f"${growth:,.2f}")
              else:
-                col_metric1, col_metric2, col_metric3 = st.columns(3, gap="large")
-                col_metric1.metric("Current Net Worth", f"${current_value:,.2f}", "First snapshot recorded")
-                col_metric2.metric("Total Assets", f"${assets:,.2f}")
-                col_metric3.metric("Guilt Free Spending", f"${net_cashflow_global:,.2f}")
+                 col_metric3.metric("Net Worth", f"${net_worth:,.2f}")
+                 
+             col_metric4.metric("Extra Monthly Cash", f"${net_cashflow_global:,.2f}")
              
 
 
@@ -946,283 +951,154 @@ def main():
             
 
 
-    # --- TAB: Assets ---
-    with tab_details:
+    # --- TAB: Assets & Liabilities ---
+    with tab_assets_liabilities:
+        st.markdown("### 🏦 Assets & Liabilities")
+        st.info("💡 Please provide details for assets and liabilities on this page in order to see how it affects the big picture.")
 
-        # 1. Account Categories (Editable Summaries)
-        # Placeholder for dynamic title
-        asset_header_placeholder = st.empty()
+        # 1. Define Categories for Detection
+        liab_types = ["Credit Card", "Loan", "Mortgage", "Liability"]
 
-        # 1. Gather all Asset Accounts (Inverse of Liabilities)
-        liab_types = ["Liability", "Credit Card", "Loan", "Mortgage"]
-        asset_accounts = [
-            a for a in data["accounts"] 
-            if a.get("type") not in liab_types and a.get("balance", 0.0) >= 0
-        ]
-        
-        # Calculate Total Assets
-        total_assets_val = sum(a["balance"] for a in asset_accounts)
-        asset_header_placeholder.markdown(f"### Assets — ${total_assets_val:,.2f}")
-        st.info("💡 Please provide details for assets on this page in order to see how it affects the big picture.")
-        
-        # 3. Single Assets Expander
-        asset_type_display = "Assets"
-        
-        with st.expander(f"**{asset_type_display}** — ${total_assets_val:,.2f}", expanded=True):
-            ss_key_assets = "assets_list_demo_combined"
-            
-            if ss_key_assets not in st.session_state:
-                # If existing data is empty, add a sample
-                if not asset_accounts:
-                    asset_accounts = [
-                        {"id": "acc_sample_gen", "name": "Savings Account", "institution": "Bank", "type": "Bank", "balance": 0.0}
-                    ]
-                st.session_state[ss_key_assets] = asset_accounts
-            
-            # Ensure default fields
-            for a in st.session_state[ss_key_assets]:
-                if "name" not in a: a["name"] = ""
-                if "institution" not in a: a["institution"] = ""
-                if "type" not in a: a["type"] = "Investments"
-                if "balance" not in a: a["balance"] = 0.0
-                if "id" not in a: a["id"] = f"acc_demo_{int(datetime.now().timestamp())}_{random.randint(0, 1000)}"
+        # 2. Gather Data
+        # Assets: Not in liab_types AND balance >= 0
+        asset_accounts = [a for a in data["accounts"] if a.get("type") not in liab_types and a.get("balance", 0.0) >= 0]
+        # Liabilities: In liab_types OR balance < 0
+        liability_accounts = [a for a in data["accounts"] if a.get("type") in liab_types or a.get("balance", 0.0) < 0]
 
-            # Header
-            h_cols = st.columns([5, 3, 0.8])
-            headers = ["Name", "Balance", ""]
-            for col, h in zip(h_cols, headers):
-                if h:
-                    col.markdown(f"**{h}**")
+        # 3. Session State Initialization
+        ss_key_assets = "assets_list_demo_combined"
+        if ss_key_assets not in st.session_state:
+            if not asset_accounts:
+                asset_accounts = [{"id": "acc_sample_gen", "name": "Savings Account", "type": "Bank", "balance": 0.0}]
+            st.session_state[ss_key_assets] = asset_accounts
+
+        ss_key_liab = "liabs_list_demo_combined"
+        if ss_key_liab not in st.session_state:
+            if not liability_accounts:
+                liability_accounts = [{"id": "liab_sample_generic", "name": "Mortgage", "type": "Liability", "balance": 0.0}]
+            st.session_state[ss_key_liab] = liability_accounts
+
+        # Ensure default fields
+        for a in st.session_state[ss_key_assets]:
+            if "name" not in a: a["name"] = ""
+            if "balance" not in a: a["balance"] = 0.0
+            if "id" not in a: a["id"] = f"acc_demo_{int(datetime.now().timestamp())}_{random.randint(0, 1000)}"
+            if "type" not in a: a["type"] = "Investments"
+        for l in st.session_state[ss_key_liab]:
+            if "name" not in l: l["name"] = ""
+            if "balance" not in l: l["balance"] = 0.0
+            if "id" not in l: l["id"] = f"liab_demo_{int(datetime.now().timestamp())}_{random.randint(0, 1000)}"
+            if "type" not in l: l["type"] = "Liability"
+
+        # 4. Unified Container
+        with st.container(border=True):
+            # --- Section: Assets ---
+            st.markdown("#### Asset List")
+            h_cols_a = st.columns([5, 3, 0.8])
+            headers_a = ["Name", "Balance", ""]
+            for col, h in zip(h_cols_a, headers_a): 
+                if h: col.markdown(f"**{h}**")
             
-            # Rows
-            updated_asset_list = []
+            updated_assets = []
             to_delete_asset = None
-            
-            for a_idx, a_row in enumerate(st.session_state[ss_key_assets]):
-                r_cols = st.columns([5, 3, 0.8])
+            subtotal_assets = 0.0
+            for idx, row in enumerate(st.session_state[ss_key_assets]):
+                r_cols_a = st.columns([5, 3, 0.8])
+                name_val = r_cols_a[0].text_input("Name", value="", placeholder=row["name"] or "Account name", key=f"a_name_cmb_{idx}", label_visibility="collapsed")
+                a_name = name_val if name_val else row["name"]
                 
-                # Name
-                name_val = r_cols[0].text_input("Name", value="", placeholder=a_row["name"] or "Account name", key=f"a_name_cmb_{a_idx}", label_visibility="collapsed")
-                a_name = name_val if name_val else a_row["name"]
-                
-                # Balance
-                try:
-                    curr_bal = float(a_row.get("balance", 0.0))
-                except:
-                    curr_bal = 0.0
-                bal_val = r_cols[1].number_input("Balance", value=None, placeholder="100,000.00" if curr_bal == 0 else f"{curr_bal:.2f}", key=f"a_bal_cmb_{a_idx}", label_visibility="collapsed", format="%.2f")
+                try: curr_bal = float(row.get("balance", 0.0))
+                except: curr_bal = 0.0
+                bal_val = r_cols_a[1].number_input("Balance", value=None, placeholder=f"{curr_bal:.2f}", key=f"a_bal_cmb_{idx}", label_visibility="collapsed", format="%.2f")
                 a_bal = bal_val if bal_val is not None else curr_bal
                 
-                # Delete
-                if r_cols[2].button("🗑️", key=f"a_del_cmb_{a_idx}"):
-                    to_delete_asset = a_idx
-
-                updated_asset_list.append({
-                    "id": a_row.get("id"),
-                    "name": a_name,
-                    "institution": a_row.get("institution", ""),
-                    "type": a_row.get("type", "Investments"),
-                    "balance": a_bal
-                })
+                if r_cols_a[2].button("🗑️", key=f"a_del_cmb_{idx}"): to_delete_asset = idx
+                subtotal_assets += a_bal
+                updated_assets.append({"id": row.get("id"), "name": a_name, "institution": row.get("institution", ""), "type": row.get("type", "Investments"), "balance": a_bal})
 
             if to_delete_asset is not None:
-                updated_asset_list.pop(to_delete_asset)
-                st.session_state[ss_key_assets] = updated_asset_list
+                updated_assets.pop(to_delete_asset)
+                st.session_state[ss_key_assets] = updated_assets
+                st.rerun()
+            st.session_state[ss_key_assets] = updated_assets
+
+            if st.button("➕ Add Asset", key="btn_add_asset_cmb"):
+                st.session_state[ss_key_assets].append({"id": f"acc_demo_{int(datetime.now().timestamp())}", "name": "", "institution": "", "type": "Investments", "balance": 0.0})
                 st.rerun()
 
-            st.session_state[ss_key_assets] = updated_asset_list
+            st.markdown("---")
 
-            # Add Button
-            if st.button("➕ Add Account", key="btn_add_asset_cmb"):
-                st.session_state[ss_key_assets].append({
-                    "id": f"acc_demo_{int(datetime.now().timestamp())}",
-                    "name": "",
-                    "institution": "",
-                    "type": "Investments",
-                    "balance": 0.0
-                })
-                st.rerun()
-            
-            _, c_save = st.columns([5, 1])
-            with c_save:
-                if st.button("Save", type="primary", key="save_assets_cmb", use_container_width=True):
-                    new_assets = st.session_state[ss_key_assets]
-                    
-                    # Logic: Gather accounts that are NOT assets
-                    def is_asset(acc):
-                        return acc.get("type") not in liab_types and acc.get("balance", 0.0) >= 0
-                    
-                    managed_ids = set(a.get("id") for a in st.session_state[ss_key_assets] if a.get("id"))
-                    non_asset_accounts = [a for a in data["accounts"] if not is_asset(a)]
-                    
-                    data["accounts"] = non_asset_accounts + new_assets
-                    
-                    current_nw, _, _ = get_net_worth(data)
-                    today_str = str(datetime.now().date())
-                    existing_hist = next((h for h in data["history"] if h["date"] == today_str), None)
-                    if existing_hist:
-                        existing_hist["net_worth"] = current_nw
-                    else:
-                        data["history"].append({"date": today_str, "net_worth": current_nw})
-                    
-                    save_data(data)
-                    # Sync session state back to prevent stale UI
-                    st.session_state[ss_key_assets] = new_assets
-                    
-                    rc = st.session_state.get("_reset_counter", 0)
-                    st.session_state[f"hl_principal_direct_v4_{rc}"] = current_nw
-                    st.success("Assets updated!")
-                    st.rerun()
-        
-        # Global "Add Account" could be here if needed, but typically users can add rows in any category editor
-        # provided they set the type correctly.
-        # If they change the type to something else, it will move to that category expander on reload.
-
-
-
-    # --- TAB: Liabilities ---
-    with tab_liabilities:
-        # Placeholder for dynamic title
-        liab_header_placeholder = st.empty()
-        
-        # 1. Define Liability Categories for Detection
-        liab_types = ["Credit Card", "Loan", "Mortgage", "Liability"]
-        
-        # 2. Gather All Liability Accounts first (for the global total)
-        all_liability_accounts = []
-        for a in data["accounts"]:
-            t = a.get("type", "")
-            b = a.get("balance", 0.0)
-            if t in liab_types or b < 0:
-                all_liability_accounts.append(a)
-        
-        # Calculate Global Total (Abs value of debt)
-        global_liab_total = sum(abs(a["balance"]) for a in all_liability_accounts)
-        liab_header_placeholder.markdown(f"### Liabilities — ${global_liab_total:,.2f}")
-        st.info("💡 Please provide details for liabilities on this page in order to see how it affects the big picture.")
-
-        # 3. Single Liabilities Expander
-        l_type_display = "Liabilities" # Display capability
-        
-        with st.expander(f"**{l_type_display}** — ${global_liab_total:,.2f}", expanded=True):
-            ss_key_liab = "liabs_list_demo_combined"
-            
-            if ss_key_liab not in st.session_state:
-                 # If existing data is empty, add a sample
-                if not all_liability_accounts:
-                    all_liability_accounts = [
-                        {"id": "liab_sample_generic", "name": "Mortgage", "institution": "Bank", "type": "Liability", "balance": 0.0}
-                    ]
-                st.session_state[ss_key_liab] = all_liability_accounts
-            
-            # Ensure default fields
-            for l in st.session_state[ss_key_liab]:
-                if "name" not in l: l["name"] = ""
-                if "institution" not in l: l["institution"] = ""
-                if "type" not in l: l["type"] = "Liability"
-                if "balance" not in l: l["balance"] = 0.0
-                if "id" not in l: l["id"] = f"liab_demo_{int(datetime.now().timestamp())}_{random.randint(0, 1000)}"
-
-            # Header
+            # --- Section: Liabilities ---
+            st.markdown("#### Liability List")
             h_cols_l = st.columns([5, 3, 0.8])
             headers_l = ["Name", "Balance", ""]
-            for col, h in zip(h_cols_l, headers_l):
-                if h:
-                    col.markdown(f"**{h}**")
-            # Rows
-            updated_liab_list = []
+            for col, h in zip(h_cols_l, headers_l): 
+                if h: col.markdown(f"**{h}**")
+
+            updated_liabilities = []
             to_delete_liab = None
-            
-            for l_idx, l_row in enumerate(st.session_state[ss_key_liab]):
+            subtotal_liabilities = 0.0
+            for idx, row in enumerate(st.session_state[ss_key_liab]):
                 r_cols_l = st.columns([5, 3, 0.8])
+                name_val = r_cols_l[0].text_input("Name", value="", placeholder=row["name"] or "Liability name", key=f"l_name_cmb_{idx}", label_visibility="collapsed")
+                l_name = name_val if name_val else row["name"]
                 
-                # Name
-                name_val = r_cols_l[0].text_input("Name", value="", placeholder=l_row["name"] or "Liability name", key=f"l_name_cmb_{l_idx}", label_visibility="collapsed")
-                l_name = name_val if name_val else l_row["name"]
-                
-                # Balance
-                try:
-                    curr_l_bal = float(l_row.get("balance", 0.0))
-                except:
-                    curr_l_bal = 0.0
-                bal_val = r_cols_l[1].number_input("Balance", value=None, placeholder="5,000.00" if curr_l_bal == 0 else f"{curr_l_bal:.2f}", key=f"l_bal_cmb_{l_idx}", label_visibility="collapsed", format="%.2f")
+                try: curr_l_bal = float(row.get("balance", 0.0))
+                except: curr_l_bal = 0.0
+                bal_val = r_cols_l[1].number_input("Balance", value=None, placeholder=f"{curr_l_bal:.2f}", key=f"l_bal_cmb_{idx}", label_visibility="collapsed", format="%.2f")
                 l_bal = bal_val if bal_val is not None else curr_l_bal
                 
-                # Delete
-                if r_cols_l[2].button("🗑️", key=f"l_del_cmb_{l_idx}"):
-                    to_delete_liab = l_idx
-
-                updated_liab_list.append({
-                    "id": l_row.get("id"),
-                    "name": l_name,
-                    "institution": l_row.get("institution", ""),
-                    "type": l_row.get("type", "Liability"), # Preserve original type if possible, or default
-                    "balance": l_bal
-                })
+                if r_cols_l[2].button("🗑️", key=f"l_del_cmb_{idx}"): to_delete_liab = idx
+                subtotal_liabilities += abs(l_bal)
+                updated_liabilities.append({"id": row.get("id"), "name": l_name, "institution": row.get("institution", ""), "type": row.get("type", "Liability"), "balance": l_bal})
 
             if to_delete_liab is not None:
-                updated_liab_list.pop(to_delete_liab)
-                st.session_state[ss_key_liab] = updated_liab_list
+                updated_liabilities.pop(to_delete_liab)
+                st.session_state[ss_key_liab] = updated_liabilities
                 st.rerun()
+            st.session_state[ss_key_liab] = updated_liabilities
 
-            st.session_state[ss_key_liab] = updated_liab_list
-
-            # Add Button
             if st.button("➕ Add Liability", key="btn_add_liab_cmb"):
-                st.session_state[ss_key_liab].append({
-                    "id": f"liab_demo_{int(datetime.now().timestamp())}",
-                    "name": "",
-                    "institution": "",
-                    "type": "Liability",
-                    "balance": 0.0
-                })
+                st.session_state[ss_key_liab].append({"id": f"liab_demo_{int(datetime.now().timestamp())}", "name": "", "institution": "", "type": "Liability", "balance": 0.0})
                 st.rerun()
-            
+
+            # --- Unified Save Button ---
+            st.markdown("<br>", unsafe_allow_html=True)
             _, c_save = st.columns([5, 1])
             with c_save:
-                if st.button("Save", type="primary", key="save_liab_cmb", use_container_width=True):
-                    new_accounts = st.session_state[ss_key_liab]
+                if st.button("Save", type="primary", key="save_assets_liab_cmb", use_container_width=True):
+                    # Combine all accounts
+                    data["accounts"] = updated_assets + updated_liabilities
+                    save_data(data)
                     
-                    # Logic: We are managing ALL liability accounts here.
-                    # So we should gather non-liability accounts from original data, and append these new ones.
-                    # Identify IDs of liabilities currently being managed
-                    managed_ids = set(a.get("id") for a in st.session_state[ss_key_liab] if a.get("id"))
-                    
-                    # Also identify IDs of liabilities that might have been deleted (were in all_liability_accounts but not in new_accounts)
-                    # Actually, safer approach:
-                    # 1. Identify all accounts in `data["accounts"]` that are NOT liabilities (Bank, Investments that are positive).
-                    # 2. Append `new_accounts` to them.
-                    
-                    # Helper to check if an account is liability (same logic as block start)
-                    def is_liability(acc):
-                         return acc.get("type", "") in liab_types or acc.get("balance", 0.0) < 0
-                    
-                    non_liability_accounts = [a for a in data["accounts"] if not is_liability(a)]
-                    
-                    # Wait, if I have a bank account with positive balance, it is non-liability.
-                    # If I have a bank account with negative balance, it IS a liability (per logic line 1164).
-                    # If I edit it here, it stays a liability.
-                    # If I delete it here, it is gone.
-                    # This seems correct.
-                    
-                    data["accounts"] = non_liability_accounts + new_accounts
-                    
+                    # Update Net Worth history
                     current_nw, _, _ = get_net_worth(data)
                     today_str = str(datetime.now().date())
                     existing_hist = next((h for h in data["history"] if h["date"] == today_str), None)
-                    if existing_hist:
-                        existing_hist["net_worth"] = current_nw
-                    else:
-                        data["history"].append({"date": today_str, "net_worth": current_nw})
+                    if existing_hist: existing_hist["net_worth"] = current_nw
+                    else: data["history"].append({"date": today_str, "net_worth": current_nw})
                     
-                    save_data(data)
-                    # Sync session state back to prevent stale UI
-                    st.session_state[ss_key_liab] = new_accounts
-
+                    # Sync session state
+                    st.session_state[ss_key_assets] = updated_assets
+                    st.session_state[ss_key_liab] = updated_liabilities
+                    
+                    # Update retirement calculation principal
                     rc = st.session_state.get("_reset_counter", 0)
                     st.session_state[f"hl_principal_direct_v4_{rc}"] = current_nw
-                    st.success("Liabilities updated!")
+                    
+                    st.toast("✅ Assets & Liabilities saved!", icon="🏦")
                     st.rerun()
+
+        # --- Summary (Below the container) ---
+        st.markdown("---")
+        st.subheader("Summary")
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Total Assets", f"${subtotal_assets:,.2f}")
+        c2.metric("Total Liabilities", f"${subtotal_liabilities:,.2f}", delta_color="inverse")
+        net_worth_val = subtotal_assets - subtotal_liabilities
+        c3.metric("Net Worth", f"${net_worth_val:,.2f}")
+
+
         
 
     # --- TAB: Budget ---
@@ -1255,13 +1131,16 @@ def main():
         income_items = [i for i in st.session_state.budget_list_demo if i.get("type") == "Income"]
         expense_items = [i for i in st.session_state.budget_list_demo if i.get("type") == "Expense"]
 
-        # --- Section 1: Income ---
-        with st.expander("Monthly Income", expanded=True):
+        # Unified Container for all Budget entries (Income, Expenses, Annual Bucket List)
+        with st.container(border=True):
+            # --- Section 1: Income ---
+            st.markdown("#### Monthly Income")
             h_cols_i = st.columns([3, 2, 2, 0.8])
             headers_i = ["Source", "Notes", "Amount", ""]
             for col, h in zip(h_cols_i, headers_i): 
                 if h:
                     col.markdown(f"**{h}**")
+            
             updated_income = []
             to_delete_income = None
             subtotal_income = 0.0
@@ -1292,16 +1171,16 @@ def main():
                 st.session_state.budget_list_demo.append({"id": f"bud_demo_{int(datetime.now().timestamp())}", "name": "", "category": "", "amount": 0.0, "type": "Income", "frequency": "Monthly"})
                 st.rerun()
 
-            st.write("")
-            st.metric("Total Income", f"${subtotal_income:,.2f}")
-
-        # --- Section 2: Expenses ---
-        with st.expander("Monthly Expenses", expanded=True):
+            st.markdown("---")
+            
+            # --- Section 2: Expenses ---
+            st.markdown("#### Monthly Expenses")
             h_cols_e = st.columns([3, 2, 2, 2, 0.8])
             headers_e = ["Kind", "Category", "Amount", "Frequency ⌵", ""]
             for col, h in zip(h_cols_e, headers_e): 
                 if h:
                     col.markdown(f"**{h}**")
+            
             updated_expenses = []
             to_delete_expense = None
             sub_exp_monthly = 0.0
@@ -1337,11 +1216,10 @@ def main():
                 st.session_state.budget_list_demo.append({"id": f"exp_demo_{int(datetime.now().timestamp())}", "name": "", "category": "", "amount": 0.0, "type": "Expense", "frequency": "Monthly"})
                 st.rerun()
 
-            st.write("")
-            st.metric("Total Expenses", f"${sub_exp_monthly:,.2f}")
-
-        # --- Section 3: Annual Bucket List ---
-        with st.expander("🏆 Annual Bucket List", expanded=True):
+            st.markdown("---")
+            
+            # --- Section 3: Annual Bucket List ---
+            st.markdown("#### 🏆 Annual Bucket List")
             if "annual_list_demo" not in st.session_state:
                 existing_annual = data.get("annual_expenditures", [])
                 if not existing_annual:
@@ -1350,15 +1228,16 @@ def main():
                     ]
                 st.session_state.annual_list_demo = existing_annual
             
-            h_cols_a = st.columns([3, 2, 2, 2, 0.8])
+            h_cols_a = st.columns([3, 2, 3.5, 1, 0.8])
             headers_a = ["Activity", "Amount", "Frequency ⌵", "Start Age", ""]
             for col, h in zip(h_cols_a, headers_a): 
                 if h:
                     col.markdown(f"**{h}**")
+            
             updated_ann = []
             to_delete_ann = None
             for idx, row in enumerate(st.session_state.annual_list_demo):
-                r_cols_a = st.columns([3, 2, 2, 2, 0.8])
+                r_cols_a = st.columns([3, 2, 3.5, 1, 0.8])
                 # Click-to-clear pattern
                 name_val = r_cols_a[0].text_input("Name", value="", placeholder=row["name"] or "Activity", key=f"ann_n_demo_{idx}", label_visibility="collapsed")
                 a_name = name_val if name_val else row["name"]
@@ -1385,6 +1264,29 @@ def main():
                 st.session_state.annual_list_demo.append({"id": f"ann_demo_{int(datetime.now().timestamp())}", "name": "", "amount": 0.0, "frequency": "One-time", "start_age": 65})
                 st.rerun()
 
+            # --- Unified Save Button ---
+            st.markdown("<br>", unsafe_allow_html=True)
+            _, c_save_all = st.columns([5, 1])
+            with c_save_all:
+                if st.button("Save", type="primary", key="btn_save_budget_all_demo", use_container_width=True):
+                    # Combine Income and Expenses back into data["budget"]
+                    data["budget"] = updated_income + updated_expenses
+                    data["annual_expenditures"] = updated_ann
+                    save_data(data)
+                    
+                    # Sync session lists
+                    st.session_state.budget_list_demo = updated_income + updated_expenses
+                    st.session_state.annual_list_demo = updated_ann
+                    
+                    # Metrics triggers (for other tabs)
+                    rc = st.session_state.get("_reset_counter", 0)
+                    st.session_state[f"hl_income_direct_v4_{rc}"] = subtotal_income
+                    st.session_state[f"hl_expenses_direct_v4_{rc}"] = sub_exp_monthly
+                    
+                    st.toast("✅ Budget saved!", icon="💰")
+                    st.rerun()
+
+        # --- Budget Summary (Below the container) ---
         st.markdown("---")
         st.subheader("Budget Summary")
         c1, c2, c3 = st.columns(3)
@@ -1393,26 +1295,6 @@ def main():
         net_cash_live = subtotal_income - sub_exp_monthly
         c3.metric("Net Cashflow", f"${net_cash_live:,.2f}")
 
-        st.write("")
-        _, c_save_all = st.columns([5, 1])
-        with c_save_all:
-            if st.button("Save Budget", type="primary", key="btn_save_budget_all_demo", use_container_width=True):
-                # Combine Income and Expenses back into data["budget"]
-                data["budget"] = updated_income + updated_expenses
-                data["annual_expenditures"] = updated_ann
-                save_data(data)
-                
-                # Sync session lists
-                st.session_state.budget_list_demo = updated_income + updated_expenses
-                st.session_state.annual_list_demo = updated_ann
-                
-                # Metrics triggers (for other tabs)
-                rc = st.session_state.get("_reset_counter", 0)
-                st.session_state[f"hl_income_direct_v4_{rc}"] = subtotal_income
-                st.session_state[f"hl_expenses_direct_v4_{rc}"] = sub_exp_monthly
-                
-                st.toast("✅ Budget saved!", icon="💰")
-                st.rerun()
         
 
 
@@ -1840,12 +1722,11 @@ def main():
     # --- TAB: What If? ---
     with tab_what_if:
         st.markdown("### 🚀 What if")
-        st.info('💡 The "What If" scenarios do not affect your real tracking data.')
+        st.info("💡 Enter big ticket items below and see how these choices affect your net worth on the graph.")
         
-        # 1. Manage Scenarios
-        scenarios = data.get("scenarios", [])
-        df_scenarios = pd.DataFrame(scenarios)
-        with st.expander("🚀 Scenarios", expanded=True):
+        # Unified Container for all Scenarios
+        with st.container(border=True):
+            st.markdown("#### Scenario List")
             # Custom Row-Based Editor for Single-Click Dropdowns
             if "scenarios_list_demo" not in st.session_state:
                 loaded_scenarios = data.get("scenarios", [])
@@ -1938,14 +1819,16 @@ def main():
                 })
                 st.rerun()
             
-            st.write("")
+            # --- Unified Save Button ---
+            st.markdown("<br>", unsafe_allow_html=True)
             _, c_save = st.columns([5, 1])
             with c_save:
                 if st.button("Save", type="primary", key="btn_save_scenarios_demo", use_container_width=True):
                     data["scenarios"] = st.session_state.scenarios_list_demo
                     save_data(data)
-                    st.success("Scenarios saved!")
+                    st.toast("✅ Scenarios saved!", icon="🚀")
                     st.rerun()
+
 
         st.write("") # Extra padding
         st.write("")
@@ -2062,10 +1945,10 @@ def main():
 
         # Run Simulations
         base_h = run_sim(monthly_income, monthly_expenses, principal, annual_return, inflation)
-        scen_h = run_sim(monthly_income, monthly_expenses, principal, annual_return, inflation, events=data.get("scenarios", []))
+        scen_h = run_sim(monthly_income, monthly_expenses, principal, annual_return, inflation, events=st.session_state.get("scenarios_list_demo", []))
         
         # 3. Visualization
-        st.markdown("#### Comparison: Net Worth Over Time")
+        st.markdown("#### Scenario Comparison")
         
         sim_years = list(range(max_years + 1))
         sim_ages = [calc_age + y for y in sim_years]
@@ -2087,7 +1970,7 @@ def main():
         ))
 
         # Add vertical lines for each scenario event
-        for s in data.get("scenarios", []):
+        for s in st.session_state.get("scenarios_list_demo", []):
             s_age = s.get("age")
             if s_age:
                 fig_comp.add_vline(
