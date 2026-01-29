@@ -484,7 +484,7 @@ def main():
                 new_cpp_start = st.selectbox("CPP Start Age", options=list(range(60, 71)), index=list(range(60, 71)).index(g_cpp_start), key="p_cpp_start")
             with c_cpp2:
                 g_cpp_amt = gov.get("cpp_amount", 0.0)
-                new_cpp_amt_input = st.number_input("CPP Amount ($/mo)", value=None, step=50.0, placeholder="800.00" if g_cpp_amt == 0 else f"{float(g_cpp_amt):.2f}")
+                new_cpp_amt_input = st.number_input("CPP Amount ($/mo)", value=None, step=50.0, placeholder="800.00" if g_cpp_amt == 0 else f"{float(g_cpp_amt):.2f}", key="p_cpp_amt_input")
                 new_cpp_amt = new_cpp_amt_input if new_cpp_amt_input is not None else float(g_cpp_amt)
             
             st.markdown("<br>", unsafe_allow_html=True)
@@ -502,7 +502,7 @@ def main():
                 new_oas_start = st.selectbox("OAS Start Age", options=oas_opts, index=oas_idx, key="p_oas_start")
             with c_oas2:
                 g_oas_amt = gov.get("oas_amount", 0.0)
-                new_oas_amt_input = st.number_input("OAS Amount ($/mo)", value=None, step=50.0, placeholder="713.00" if g_oas_amt == 0 else f"{float(g_oas_amt):.2f}")
+                new_oas_amt_input = st.number_input("OAS Amount ($/mo)", value=None, step=50.0, placeholder="713.00" if g_oas_amt == 0 else f"{float(g_oas_amt):.2f}", key="p_oas_amt_input")
                 new_oas_amt = new_oas_amt_input if new_oas_amt_input is not None else float(g_oas_amt)
             
             st.markdown("<br>", unsafe_allow_html=True)
@@ -517,6 +517,7 @@ def main():
                         "oas_amount": new_oas_amt
                     }
                     save_data(data)
+                    st.success("Government benefits saved!")
                     
                     # Store in session state for immediate display
                     st.session_state["show_gov_results"] = True
@@ -540,11 +541,11 @@ def main():
                 
                 # Age input also requested to be cleared? "where I'm entering dollar amounts... or inheritance age"
                 # USER TESTING: Default to None with saved value as placeholder
-                new_inh_age_input = st.number_input("Inheritance Age", min_value=0, max_value=100, value=None, step=1, help="Age you expect to receive this.", placeholder=str(int(i_age)))
+                new_inh_age_input = st.number_input("Inheritance Age", min_value=0, max_value=100, value=None, step=1, help="Age you expect to receive this.", placeholder=str(int(i_age)), key="p_inh_age_input")
                 new_inh_age = new_inh_age_input if new_inh_age_input is not None else int(i_age)
                 
                 # USER TESTING: Default to None with saved value as placeholder
-                new_inh_amt_input = st.number_input("Amount ($)", value=None, step=1000.0, placeholder="500,000.00" if i_amt == 0 else f"{float(i_amt):.2f}")
+                new_inh_amt_input = st.number_input("Amount ($)", value=None, step=1000.0, placeholder="500,000.00" if i_amt == 0 else f"{float(i_amt):.2f}", key="p_inh_amt_input")
                 new_inh_amt = new_inh_amt_input if new_inh_amt_input is not None else float(i_amt)
             
             with c2:
@@ -562,7 +563,7 @@ def main():
                     new_sell_prop = st.checkbox("Plan to sell this property?", value=i_sell)
                     if new_sell_prop:
                         tgt_val = i_sell_age if i_sell_age >= new_inh_age else new_inh_age + 5
-                        sell_age_input = st.number_input("Sell Age", min_value=new_inh_age, max_value=100, value=None, step=1, placeholder=str(int(tgt_val)))
+                        sell_age_input = st.number_input("Sell Age", min_value=new_inh_age, max_value=100, value=None, step=1, placeholder=str(int(tgt_val)), key="p_inh_sell_age_input")
                         new_sell_age = sell_age_input if sell_age_input is not None else int(tgt_val)
                     else:
                         st.caption("Value will add to Net Worth but NOT to liquid spendable balance.")
