@@ -1633,106 +1633,99 @@ def main():
 
                 # Result box moved below chart
 
-                # Chart
-                
-                # Calculate Y-axis range for consistency
-                # Rule: Start at 0, Top at exactly the next full million above the highest value
-                import math
-                max_projected = max(history_bal) if history_bal else principal
-                
-                # Check for empty history to avoid errors
-                if max_projected <= 0:
-                     target_million_proj = 1000000.0
-                else:
-                     # Use math.ceil for robust ceiling logic
-                     # Division by 1M -> ceil -> multiply by 1M
-                     # Example: 7,000,001 -> 7.000001 -> ceil 8 -> 8,000,000
-                     # Example: 7,000,000 -> 7.0 -> ceil 7 -> 7,000,000 (We might want padding?)
-                     # User preference implies they want padding if it's tight? 
-                     # "no greater than 8 million" for ~7M assets.
-                     # Let's add distinct logic: if exactly divisible, add 1M for padding.
-                     # If not, ceil does the "next million" automatically.
-                     
-                     val_in_millions = max_projected / 1000000.0
-                     ceil_val = math.ceil(val_in_millions)
-                     # (Smart Response: Headroom buffer removed)
-                     
-                     target_million_proj = ceil_val * 1000000.0
-                
-                y_max_proj = target_million_proj
-
-                # Dynamic tick size based on range to avoid clutter
-                if y_max_proj <= 2000000:
-                    y_dtick = 200000
-                elif y_max_proj <= 5000000:
-                    y_dtick = 500000
-                else:
-                    y_dtick = 1000000
-
-                # Custom Tick Values Logic
-                # 1. Start at current age
-                custom_ticks = [current_age]
-                
-                # 2. Next multiple of 5
-                next_five = ((current_age // 5) + 1) * 5
-                
-                # 3. Add multiples of 5 up to 110
-                for val in range(next_five, 111, 5):
-                    if val > current_age: # Avoid duplicates if current_age works out to be a multiple
-                        custom_ticks.append(val)
-                
-                fig_proj = px.line(x=years_axis, y=history_bal, labels={'x': 'Age', 'y': 'Balance'})
-                fig_proj.update_layout(
-                    yaxis=dict(range=[0, y_max_proj], tickformat='$,.0f', dtick=y_dtick),
-                    xaxis=dict(
-                        range=[current_age, current_age + max_years], # Explicit range based on calculation
-                        tickvals=custom_ticks,
-                        tickmode='array',
-                        tickangle=0 # Force upright labels
-                    ),
-                    margin=dict(l=20, r=20, t=40, b=20),
-                    height=350,
-                    hovermode="x unified",
-                    font=dict(size=14)
-                )
-                
-                # Add vertical lines for Pension starts (Absolute Age)
-                if not is_retired and planned_ret_age > current_age and planned_ret_age <= (current_age + max_years):
-                    fig_proj.add_vline(x=planned_ret_age, line_width=2, line_dash="solid", line_color="#ff2b2b", annotation_text="Retire", annotation_position="top left", annotation=dict(y=0.85))
-
-                if cpp_start_age > current_age and cpp_start_age <= (current_age + max_years):
-                    fig_proj.add_vline(x=cpp_start_age, line_width=1, line_dash="dash", line_color="#21c354", annotation_text="CPP", annotation_position="top left", annotation=dict(y=0.90))
+            # Chart
+            
+            # Calculate Y-axis range for consistency
+            # Rule: Start at 0, Top at exactly the next full million above the highest value
+            import math
+            max_projected = max(history_bal) if history_bal else principal
+            
+            # Check for empty history to avoid errors
+            if max_projected <= 0:
+                    target_million_proj = 1000000.0
+            else:
+                    # Use math.ceil for robust ceiling logic
+                    # Division by 1M -> ceil -> multiply by 1M
                     
-                if oas_start_age > current_age and oas_start_age <= (current_age + max_years):
-                     fig_proj.add_vline(x=oas_start_age, line_width=1, line_dash="dash", line_color="#21c354", annotation_text="OAS", annotation_position="top left", annotation=dict(y=0.95))
-
-                if inherit_amount > 0 and inherit_age > current_age and inherit_age <= (current_age + max_years):
-                    fig_proj.add_vline(x=inherit_age, line_width=1, line_dash="dash", line_color="#a855f7", annotation_text="Inheritance", annotation_position="top right", annotation=dict(y=0.95))
-
-                st.markdown("#### Investments Over Time")
-                # Display Graph and Sliders side-by-side
-                c_graph, c_vars = st.columns([3, 1])
-                with c_graph:
-                    st.plotly_chart(fig_proj, use_container_width=True)
-                with c_vars:
-                    st.markdown("<br>", unsafe_allow_html=True) # Spacer
-                    st.markdown("##### Market Variables")
+                    val_in_millions = max_projected / 1000000.0
+                    ceil_val = math.ceil(val_in_millions)
                     
-                    # --- CSS to force Blue Sliders ---
-                    st.markdown("""
-                    <style>
-                    /* Force blue sliders for this scope */
-                    div.stSlider > div[data-baseweb="slider"] > div > div > div[role="slider"]{
+                    target_million_proj = ceil_val * 1000000.0
+            
+            y_max_proj = target_million_proj
+
+            # Dynamic tick size based on range to avoid clutter
+            if y_max_proj <= 2000000:
+                y_dtick = 200000
+            elif y_max_proj <= 5000000:
+                y_dtick = 500000
+            else:
+                y_dtick = 1000000
+
+            # Custom Tick Values Logic
+            # 1. Start at current age
+            custom_ticks = [current_age]
+            
+            # 2. Next multiple of 5
+            next_five = ((current_age // 5) + 1) * 5
+            
+            # 3. Add multiples of 5 up to 110
+            for val in range(next_five, 111, 5):
+                if val > current_age: # Avoid duplicates if current_age works out to be a multiple
+                    custom_ticks.append(val)
+            
+            fig_proj = px.line(x=years_axis, y=history_bal, labels={'x': 'Age', 'y': 'Balance'})
+            fig_proj.update_layout(
+                yaxis=dict(range=[0, y_max_proj], tickformat='$,.0f', dtick=y_dtick),
+                xaxis=dict(
+                    range=[current_age, current_age + max_years], # Explicit range based on calculation
+                    tickvals=custom_ticks,
+                    tickmode='array',
+                    tickangle=0 # Force upright labels
+                ),
+                margin=dict(l=20, r=20, t=40, b=20),
+                height=350,
+                hovermode="x unified",
+                font=dict(size=14)
+            )
+            
+            # Add vertical lines for Pension starts (Absolute Age)
+            if not is_retired and planned_ret_age > current_age and planned_ret_age <= (current_age + max_years):
+                fig_proj.add_vline(x=planned_ret_age, line_width=2, line_dash="solid", line_color="#ff2b2b", annotation_text="Retire", annotation_position="top left", annotation=dict(y=0.85))
+
+            if cpp_start_age > current_age and cpp_start_age <= (current_age + max_years):
+                fig_proj.add_vline(x=cpp_start_age, line_width=1, line_dash="dash", line_color="#21c354", annotation_text="CPP", annotation_position="top left", annotation=dict(y=0.90))
+                
+            if oas_start_age > current_age and oas_start_age <= (current_age + max_years):
+                    fig_proj.add_vline(x=oas_start_age, line_width=1, line_dash="dash", line_color="#21c354", annotation_text="OAS", annotation_position="top left", annotation=dict(y=0.95))
+
+            if inherit_amount > 0 and inherit_age > current_age and inherit_age <= (current_age + max_years):
+                fig_proj.add_vline(x=inherit_age, line_width=1, line_dash="dash", line_color="#a855f7", annotation_text="Inheritance", annotation_position="top right", annotation=dict(y=0.95))
+
+            st.markdown("#### Investments Over Time")
+            # Display Graph and Sliders side-by-side
+            c_graph, c_vars = st.columns([3, 1])
+            with c_graph:
+                st.plotly_chart(fig_proj, use_container_width=True)
+            with c_vars:
+                st.markdown("<br>", unsafe_allow_html=True) # Spacer
+                st.markdown("##### Market Variables")
+                
+                # --- CSS to force Blue Sliders ---
+                st.markdown("""
+                <style>
+                /* Force blue sliders for this scope */
+                div.stSlider > div[data-baseweb="slider"] > div > div > div[role="slider"]{
+                    background-color: #0068c9 !important;
+                }
+                div.stSlider > div[data-baseweb="slider"] > div > div > div > div {
                         background-color: #0068c9 !important;
-                    }
-                    div.stSlider > div[data-baseweb="slider"] > div > div > div > div {
-                         background-color: #0068c9 !important;
-                    }
-                    </style>
-                    """, unsafe_allow_html=True)
+                }
+                </style>
+                """, unsafe_allow_html=True)
 
-                    inflation = st.slider("Inflation (%)", 0.0, 10.0, 3.0, 0.1, key="hl_inflation")
-                    annual_return = st.slider("Annual Return (%)", 0.0, 15.0, 5.0, 0.1, key="hl_return")
+                inflation = st.slider("Inflation (%)", 0.0, 10.0, 3.0, 0.1, key="hl_inflation")
+                annual_return = st.slider("Annual Return (%)", 0.0, 15.0, 5.0, 0.1, key="hl_return")
 
             # --- 2. Render Result Box (Middle) ---
             st.markdown("<br>", unsafe_allow_html=True)
