@@ -1151,12 +1151,10 @@ def main():
         # Placeholder for dynamic title
         liab_header_placeholder = st.empty()
         
-        # 1. Define Liability Categories
-        # These match the logical groupings users expect
-        liab_types = ["Credit Card", "Loan", "Mortgage"]
+        # 1. Define Liability Categories for Detection
+        liab_types = ["Credit Card", "Loan", "Mortgage", "Liability"]
         
         # 2. Gather All Liability Accounts first (for the global total)
-        # Reusing the robust logic from get_net_worth essentially
         all_liability_accounts = []
         for a in data["accounts"]:
             t = a.get("type", "")
@@ -1169,133 +1167,125 @@ def main():
         liab_header_placeholder.markdown(f"### Liabilities — ${global_liab_total:,.2f}")
         st.info("💡 Please provide details for liabilities on this page in order to see how it affects the big picture.")
 
-        # 3. Create Expanders per Category
-        # We iterate through specific types to create the breakdown
-        # Any account that is a liability but doesn't match these specific types (e.g. negative Bank balance)
-        # should probably go into a "Other/General" bucket or be handled.
-        # However, to match the Asset tab "Account Categories" style:
+        # 3. Single Liabilities Expander
+        l_type_display = "Liabilities" # Display capability
         
-        display_types = liab_types + ["Other"]
-        
-        for l_type in display_types:
-            # Filter accounts for this specific type
-            # Note: "Other" catches things not in the main list but still considered liabilities logic-wise?
-            # Or we strictly follow the type field like Assets tab does.
-            # Assets logic: type_accounts = [a for a in asset_accounts if a["type"] == asset_type]
-            # Let's stick to strict type matching for the buckets to allow moving items.
+        with st.expander(f"**{l_type_display}** — ${global_liab_total:,.2f}", expanded=True):
+            ss_key_liab = "liabs_list_demo_combined"
             
-            if l_type == "Other":
-                # Fallback for things with weird types but negative balances
-                type_accounts = [a for a in all_liability_accounts if a.get("type") not in liab_types]
-            else:
-                type_accounts = [a for a in all_liability_accounts if a.get("type") == l_type]
+            if ss_key_liab not in st.session_state:
+                 # If existing data is empty, add a sample
+                if not all_liability_accounts:
+                    all_liability_accounts = [
+                        {"id": f"liab_sample_generic", "name": "Credit Card", "institution": "Bank", "type": "Liability", "balance": 1500.0}
+                    ]
+                st.session_state[ss_key_liab] = all_liability_accounts
             
-            # Calculate Type Total
-            type_total = sum(abs(a["balance"]) for a in type_accounts)
+            # Ensure default fields
+            for l in st.session_state[ss_key_liab]:
+                if "name" not in l: l["name"] = ""
+                if "institution" not in l: l["institution"] = ""
+                if "type" not in l: l["type"] = "Liability"
+                if "balance" not in l: l["balance"] = 0.0
+                if "id" not in l: l["id"] = f"liab_demo_{int(datetime.now().timestamp())}_{random.randint(0, 1000)}"
+
+            # Header
+            h_cols_l = st.columns([5, 3, 0.8])
+            headers_l = ["Name", "Balance", ""]
+            for col, h in zip(h_cols_l, headers_l):
+                if h:
+                    col.markdown(f"**{h}**")
+            # Rows
+            updated_liab_list = []
+            to_delete_liab = None
             
-            with st.expander(f"**{l_type}** — ${type_total:,.2f}", expanded=False):
-                # Custom Row-Based Editor for Liabilities
-                ss_key_liab = f"liabs_list_demo_{l_type}"
-                if ss_key_liab not in st.session_state:
-                     # If existing data is empty for this type, add a sample
-                    if not type_accounts:
-                        sample_name = "Sample Debt"
-                        if l_type == "Credit Card": sample_name = "Visa"
-                        elif l_type == "Mortgage": sample_name = "Home Loan"
-                        
-                        type_accounts = [
-                            {"id": f"liab_sample_{l_type}", "name": sample_name, "institution": "Bank", "type": l_type, "balance": 5000.0}
-                        ]
-                    st.session_state[ss_key_liab] = type_accounts
+            for l_idx, l_row in enumerate(st.session_state[ss_key_liab]):
+                r_cols_l = st.columns([5, 3, 0.8])
                 
-                # Ensure default fields
-                for l in st.session_state[ss_key_liab]:
-                    if "name" not in l: l["name"] = ""
-                    if "institution" not in l: l["institution"] = ""
-                    if "type" not in l: l["type"] = l_type
-                    if "balance" not in l: l["balance"] = 0.0
-                    if "id" not in l: l["id"] = f"liab_demo_{int(datetime.now().timestamp())}_{random.randint(0, 1000)}"
-
-                # Header
-                h_cols_l = st.columns([5, 3, 0.8])
-                headers_l = ["Name", "Balance", ""]
-                for col, h in zip(h_cols_l, headers_l):
-                    if h:
-                        col.markdown(f"**{h}**")
-                # Rows
-                updated_liab_list = []
-                to_delete_liab = None
+                # Name
+                name_val = r_cols_l[0].text_input("Name", value="", placeholder=l_row["name"] or "Liability name", key=f"l_name_cmb_{l_idx}", label_visibility="collapsed")
+                l_name = name_val if name_val else l_row["name"]
                 
-                for l_idx, l_row in enumerate(st.session_state[ss_key_liab]):
-                    r_cols_l = st.columns([5, 3, 0.8])
-                    
-                    # Click-to-clear pattern
-                    name_val = r_cols_l[0].text_input("Name", value="", placeholder=l_row["name"] or "Liability name", key=f"l_name_demo_{l_type}_{l_idx}", label_visibility="collapsed")
-                    l_name = name_val if name_val else l_row["name"]
-                    
-                    # Institution removed from UI
-                    l_inst = l_row.get("institution", "")
-                    
-                    # Implicitly use the current section type since column was removed
-                    l_type_val = l_type
-                    
-                    try:
-                        curr_l_bal = float(l_row.get("balance", 0.0))
-                    except:
-                        curr_l_bal = 0.0
-                    bal_val = r_cols_l[1].number_input("Balance", value=None, placeholder=f"{curr_l_bal:.2f}", key=f"l_bal_demo_{l_type}_{l_idx}", label_visibility="collapsed", format="%.2f")
-                    l_bal = bal_val if bal_val is not None else curr_l_bal
-                    
-                    if r_cols_l[2].button("🗑️", key=f"l_del_demo_{l_type}_{l_idx}"):
-                        to_delete_liab = l_idx
+                # Balance
+                try:
+                    curr_l_bal = float(l_row.get("balance", 0.0))
+                except:
+                    curr_l_bal = 0.0
+                bal_val = r_cols_l[1].number_input("Balance", value=None, placeholder=f"{curr_l_bal:.2f}", key=f"l_bal_cmb_{l_idx}", label_visibility="collapsed", format="%.2f")
+                l_bal = bal_val if bal_val is not None else curr_l_bal
+                
+                # Delete
+                if r_cols_l[2].button("🗑️", key=f"l_del_cmb_{l_idx}"):
+                    to_delete_liab = l_idx
 
-                    updated_liab_list.append({
-                        "id": l_row.get("id"),
-                        "name": l_name,
-                        "institution": l_inst,
-                        "type": l_type_val,
-                        "balance": l_bal
-                    })
+                updated_liab_list.append({
+                    "id": l_row.get("id"),
+                    "name": l_name,
+                    "institution": l_row.get("institution", ""),
+                    "type": l_row.get("type", "Liability"), # Preserve original type if possible, or default
+                    "balance": l_bal
+                })
 
-                if to_delete_liab is not None:
-                    updated_liab_list.pop(to_delete_liab)
-                    st.session_state[ss_key_liab] = updated_liab_list
-                    st.rerun()
-
+            if to_delete_liab is not None:
+                updated_liab_list.pop(to_delete_liab)
                 st.session_state[ss_key_liab] = updated_liab_list
+                st.rerun()
 
-                # Add Button
-                if st.button("➕ Add Liability", key=f"btn_add_liab_demo_{l_type}"):
-                    st.session_state[ss_key_liab].append({
-                        "id": f"liab_demo_{int(datetime.now().timestamp())}",
-                        "name": "",
-                        "institution": "",
-                        "type": l_type,
-                        "balance": 0.0
-                    })
+            st.session_state[ss_key_liab] = updated_liab_list
+
+            # Add Button
+            if st.button("➕ Add Liability", key="btn_add_liab_cmb"):
+                st.session_state[ss_key_liab].append({
+                    "id": f"liab_demo_{int(datetime.now().timestamp())}",
+                    "name": "",
+                    "institution": "",
+                    "type": "Liability",
+                    "balance": 0.0
+                })
+                st.rerun()
+            
+            _, c_save = st.columns([5, 1])
+            with c_save:
+                if st.button("Save", type="primary", key="save_liab_cmb", use_container_width=True):
+                    new_accounts = st.session_state[ss_key_liab]
+                    
+                    # Logic: We are managing ALL liability accounts here.
+                    # So we should gather non-liability accounts from original data, and append these new ones.
+                    # Identify IDs of liabilities currently being managed
+                    managed_ids = set(a.get("id") for a in st.session_state[ss_key_liab] if a.get("id"))
+                    
+                    # Also identify IDs of liabilities that might have been deleted (were in all_liability_accounts but not in new_accounts)
+                    # Actually, safer approach:
+                    # 1. Identify all accounts in `data["accounts"]` that are NOT liabilities (Bank, Investments that are positive).
+                    # 2. Append `new_accounts` to them.
+                    
+                    # Helper to check if an account is liability (same logic as block start)
+                    def is_liability(acc):
+                         return acc.get("type", "") in liab_types or acc.get("balance", 0.0) < 0
+                    
+                    non_liability_accounts = [a for a in data["accounts"] if not is_liability(a)]
+                    
+                    # Wait, if I have a bank account with positive balance, it is non-liability.
+                    # If I have a bank account with negative balance, it IS a liability (per logic line 1164).
+                    # If I edit it here, it stays a liability.
+                    # If I delete it here, it is gone.
+                    # This seems correct.
+                    
+                    data["accounts"] = non_liability_accounts + new_accounts
+                    
+                    current_nw, _, _ = get_net_worth(data)
+                    today_str = str(datetime.now().date())
+                    existing_hist = next((h for h in data["history"] if h["date"] == today_str), None)
+                    if existing_hist:
+                        existing_hist["net_worth"] = current_nw
+                    else:
+                        data["history"].append({"date": today_str, "net_worth": current_nw})
+                    
+                    save_data(data)
+                    rc = st.session_state.get("_reset_counter", 0)
+                    st.session_state[f"hl_principal_direct_v4_{rc}"] = current_nw
+                    st.success("Liabilities updated!")
                     st.rerun()
-                
-                _, c_save = st.columns([5, 1])
-                with c_save:
-                    if st.button("Save", type="primary", key=f"save_liab_demo_{l_type}", use_container_width=True):
-                        new_accounts = st.session_state[ss_key_liab]
-                        original_ids = set(a.get("id") for a in type_accounts if a.get("id"))
-                        other_accounts = [a for a in data["accounts"] if a.get("id") not in original_ids]
-                        data["accounts"] = other_accounts + new_accounts
-                        
-                        current_nw, _, _ = get_net_worth(data)
-                        today_str = str(datetime.now().date())
-                        existing_hist = next((h for h in data["history"] if h["date"] == today_str), None)
-                        if existing_hist:
-                            existing_hist["net_worth"] = current_nw
-                        else:
-                            data["history"].append({"date": today_str, "net_worth": current_nw})
-                        
-                        save_data(data)
-                        rc = st.session_state.get("_reset_counter", 0)
-                        st.session_state[f"hl_principal_direct_v4_{rc}"] = current_nw
-                        st.success(f"{l_type} updated!")
-                        st.rerun()
         
 
     # --- TAB: Budget ---
