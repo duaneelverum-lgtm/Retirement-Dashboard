@@ -44,6 +44,8 @@ def load_data():
 # Custom Metric Display to prevent truncation
 def display_custom_metric(label, value, delta=None, help_text=None):
     delta_html = ""
+    if label is None or str(label).lower() == "undefined":
+        label = "Net Worth"
     if delta:
         # Determine color based on content
         color = "#007a33" # Green
@@ -335,6 +337,24 @@ def main():
         div[data-testid="stNumberInput"] input {
             padding-right: 1rem !important;
         }
+        
+        /* Chart Borders */
+        .stPlotlyChart {
+            border: 1px solid lightgray !important;
+            border-radius: 8px !important;
+            padding: 15px !important;
+            background-color: white !important;
+            box-sizing: border-box !important;
+            width: 100% !important;
+            display: block !important;
+            overflow: hidden !important;
+        }
+        
+        /* Fix Plotly Modebar Position */
+        .js-plotly-plot .plotly .modebar {
+            right: 15px !important;
+            top: 15px !important;
+        }
         </style>
     """, unsafe_allow_html=True)
 
@@ -384,11 +404,10 @@ def main():
     col_main, col_blog = st.columns([3.5, 1], gap="medium")
     
     with col_main:
-        tab_personal, tab_summary, tab_will_it_last, tab_what_if, tab_budget = st.tabs([
+        tab_personal, tab_summary, tab_will_it_last, tab_budget = st.tabs([
             "👤 Profile",
             "⛰️ The Big Picture", 
             "⏳ Will It Last?",
-            "🚀 What If?",
             "💰 Financial Data"
         ])
 
@@ -739,11 +758,12 @@ def main():
                 yaxis_title="Net Worth",
                 yaxis_tickformat='$,.0f',
                 yaxis_range=[y_min, y_max],
+                title="Net Worth Over Time",
                 title_font=dict(size=24, color='#31333F'),
                 font=dict(family="sans-serif", size=14, color="#31333F"),
                 hovermode="x unified",
                 height=500, # Taller chart since it's full width
-                margin=dict(l=20, r=20, t=40, b=20)
+                margin=dict(l=20, r=50, t=40, b=20)
             )
             
             st.plotly_chart(fig_hist, use_container_width=True)
@@ -1546,7 +1566,7 @@ def main():
                     tickmode='array',
                     tickangle=0 # Force upright labels
                 ),
-                margin=dict(l=20, r=20, t=40, b=20),
+                margin=dict(l=20, r=50, t=40, b=20),
                 height=350,
                 hovermode="x unified",
                 font=dict(size=14)
@@ -1682,6 +1702,7 @@ def main():
             
             # Reverse Calculator Section
             st.subheader("Reverse Calculator")
+            st.info("💡 Check to see how much more money you can withdraw")
             
             with st.container():
                 col_rev_1, col_rev_2 = st.columns([1, 3])
@@ -1745,13 +1766,17 @@ def main():
                     </div>
                     """, unsafe_allow_html=True)
     # --- TAB: What If? ---
-    with tab_what_if:
-        st.markdown("### 🚀 What if")
+    # --- What If Section (Merged) ---
+        st.write("") # Padding
+        st.divider() # Line
+        st.write("") # Padding
+        
+        st.markdown("### 🚀 What If Scenarios")
         st.info("💡 Enter big ticket items below and see how these choices affect your net worth on the graph.")
         
         # Unified Container for all Scenarios
         with st.container(border=True):
-            st.markdown("#### Scenario List")
+            st.markdown("#### Scenarios")
             # Custom Row-Based Editor for Single-Click Dropdowns
             if "scenarios_list_demo" not in st.session_state:
                 loaded_scenarios = data.get("scenarios", [])
@@ -1855,9 +1880,8 @@ def main():
                     st.rerun()
 
 
+
         st.write("") # Extra padding
-        st.write("")
-        st.write("")
 
         # 2. Calculation Logic
         def run_sim(p_income, p_expenses, p_principal, p_return, p_inflation, events=None):
@@ -1973,7 +1997,6 @@ def main():
         scen_h = run_sim(monthly_income, monthly_expenses, principal, annual_return, inflation, events=st.session_state.get("scenarios_list_demo", []))
         
         # 3. Visualization
-        st.markdown("#### Scenario Comparison")
         
         sim_years = list(range(max_years + 1))
         sim_ages = [calc_age + y for y in sim_years]
@@ -2013,7 +2036,8 @@ def main():
             yaxis_title="Account Balance",
             yaxis=dict(tickformat='$,.0f'),
             hovermode="x unified",
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+            margin=dict(l=20, r=50, t=10, b=20),
             height=450,
             font=dict(size=14)
         )
@@ -2031,6 +2055,8 @@ def main():
             
         st.plotly_chart(fig_comp, use_container_width=True)
         
+        st.divider()
+
         # Summary Metrics
         m1, m2, m3 = st.columns(3)
         
