@@ -1550,20 +1550,20 @@ def main():
             st.markdown("#### Assumptions")
             
             # Use columns or simple text for the permanent table
+            inh_str = "None"
+            if inherit_amount > 0:
+                inh_str = f"${inherit_amount:,.0f} at age {inherit_age}"
+                if inherit_type != "Cash / Investments":
+                    inh_str += f" ({inherit_type})"
+
             st.markdown(f"""
             <div style="font-size:14px; margin-bottom: 5px;">
             <b>Current Age:</b> {current_age} &nbsp;|&nbsp; <b>Retire Age:</b> {planned_ret_age}<br>
             <b>CPP:</b> ${cpp_amount:,.2f}/mo at age {cpp_start_age}<br>
-            <b>OAS:</b> ${oas_amount:,.2f}/mo at age {oas_start_age}
+            <b>OAS:</b> ${oas_amount:,.2f}/mo at age {oas_start_age}<br>
+            <b>Inheritance:</b> {inh_str}
             </div>
             """, unsafe_allow_html=True)
-            
-            if inherit_amount > 0:
-                 st.markdown(f"""
-                 <div style="font-size:14px; margin-bottom: 5px;">
-                 <b>Inheritance:</b> ${inherit_amount:,.0f} at age {inherit_age} ({inherit_type})
-                 </div>
-                 """, unsafe_allow_html=True)
             
             st.caption("Change these values on the **Profile** tab.")
 
