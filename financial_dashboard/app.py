@@ -321,8 +321,7 @@ def main():
 
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # Info banner about session state
-    st.info("💡 Your data is private. It only lasts for this session. Please use the **Clear Session** button to reset, or close your browser.")
+
     
     # Tabs (Top-Level Navigation)
     # Tabs (Top-Level Navigation)
@@ -374,7 +373,7 @@ def main():
             st.toast("✅ Profile details saved!", icon="👤")
 
         st.markdown("### 👤 Profile")
-        st.info("💡 **Start here.** Changes on this page will update totals across the site.")
+        st.info("💡 **Start here.** Changes on this page will update totals across the site. Your data is private. It only lasts for this session. Please use the **Clear Session** button to reset, or close your browser.")
         
         personal = data.get("personal", {})
         
