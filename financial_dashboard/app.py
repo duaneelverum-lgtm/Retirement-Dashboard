@@ -470,7 +470,7 @@ def main():
                 new_cpp_start = st.selectbox("CPP Start Age", options=list(range(60, 71)), index=list(range(60, 71)).index(g_cpp_start), key="p_cpp_start")
             with c_cpp2:
                 g_cpp_amt = gov.get("cpp_amount", 0.0)
-                new_cpp_amt_input = st.number_input("CPP Amount ($/mo)", value=None, step=50.0, placeholder=f"{float(g_cpp_amt):.2f}")
+                new_cpp_amt_input = st.number_input("CPP Amount ($/mo)", value=None, step=50.0, placeholder="1,200.00" if g_cpp_amt == 0 else f"{float(g_cpp_amt):.2f}")
                 new_cpp_amt = new_cpp_amt_input if new_cpp_amt_input is not None else float(g_cpp_amt)
             
             st.markdown("<br>", unsafe_allow_html=True)
@@ -488,7 +488,7 @@ def main():
                 new_oas_start = st.selectbox("OAS Start Age", options=oas_opts, index=oas_idx, key="p_oas_start")
             with c_oas2:
                 g_oas_amt = gov.get("oas_amount", 0.0)
-                new_oas_amt_input = st.number_input("OAS Amount ($/mo)", value=None, step=50.0, placeholder=f"{float(g_oas_amt):.2f}")
+                new_oas_amt_input = st.number_input("OAS Amount ($/mo)", value=None, step=50.0, placeholder="713.00" if g_oas_amt == 0 else f"{float(g_oas_amt):.2f}")
                 new_oas_amt = new_oas_amt_input if new_oas_amt_input is not None else float(g_oas_amt)
             
             st.markdown("<br>", unsafe_allow_html=True)
@@ -530,7 +530,7 @@ def main():
                 new_inh_age = new_inh_age_input if new_inh_age_input is not None else int(i_age)
                 
                 # USER TESTING: Default to None with saved value as placeholder
-                new_inh_amt_input = st.number_input("Amount ($)", value=None, step=1000.0, placeholder=f"{float(i_amt):.2f}")
+                new_inh_amt_input = st.number_input("Amount ($)", value=None, step=1000.0, placeholder="500,000.00" if i_amt == 0 else f"{float(i_amt):.2f}")
                 new_inh_amt = new_inh_amt_input if new_inh_amt_input is not None else float(i_amt)
             
             with c2:
@@ -1015,7 +1015,7 @@ def main():
                 # If existing data is empty, add a sample
                 if not asset_accounts:
                     asset_accounts = [
-                        {"id": "acc_sample_gen", "name": "Savings Account", "institution": "Bank", "type": "Bank", "balance": 1000.0}
+                        {"id": "acc_sample_gen", "name": "Savings Account", "institution": "Bank", "type": "Bank", "balance": 0.0}
                     ]
                 st.session_state[ss_key_assets] = asset_accounts
             
@@ -1050,7 +1050,7 @@ def main():
                     curr_bal = float(a_row.get("balance", 0.0))
                 except:
                     curr_bal = 0.0
-                bal_val = r_cols[1].number_input("Balance", value=None, placeholder=f"{curr_bal:.2f}", key=f"a_bal_cmb_{a_idx}", label_visibility="collapsed", format="%.2f")
+                bal_val = r_cols[1].number_input("Balance", value=None, placeholder="100,000.00" if curr_bal == 0 else f"{curr_bal:.2f}", key=f"a_bal_cmb_{a_idx}", label_visibility="collapsed", format="%.2f")
                 a_bal = bal_val if bal_val is not None else curr_bal
                 
                 # Delete
@@ -1148,7 +1148,7 @@ def main():
                  # If existing data is empty, add a sample
                 if not all_liability_accounts:
                     all_liability_accounts = [
-                        {"id": f"liab_sample_generic", "name": "Credit Card", "institution": "Bank", "type": "Liability", "balance": 1500.0}
+                        {"id": "liab_sample_generic", "name": "Mortgage", "institution": "Bank", "type": "Liability", "balance": 0.0}
                     ]
                 st.session_state[ss_key_liab] = all_liability_accounts
             
@@ -1182,7 +1182,7 @@ def main():
                     curr_l_bal = float(l_row.get("balance", 0.0))
                 except:
                     curr_l_bal = 0.0
-                bal_val = r_cols_l[1].number_input("Balance", value=None, placeholder=f"{curr_l_bal:.2f}", key=f"l_bal_cmb_{l_idx}", label_visibility="collapsed", format="%.2f")
+                bal_val = r_cols_l[1].number_input("Balance", value=None, placeholder="5,000.00" if curr_l_bal == 0 else f"{curr_l_bal:.2f}", key=f"l_bal_cmb_{l_idx}", label_visibility="collapsed", format="%.2f")
                 l_bal = bal_val if bal_val is not None else curr_l_bal
                 
                 # Delete
@@ -1272,8 +1272,8 @@ def main():
             if not existing_budget:
                 # Add sample data
                 existing_budget = [
-                    {"id": f"bud_demo_sample_1", "name": "Salary", "category": "Work", "amount": 5000.0, "type": "Income", "frequency": "Monthly"},
-                    {"id": f"bud_demo_sample_2", "name": "Rent / Mortgage", "category": "Housing", "amount": 2000.0, "type": "Expense", "frequency": "Monthly"}
+                    {"id": f"bud_demo_sample_1", "name": "Salary", "category": "Work", "amount": 0.0, "type": "Income", "frequency": "Monthly"},
+                    {"id": f"bud_demo_sample_2", "name": "Rent / Mortgage", "category": "Housing", "amount": 0.0, "type": "Expense", "frequency": "Monthly"}
                 ]
             st.session_state.budget_list_demo = existing_budget
         
@@ -1309,7 +1309,7 @@ def main():
                 cat_val = r_cols_i[1].text_input("Notes", value="", placeholder=row.get("category", "") or "Notes", key=f"i_cat_demo_{idx}", label_visibility="collapsed")
                 new_cat = cat_val if cat_val else row.get("category", "")
                 
-                amt_val = r_cols_i[2].number_input("Amount", value=None, placeholder=f"{float(row['amount']):.2f}", key=f"i_amt_demo_{idx}", label_visibility="collapsed", format="%.2f")
+                amt_val = r_cols_i[2].number_input("Amount", value=None, placeholder="5,000.00" if float(row['amount']) == 0 else f"{float(row['amount']):.2f}", key=f"i_amt_demo_{idx}", label_visibility="collapsed", format="%.2f")
                 new_amt = amt_val if amt_val is not None else float(row["amount"])
                 
                 if r_cols_i[3].button("🗑️", key=f"i_del_inc_demo_{idx}"): to_delete_income = idx
@@ -1359,7 +1359,7 @@ def main():
                 cat_val = r_cols_e[1].text_input("Cat", value="", placeholder=row.get("category", "") or "Category", key=f"e_cat_demo_{idx}", label_visibility="collapsed")
                 new_cat = cat_val if cat_val else row.get("category", "")
                 
-                amt_val = r_cols_e[2].number_input("Amt", value=None, placeholder=f"{float(row['amount']):.2f}", key=f"e_amt_demo_{idx}", label_visibility="collapsed", format="%.2f")
+                amt_val = r_cols_e[2].number_input("Amt", value=None, placeholder="2,000.00" if float(row['amount']) == 0 else f"{float(row['amount']):.2f}", key=f"e_amt_demo_{idx}", label_visibility="collapsed", format="%.2f")
                 new_amt = amt_val if amt_val is not None else float(row["amount"])
                 
                 freq_opts = ["Monthly", "Annually"]
@@ -1400,7 +1400,7 @@ def main():
                 existing_annual = data.get("annual_expenditures", [])
                 if not existing_annual:
                     existing_annual = [
-                        {"id": "ann_sample_1", "name": "International Trip", "amount": 5000.0, "frequency": "Every Year", "start_age": 65}
+                        {"id": "ann_sample_1", "name": "International Trip", "amount": 0.0, "frequency": "Every Year", "start_age": 65}
                     ]
                 st.session_state.annual_list_demo = existing_annual
             
@@ -1417,7 +1417,7 @@ def main():
                 name_val = r_cols_a[0].text_input("Name", value="", placeholder=row["name"] or "Activity", key=f"ann_n_demo_{idx}", label_visibility="collapsed")
                 a_name = name_val if name_val else row["name"]
                 
-                amt_val = r_cols_a[1].number_input("Amt", value=None, placeholder=f"{float(row['amount']):.2f}", key=f"ann_a_demo_{idx}", label_visibility="collapsed", format="%.2f")
+                amt_val = r_cols_a[1].number_input("Amt", value=None, placeholder="5,000.00" if float(row['amount']) == 0 else f"{float(row['amount']):.2f}", key=f"ann_a_demo_{idx}", label_visibility="collapsed", format="%.2f")
                 a_amt = amt_val if amt_val is not None else float(row["amount"])
                 
                 ann_f_opts = ["One-time", "Every Year", "Every 2 Years", "Every 5 Years", "Every 10 Years"]
@@ -1883,7 +1883,7 @@ def main():
                          "name": "Buy a Cottage",
                          "age": 60,
                          "type": "Cost",
-                         "impact": 150000.0,
+                         "impact": 0.0,
                          "frequency": "One-time"
                      }]
                 st.session_state.scenarios_list_demo = loaded_scenarios
@@ -1922,7 +1922,7 @@ def main():
                 age_val = r_cols[1].number_input("Age", value=None, placeholder=str(int(row["age"])), min_value=18, max_value=110, key=f"sc_age_demo_{idx}", label_visibility="collapsed")
                 new_age = age_val if age_val is not None else int(row["age"])
                 
-                impact_val = r_cols[2].number_input("Cost", value=None, placeholder=f"{float(row['impact']):.2f}", key=f"sc_impact_demo_{idx}", label_visibility="collapsed")
+                impact_val = r_cols[2].number_input("Cost", value=None, placeholder="50,000.00" if float(row['impact']) == 0 else f"{float(row['impact']):.2f}", key=f"sc_impact_demo_{idx}", label_visibility="collapsed")
                 new_impact = impact_val if impact_val is not None else float(row["impact"])
                 
                 freq_opts = ["One-time", "Monthly", "Twice per year", "Annually", "Every 2 years", "Every 3 years", "Every 5 years", "Every 10 years", "Until End of Plan"]
