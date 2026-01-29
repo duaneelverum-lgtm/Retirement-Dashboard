@@ -364,13 +364,14 @@ def main():
                                 st.markdown(item['content'])
                             show_post_item(post)
 
-        st.caption("Financial Dashboard v1.0")
+        st.divider()
+        st.caption("v1.0")
 
-    # --- TAB: Personal Details ---
+    # --- TAB: Profile Details ---
     # --- Profile Tab ---
     with tab_personal:
         if st.session_state.get("show_personal_results"):
-            st.toast("✅ Personal details saved!", icon="👤")
+            st.toast("✅ Profile details saved!", icon="👤")
 
         st.markdown("### 👤 Profile")
         st.info("💡 **Start here.** Changes on this page will update totals across the site.")
@@ -449,7 +450,7 @@ def main():
     planned_life_exp_val = data.get("personal", {}).get("life_expectancy")
     planned_life_exp = planned_life_exp_val if planned_life_exp_val is not None else 95 # Safe default for charts
     
-    # --- Government Benefits Section (Moved to Personal) ---
+    # --- Government Benefits Section (Moved to Profile) ---
     with tab_personal:
         st.markdown("---")
         st.markdown("### 🇨🇦 Government Benefits")
@@ -509,7 +510,7 @@ def main():
                     
                     st.rerun()
 
-    # --- Inheritance Section (Moved to Personal) ---
+    # --- Inheritance Section (Moved to Profile) ---
     with tab_personal:
         st.markdown("---")
         st.markdown("### 💎 Inheritance / Windfall")
@@ -1177,8 +1178,8 @@ def main():
                     if "id" not in l: l["id"] = f"liab_demo_{int(datetime.now().timestamp())}_{random.randint(0, 1000)}"
 
                 # Header
-                h_cols_l = st.columns([2, 2, 2, 3, 0.8])
-                headers_l = ["Name", "Institution", "Type ⌵", "Balance", ""]
+                h_cols_l = st.columns([3, 3, 3, 0.8])
+                headers_l = ["Name", "Institution", "Balance", ""]
                 for col, h in zip(h_cols_l, headers_l):
                     if h:
                         col.markdown(f"**{h}**")
@@ -1187,7 +1188,7 @@ def main():
                 to_delete_liab = None
                 
                 for l_idx, l_row in enumerate(st.session_state[ss_key_liab]):
-                    r_cols_l = st.columns([2, 2, 2, 3, 0.8])
+                    r_cols_l = st.columns([3, 3, 3, 0.8])
                     
                     # Click-to-clear pattern
                     name_val = r_cols_l[0].text_input("Name", value="", placeholder=l_row["name"] or "Liability name", key=f"l_name_demo_{l_type}_{l_idx}", label_visibility="collapsed")
@@ -1196,19 +1197,17 @@ def main():
                     inst_val = r_cols_l[1].text_input("Inst", value="", placeholder=l_row.get("institution", "") or "Institution", key=f"l_inst_demo_{l_type}_{l_idx}", label_visibility="collapsed")
                     l_inst = inst_val if inst_val else l_row.get("institution", "")
                     
-                    liab_options = ["Liability", "Credit Card", "Loan", "Mortgage", "Other"]
-                    curr_l_type = l_row.get("type", l_type)
-                    if curr_l_type not in liab_options: curr_l_type = l_type
-                    l_type_val = r_cols_l[2].selectbox("Type", options=liab_options, index=liab_options.index(curr_l_type), key=f"l_type_demo_{l_type}_{l_idx}", label_visibility="collapsed")
+                    # Implicitly use the current section type since column was removed
+                    l_type_val = l_type
                     
                     try:
                         curr_l_bal = float(l_row.get("balance", 0.0))
                     except:
                         curr_l_bal = 0.0
-                    bal_val = r_cols_l[3].number_input("Balance", value=None, placeholder=f"{curr_l_bal:.2f}", key=f"l_bal_demo_{l_type}_{l_idx}", label_visibility="collapsed", format="%.2f")
+                    bal_val = r_cols_l[2].number_input("Balance", value=None, placeholder=f"{curr_l_bal:.2f}", key=f"l_bal_demo_{l_type}_{l_idx}", label_visibility="collapsed", format="%.2f")
                     l_bal = bal_val if bal_val is not None else curr_l_bal
                     
-                    if r_cols_l[4].button("🗑️", key=f"l_del_demo_{l_type}_{l_idx}"):
+                    if r_cols_l[3].button("🗑️", key=f"l_del_demo_{l_type}_{l_idx}"):
                         to_delete_liab = l_idx
 
                     updated_liab_list.append({
@@ -1535,7 +1534,7 @@ def main():
                  </div>
                  """, unsafe_allow_html=True)
             
-            st.caption("Change these values on the **Personal** tab.")
+            st.caption("Change these values on the **Profile** tab.")
 
 
 
