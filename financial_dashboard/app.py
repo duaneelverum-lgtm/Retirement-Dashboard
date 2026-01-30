@@ -252,7 +252,7 @@ def get_net_worth_history_fig(data, net_worth):
 def get_projection_fig(years_axis, history_bal, current_age, max_years, y_max_proj, y_dtick, custom_ticks, 
                        planned_ret_age, is_retired, cpp_start, oas_start, inh_age, inh_amt):
     """Generates the Projection Figure."""
-    fig_proj = px.line(x=years_axis, y=history_bal, labels={'x': 'Age', 'y': 'Balance'})
+    fig_proj = px.line(x=years_axis, y=history_bal, labels={'x': 'Age', 'y': 'Net Worth'})
     fig_proj.update_layout(
         title="Retirement Projection",
         yaxis=dict(range=[0, y_max_proj], tickformat='$,.0f', dtick=y_dtick),
@@ -264,6 +264,7 @@ def get_projection_fig(years_axis, history_bal, current_age, max_years, y_max_pr
         ),
         margin=dict(l=40, r=40, t=60, b=40),
         font=dict(size=12),
+        height=550,
         plot_bgcolor='white',
         paper_bgcolor='white'
     )
@@ -515,10 +516,14 @@ def create_pdf_report(data, sim_inflation=3.0, sim_return=5.0):
     fig_nw = get_net_worth_history_fig(data, net_worth)
     if fig_nw:
         # Save temp image
-        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_nw:
-            pio.write_image(fig_nw, tmp_nw.name, format="png", width=800, height=400, scale=2)
-            pdf.image(tmp_nw.name, x=10, w=190)
-            tmp_nw_path = tmp_nw.name
+        try:
+            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_nw:
+                pio.write_image(fig_nw, tmp_nw.name, format="png", width=800, height=400, scale=2)
+                pdf.image(tmp_nw.name, x=10, w=190)
+                tmp_nw_path = tmp_nw.name
+        except Exception as e:
+            pdf.set_font("Helvetica", "I", 10)
+            pdf.cell(0, 10, sanitize_for_pdf("[Chart unavailable - Visual generation failed]"), ln=1)
         # Clean up later or rely on OS temp clean. 
         # (For strictness we should remove it, but in Streamlit threading it's tricky. 
         # OS temp is safe enough for "download as is".)
@@ -616,9 +621,13 @@ def create_pdf_report(data, sim_inflation=3.0, sim_return=5.0):
         data.get("inheritance",{}).get("age",0), data.get("inheritance",{}).get("amount",0.0)
     )
     
-    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_pr:
-        pio.write_image(fig_proj_pdf, tmp_pr.name, format="png", width=800, height=400, scale=2)
-        pdf.image(tmp_pr.name, x=10, w=190)
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_pr:
+            pio.write_image(fig_proj_pdf, tmp_pr.name, format="png", width=800, height=400, scale=2)
+            pdf.image(tmp_pr.name, x=10, w=190)
+    except Exception as e:
+        pdf.set_font("Helvetica", "I", 10)
+        pdf.cell(0, 10, sanitize_for_pdf("[Chart unavailable - Visual generation failed]"), ln=1)
     
     pdf.ln(10)
     # Result Box
@@ -931,6 +940,17 @@ def main():
 
 
     # --- Main Dashboard ---
+    # Calculate PDF Data (Pre-compute to avoid layout issues)
+    pdf_data = None
+    pdf_error = None
+    try:
+        inf_val = st.session_state.get("hl_inflation", 3.0)
+        ret_val = st.session_state.get("hl_return", 5.0)
+        pdf_data = create_pdf_report(data, sim_inflation=inf_val, sim_return=ret_val)
+    except Exception as e:
+        pdf_error = str(e)
+
+    # --- Main Dashboard ---
     col_title, col_clear = st.columns([4, 1.5])
     with col_title:
         st.title("The Retirement Dashboard")
@@ -941,14 +961,6 @@ def main():
                 confirm_reset_dialog()
 
         with c_pdf:
-            # Wrap generation in empty container to suppress rogue "None" output
-            placeholder = st.empty()
-            with placeholder:
-                inf_val = st.session_state.get("hl_inflation", 3.0)
-                ret_val = st.session_state.get("hl_return", 5.0)
-                pdf_data = create_pdf_report(data, sim_inflation=inf_val, sim_return=ret_val)
-            placeholder.empty()
-            
             if pdf_data:
                 st.download_button(
                     label="PDF", 
@@ -959,7 +971,9 @@ def main():
                     help="Download the full 4-page visual dashboard report"
                 )
             else:
-                st.error("PDF Generation Failed")
+                # Show error state
+                err_msg = pdf_error if pdf_error else "Generation failed"
+                st.button("PDF", disabled=True, use_container_width=True, help=f"PDF generation failed: {err_msg}")
 
     st.markdown("<br>", unsafe_allow_html=True)
     
@@ -1137,8 +1151,13 @@ def main():
             with i_col1:
                 i_age = inh.get("age", 0)
                 i_amt = inh.get("amount", 0.0)
-                new_inh_age = st.number_input("Inheritance Age", min_value=0, max_value=100, value=int(i_age), step=1, key="p_inh_age_direct")
-                new_inh_amt = st.number_input("Amount ($)", value=float(i_amt), step=1000.0, key="p_inh_amt_direct")
+                i_age_ph = str(int(i_age)) if i_age > 0 else "e.g. 65"
+                inp_inh_age = st.number_input("Inheritance Age", min_value=0, max_value=100, value=None, placeholder=i_age_ph, step=1, key="p_inh_age_direct")
+                new_inh_age = inp_inh_age if inp_inh_age is not None else int(i_age)
+                
+                i_amt_ph = f"{float(i_amt):,.0f}" if i_amt > 0 else "e.g. 100,000"
+                inp_inh_amt = st.number_input("Amount ($)", value=None, placeholder=i_amt_ph, step=1000.0, key="p_inh_amt_direct")
+                new_inh_amt = inp_inh_amt if inp_inh_amt is not None else float(i_amt)
             
             with i_col2:
                 i_type = inh.get("type", "Cash / Investments")
@@ -1231,7 +1250,16 @@ def main():
     with tab_summary:
         st.markdown("### ⛰️ The Big Picture")
         st.info("💡 **Tip:** Please fill out the Profile, Budget, and Assets & Liabilities pages to see the big picture.")
-        net_worth, assets, liabilities = get_net_worth(data)
+        # Calculate Correct Net Worth (Investments + Other Assets + Inheritance - Liabilities)
+        liquid_nw, raw_assets, liabilities = get_net_worth(data)
+        inheritance_val = data.get("inheritance", {}).get("amount", 0.0)
+        
+        assets = raw_assets + inheritance_val # Total Assets (Includes Investments, Chattel, Inheritance)
+        net_worth = assets - liabilities # Net Worth (Includes everything)
+        
+        # Calculate Investments Only (for Withdrawal Logic)
+        investments_total = sum(a.get("balance", 0.0) for a in data["accounts"] 
+                               if a.get("type") in ["Bank", "Investments"])
         
         # --- Auto-Update Today's History ---
         # Ensure the history table reflects the current calculation method
@@ -1284,7 +1312,7 @@ def main():
              """, unsafe_allow_html=True)
 
              col_metric1, col_metric2, col_metric3, col_metric4 = st.columns(4, gap="large")
-             col_metric1.metric("Total Assets", f"${assets:,.0f}")
+             col_metric1.metric("Total Assets", f"${assets:,.0f}", help=f"Investments & Other: ${raw_assets:,.0f} | Inheritance: ${inheritance_val:,.0f}")
              col_metric2.metric("Total Liabilities", f"${liabilities:,.0f}")
              
              if len(df_hist_metrics) > 1:
@@ -1384,9 +1412,9 @@ def main():
                 pmt = net_cashflow_global 
 
                 if years_to_ret > 0:
-                    future_wealth = (net_worth * (1+r)**months_to_ret) + (pmt * (((1+r)**months_to_ret - 1) / r))
+                    future_wealth = (investments_total * (1+r)**months_to_ret) + (pmt * (((1+r)**months_to_ret - 1) / r))
                 else:
-                    future_wealth = net_worth
+                    future_wealth = investments_total
                     
                 final_gap = target_nest_egg - future_wealth 
                 lump_sum_today = final_gap / ((1 + r) ** months_to_ret) if (final_gap > 0 and months_to_ret > 0) else final_gap
@@ -1405,12 +1433,12 @@ def main():
             # --- RETIRED LOGIC ---
             st.markdown("#### How much more money can I spend?")
             
-            if net_worth == 0 and target_spend == 0:
+            if investments_total == 0 and target_spend == 0:
                 st.info("💡 **Tip:** Enter your financial data in the **Financial Data** tab to find out how much more money you can spend.")
             else:
                 # Simple 4% Rule Reverse Check (or customized)
                 # Safe withdrawal from current assets
-                safe_annual_draw = net_worth * withdraw_rate
+                safe_annual_draw = investments_total * withdraw_rate
                 safe_monthly_draw = safe_annual_draw / 12
                 
                 total_monthly_spending_power = safe_monthly_draw + passive_income
@@ -1425,7 +1453,7 @@ def main():
                 
                 st.markdown(f"""
                 **Breakdown:**
-                - Current Net Worth: **${net_worth:,.0f}**
+                - Investable Assets: **${investments_total:,.0f}**
                 - Safe Monthly Withdrawal (4%): **${safe_monthly_draw:,.0f}**
                 - Monthly Pension Benefits: **${passive_income:,.0f}**
                 - **Total Safe Spending Power: ${total_monthly_spending_power:,.0f}**
@@ -1488,7 +1516,14 @@ def main():
                 liability_accounts = [{"id": "liab_sample_generic", "name": "Mortgage", "type": "Liability", "balance": 0.0}]
             st.session_state[ss_key_liab] = liability_accounts
 
-        # Ensure default fields for Assets/Liabs
+        ss_key_chattel = "chattel_list_demo"
+        if ss_key_chattel not in st.session_state:
+            chattel_accounts = [a for a in data["accounts"] if a.get("type") == "Chattel"]
+            if not chattel_accounts:
+                chattel_accounts = [{"id": "chat_sample_1", "name": "Furniture/Jewellery", "type": "Chattel", "balance": 0.0}]
+            st.session_state[ss_key_chattel] = chattel_accounts
+
+        # Ensure default fields for Assets/Liabs/Chattel
         for a in st.session_state[ss_key_assets]:
             if "name" not in a: a["name"] = ""
             if "balance" not in a: a["balance"] = 0.0
@@ -1499,20 +1534,47 @@ def main():
             if "balance" not in l: l["balance"] = 0.0
             if "id" not in l: l["id"] = f"liab_demo_{int(datetime.now().timestamp())}_{random.randint(0, 1000)}"
             if "type" not in l: l["type"] = "Liability"
+        for c in st.session_state[ss_key_chattel]:
+            if "name" not in c: c["name"] = ""
+            if "balance" not in c: c["balance"] = 0.0
+            if "id" not in c: c["id"] = f"chat_demo_{int(datetime.now().timestamp())}_{random.randint(0, 1000)}"
+            if "type" not in c: c["type"] = "Chattel"
 
 
         # ==========================================
         # 2. RENDER UNIFIED FORM
         # ==========================================
         
+        if "annual_list_demo" not in st.session_state:
+            existing_annual = data.get("annual_expenditures", [])
+            if not existing_annual:
+                existing_annual = [
+                    {"id": "ann_sample_1", "name": "International Trip", "amount": 0.0, "frequency": "Every Year", "start_age": 65}
+                ]
+            st.session_state.annual_list_demo = existing_annual
+
         # Split budget into income/expenses for distinct sections
         income_items = [i for i in st.session_state.budget_list_demo if i.get("type") == "Income"]
         expense_items = [i for i in st.session_state.budget_list_demo if i.get("type") == "Expense"]
 
+        # Pre-calculate totals for Headers
+        total_inc_header = sum(float(i.get("amount", 0)) for i in income_items)
+        total_exp_header = 0.0
+        for e in expense_items:
+            amt = float(e.get("amount", 0))
+            freq = e.get("frequency", "Monthly")
+            if freq == "Annually": total_exp_header += amt / 12
+            else: total_exp_header += amt
+        
+        total_ann_header = sum(float(i.get("amount", 0)) for i in st.session_state.annual_list_demo)
+        total_inv_header = sum(float(a.get("balance", 0)) for a in st.session_state[ss_key_assets])
+        total_chat_header = sum(float(c.get("balance", 0)) for c in st.session_state[ss_key_chattel])
+        total_liab_header = sum(float(l.get("balance", 0)) for l in st.session_state[ss_key_liab])
+
         with st.container(border=True):
             
             # --- SECTION 1: INCOME ---
-            st.markdown("#### 1. Monthly Income")
+            st.markdown(f"#### 1. Monthly Income: \${total_inc_header:,.0f}")
             h_cols_i = st.columns([3, 2, 2, 0.8])
             headers_i = ["Source", "Notes", "Amount", ""]
             for col, h in zip(h_cols_i, headers_i): 
@@ -1524,7 +1586,7 @@ def main():
             
             for idx, row in enumerate(income_items):
                 r_cols_i = st.columns([3, 2, 2, 0.8])
-                name_val = r_cols_i[0].text_input("Name", value="", placeholder=row["name"] or "Income source", key=f"i_name_demo_{idx}", label_visibility="collapsed")
+                name_val = r_cols_i[0].text_input("Source", value="", placeholder=row["name"] or "Income source", key=f"i_name_demo_{idx}", label_visibility="collapsed")
                 new_name = name_val if name_val else row["name"]
                 
                 cat_val = r_cols_i[1].text_input("Notes", value="", placeholder=row.get("category", "") or "Notes", key=f"i_cat_demo_{idx}", label_visibility="collapsed")
@@ -1550,7 +1612,7 @@ def main():
             st.markdown("---")
             
             # --- SECTION 2: EXPENSES ---
-            st.markdown("#### 2. Monthly Expenses")
+            st.markdown(f"#### 2. Expenses: \${total_exp_header:,.0f}/mo")
             h_cols_e = st.columns([3, 2, 2, 2, 0.8])
             headers_e = ["Kind", "Category", "Amount", "Frequency ⌵", ""]
             for col, h in zip(h_cols_e, headers_e): 
@@ -1593,7 +1655,7 @@ def main():
             st.markdown("---")
             
             # --- SECTION 3: ANNUAL BUCKET LIST ---
-            st.markdown("#### 3. 🏆 Annual Bucket List")
+            st.markdown(f"#### 3. 🏆 Annual Bucket List: \${total_ann_header:,.0f}")
             if "annual_list_demo" not in st.session_state:
                 existing_annual = data.get("annual_expenditures", [])
                 if not existing_annual:
@@ -1636,10 +1698,12 @@ def main():
                 st.session_state.annual_list_demo.append({"id": f"ann_demo_{int(datetime.now().timestamp())}", "name": "", "amount": 0.0, "frequency": "One-time", "start_age": 65})
                 st.rerun()
 
-            st.markdown("---")
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        with st.container(border=True):
 
-            # --- SECTION 4: ASSETS ---
-            st.markdown("#### 4. 🏦 Assets")
+            # --- SECTION 4: INVESTMENTS (Savings, etc.) ---
+            st.markdown(f"#### 4. 🏦 Investments (Savings, etc.): \${total_inv_header:,.0f}")
             h_cols_ass = st.columns([5, 3, 0.8])
             headers_ass = ["Name", "Balance", ""]
             for col, h in zip(h_cols_ass, headers_ass): 
@@ -1675,8 +1739,45 @@ def main():
 
             st.markdown("---")
 
-            # --- SECTION 5: LIABILITIES ---
-            st.markdown("#### 5. 💳 Liabilities")
+            # --- SECTION 5: OTHER ASSETS (Cars, etc.) ---
+            st.markdown(f"#### 5. 🛋️ Other Assets (Cars, etc.): \${total_chat_header:,.0f}")
+            h_cols_cha = st.columns([5, 3, 0.8])
+            headers_cha = ["Item", "Estimated Value", ""]
+            for col, h in zip(h_cols_cha, headers_cha): 
+                if h: col.markdown(f"**{h}**")
+
+            updated_chattel = []
+            to_delete_chattel = None
+            subtotal_chattel = 0.0
+            
+            for idx, row in enumerate(st.session_state[ss_key_chattel]):
+                r_cols_cha = st.columns([5, 3, 0.8])
+                name_val = r_cols_cha[0].text_input("Name", value="", placeholder=row["name"] or "Item name", key=f"c_name_cmb_{idx}", label_visibility="collapsed")
+                c_name = name_val if name_val else row["name"]
+                
+                try: curr_c_bal = float(row.get("balance", 0.0))
+                except: curr_c_bal = 0.0
+                bal_val = r_cols_cha[1].number_input("Value", value=None, placeholder=f"{curr_c_bal:.0f}", key=f"c_bal_cmb_{idx}", label_visibility="collapsed", format="%.0f")
+                c_bal = bal_val if bal_val is not None else curr_c_bal
+                
+                if r_cols_cha[2].button("🗑️", key=f"c_del_cmb_{idx}"): to_delete_chattel = idx
+                
+                subtotal_chattel += c_bal
+                updated_chattel.append({"id": row.get("id"), "name": c_name, "institution": "", "type": "Chattel", "balance": c_bal})
+
+            if to_delete_chattel is not None:
+                updated_chattel.pop(to_delete_chattel)
+                st.session_state[ss_key_chattel] = updated_chattel
+                st.rerun()
+
+            if st.button("➕ Add Chattel", key="btn_add_chattel_cmb"):
+                st.session_state[ss_key_chattel].append({"id": f"chat_demo_{int(datetime.now().timestamp())}", "name": "", "institution": "", "type": "Chattel", "balance": 0.0})
+                st.rerun()
+
+            st.markdown("---")
+
+            # --- SECTION 6: LIABILITIES (Loans and Debt) ---
+            st.markdown(f"#### 6. 💳 Liabilities (Loans and Debt): \${total_liab_header:,.0f}")
             h_cols_lia = st.columns([5, 3, 0.8])
             headers_lia = ["Name", "Balance", ""]
             for col, h in zip(h_cols_lia, headers_lia): 
@@ -1724,8 +1825,8 @@ def main():
                     # 2. Save Annual Items
                     data["annual_expenditures"] = updated_ann
                     
-                    # 3. Save Accounts (Assets + Liabilities)
-                    data["accounts"] = updated_assets + updated_liabilities
+                    # 3. Save Accounts (Assets + Chattel + Liabilities)
+                    data["accounts"] = updated_assets + updated_chattel + updated_liabilities
                     
                     # 4. Persist to Disk
                     save_data(data)
@@ -1734,6 +1835,7 @@ def main():
                     st.session_state.budget_list_demo = updated_income + updated_expenses
                     st.session_state.annual_list_demo = updated_ann
                     st.session_state[ss_key_assets] = updated_assets
+                    st.session_state[ss_key_chattel] = updated_chattel
                     st.session_state[ss_key_liab] = updated_liabilities
                     
                     # 6. Trigger Metrics Updates
@@ -1742,7 +1844,7 @@ def main():
                     st.session_state[f"hl_expenses_direct_v4_{rc}"] = sub_exp_monthly
                     
                     # Update Net Worth history
-                    current_nw = subtotal_assets - subtotal_liabilities
+                    current_nw = (subtotal_assets + subtotal_chattel) - subtotal_liabilities
                     today_str = str(datetime.now().date())
                     existing_hist = next((h for h in data["history"] if h["date"] == today_str), None)
                     if existing_hist: existing_hist["net_worth"] = current_nw
@@ -1759,26 +1861,34 @@ def main():
         # ==========================================
         # 4. SUMMARY SECTION (Below Container)
         # ==========================================
-        st.markdown("---")
+        
         st.subheader("Results Summary")
-        
-        # Row 1: Cashflow
-        st.markdown("##### Monthly Cashflow")
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Total Income", f"${subtotal_income:,.0f}")
-        c2.metric("Total Expenses", f"${sub_exp_monthly:,.0f}", delta_color="inverse")
-        net_cash_live = subtotal_income - sub_exp_monthly
-        c3.metric("Net Cashflow", f"${net_cash_live:,.0f}", delta=f"{'Surplus' if net_cash_live >= 0 else 'Deficit'}", delta_color="normal" if net_cash_live >= 0 else "inverse")
-        
-        st.divider()
-        
-        # Row 2: Net Worth
-        st.markdown("##### Net Worth")
-        n1, n2, n3 = st.columns(3)
-        n1.metric("Total Assets", f"${subtotal_assets:,.0f}")
-        n2.metric("Total Liabilities", f"${subtotal_liabilities:,.0f}", delta_color="inverse")
-        net_worth_val = subtotal_assets - subtotal_liabilities
-        n3.metric("Total Net Worth", f"${net_worth_val:,.0f}")
+        with st.container(border=True):
+            
+            # Row 1: Cashflow
+            st.markdown("##### Monthly Cashflow")
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Total Income", f"${subtotal_income:,.0f}")
+            c2.metric("Total Expenses", f"${sub_exp_monthly:,.0f}", delta_color="inverse")
+            net_cash_live = subtotal_income - sub_exp_monthly
+            c3.metric("Net Cashflow", f"${net_cash_live:,.0f}", delta=f"{'Surplus' if net_cash_live >= 0 else 'Deficit'}", delta_color="normal" if net_cash_live >= 0 else "inverse")
+            
+            st.markdown("<hr style='margin: 5px 0 15px 0; opacity: 0.2;'>", unsafe_allow_html=True)
+            
+            # Row 2: Net Worth
+            st.markdown("##### Net Worth")
+            n1, n2, n3, n4, n5 = st.columns(5)
+            
+            inheritance_val = data.get("inheritance", {}).get("amount", 0.0)
+            
+            # New Calculation: Investments + Other Assets + Inheritance - Liabilities
+            net_worth_val = subtotal_assets + subtotal_chattel + inheritance_val - subtotal_liabilities
+            
+            n1.metric("Investments", f"${subtotal_assets:,.0f}")
+            n2.metric("Other Assets", f"${subtotal_chattel:,.0f}")
+            n3.metric("Inheritance", f"${inheritance_val:,.0f}")
+            n4.metric("Total Liabilities", f"${subtotal_liabilities:,.0f}", delta_color="inverse")
+            n5.metric("Total Assets", f"${net_worth_val:,.0f}")
 
         
 
@@ -1799,7 +1909,7 @@ def main():
         # Logic variables placeholders
         months = 0
         run_out = False
-        max_years = 60
+        max_years = max(5, 95 - calc_age)
         history_bal = []
         years_axis = []
         
@@ -1903,15 +2013,15 @@ def main():
             # 1. Start at current age
             custom_ticks = [current_age]
             
-            # 2. Next multiple of 5
-            next_five = ((current_age // 5) + 1) * 5
+            # 2. Next multiple of 10
+            next_ten = ((current_age // 10) + 1) * 10
             
-            # 3. Add multiples of 5 up to 110
-            for val in range(next_five, 111, 5):
+            # 3. Add multiples of 10 up to 110
+            for val in range(next_ten, 111, 10):
                 if val > current_age: # Avoid duplicates if current_age works out to be a multiple
                     custom_ticks.append(val)
             
-            fig_proj = px.line(x=years_axis, y=history_bal, labels={'x': 'Age', 'y': 'Balance'})
+            fig_proj = px.line(x=years_axis, y=history_bal, labels={'x': 'Age', 'y': 'Net Worth'})
             fig_proj.update_layout(
                 yaxis=dict(range=[0, y_max_proj], tickformat='$,.0f', dtick=y_dtick),
                 xaxis=dict(
@@ -1921,7 +2031,7 @@ def main():
                     tickangle=0 # Force upright labels
                 ),
                 margin=dict(l=20, r=50, t=40, b=20),
-                height=350,
+                height=550,
                 hovermode="x unified",
                 font=dict(size=14)
             )
@@ -2055,10 +2165,12 @@ def main():
 
 
             
+            
+            st.markdown("<br><br>", unsafe_allow_html=True)
             # Reverse Calculator Section
+            st.subheader("🧮 Reverse Calculator")
+            st.info("💡 **Tip:** Check to see how much more money you can withdraw")
             with st.container(border=True):
-                st.subheader("Reverse Calculator")
-                st.info("💡 **Tip:** Check to see how much more money you can withdraw")
                 
                 col_rev_1, col_rev_2 = st.columns([1, 3])
                 with col_rev_1:
@@ -2259,15 +2371,43 @@ def main():
                         mode='lines',
                         name='With Scenarios',
                         line=dict(color='#ff7f0e', width=3, dash='dash'),
-                        hovertemplate="Age: %{x:.1f}<br>Net Worth: $%{y:,.0f}<extra></extra>"
+                        hovertemplate="Age: %{x:.1f}<br>Balance: $%{y:,.0f}<extra></extra>"
                     ))
                 
+                # Calculate Max Y for scale consistent with Tab 2 Logic
+                import math
+                max_base = max(base_h) if (base_h and len(base_h)>0) else 0.0
+                max_scen = max(scen_h) if (scen_h and len(scen_h)>0) else 0.0
+                max_val = max(max_base, max_scen)
+                
+                if max_val <= 0:
+                     target_million_proj = 1000000.0
+                else:
+                     val_in_millions = max_val / 1000000.0
+                     ceil_val = math.ceil(val_in_millions)
+                     target_million_proj = ceil_val * 1000000.0
+                
+                y_max_comp = target_million_proj
+                
+                # Dynamic Y Ticks
+                if y_max_comp <= 2000000: y_dtick_comp = 200000
+                elif y_max_comp <= 5000000: y_dtick_comp = 500000
+                else: y_dtick_comp = 1000000
+                
+                # Custom X Ticks (Multiples of 10)
+                custom_ticks = [current_age]
+                next_ten = ((current_age // 10) + 1) * 10
+                for val in range(int(next_ten), current_age + max_years + 1, 10):
+                     if val > current_age: custom_ticks.append(val)
+
                 # Chart Layout
                 fig_comp.update_layout(
                     title="",
                     xaxis_title="Age",
-                    yaxis_title="Net Worth ($)",
-                    height=450,
+                    yaxis_title="Net Worth",
+                    yaxis=dict(range=[0, y_max_comp], tickformat='$,.0f', dtick=y_dtick_comp),
+                    xaxis=dict(range=[current_age, current_age + max_years], tickvals=custom_ticks, tickmode='array', tickangle=0),
+                    height=550,
                     hovermode="x unified",
                     legend=dict(
                         orientation="h",
@@ -2276,7 +2416,7 @@ def main():
                         xanchor="right",
                         x=1
                     ),
-                    margin=dict(l=20, r=20, t=30, b=20)
+                    margin=dict(l=40, r=40, t=90, b=40)
                 )
                 
                 # Add Limit Line (Zero)

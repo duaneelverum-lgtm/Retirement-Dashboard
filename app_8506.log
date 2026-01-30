@@ -807,3 +807,542 @@ Traceback (most recent call last):
   File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/state/session_state.py", line 533, in __setitem__
     raise StreamlitAPIException(
 streamlit.errors.StreamlitAPIException: `st.session_state.hl_inflation` cannot be modified after the widget with key `hl_inflation` is instantiated.
+Raising error on Net_Worth_Over_Time.png
+2026-01-29 20:43:42.295 Uncaught app execution
+Traceback (most recent call last):
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/exec_code.py", line 128, in exec_func_with_error_handling
+    result = func()
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/script_runner.py", line 669, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+  File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/app.py", line 2328, in <module>
+    main()
+  File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/app.py", line 949, in main
+    pdf_data = create_pdf_report(data, sim_inflation=inf_val, sim_return=ret_val)
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/caching/cache_utils.py", line 227, in __call__
+    return self._get_or_create_cached_value(args, kwargs, spinner_message)
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/caching/cache_utils.py", line 269, in _get_or_create_cached_value
+    return self._handle_cache_miss(cache, value_key, func_args, func_kwargs)
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/caching/cache_utils.py", line 328, in _handle_cache_miss
+    computed_value = self._info.func(*func_args, **func_kwargs)
+  File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/app.py", line 519, in create_pdf_report
+    pio.write_image(fig_nw, tmp_nw.name, format="png", width=800, height=400, scale=2)
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/plotly/io/_kaleido.py", line 528, in write_image
+    img_data = to_image(
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/plotly/io/_kaleido.py", line 398, in to_image
+    img_bytes = kaleido.calc_fig_sync(
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/kaleido/__init__.py", line 171, in calc_fig_sync
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/kaleido/_sync_server.py", line 131, in oneshot_async_run
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/kaleido/_sync_server.py", line 122, in run
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/asyncio/runners.py", line 44, in run
+    return loop.run_until_complete(main)
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/asyncio/base_events.py", line 642, in run_until_complete
+    return future.result()
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/kaleido/__init__.py", line 102, in calc_fig
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/kaleido/kaleido.py", line 412, in calc_fig
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/asyncio/tasks.py", line 481, in wait_for
+    return fut.result()
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/kaleido/_kaleido_tab.py", line 323, in _calc_fig
+kaleido._kaleido_tab.JavascriptError: {'result': {'type': 'object', 'subtype': 'error', 'className': 'ReferenceError', 'description': 'ReferenceError: kaleido_scopes is not defined\n    at <anonymous>:1:26', 'objectId': '9132514381473436171.1.1'}, 'exceptionDetails': {'exceptionId': 1, 'text': 'Uncaught', 'lineNumber': 0, 'columnNumber': 25, 'scriptId': '14', 'stackTrace': {'callFrames': [{'functionName': '', 'scriptId': '14', 'url': '', 'lineNumber': 0, 'columnNumber': 25}]}, 'exception': {'type': 'object', 'subtype': 'error', 'className': 'ReferenceError', 'description': 'ReferenceError: kaleido_scopes is not defined\n    at <anonymous>:1:26', 'objectId': '9132514381473436171.1.2'}}}
+Raising error on Net_Worth_Over_Time.png
+2026-01-29 20:44:14.432 Uncaught app execution
+Traceback (most recent call last):
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/exec_code.py", line 128, in exec_func_with_error_handling
+    result = func()
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/script_runner.py", line 669, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+  File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/app.py", line 2328, in <module>
+    main()
+  File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/app.py", line 949, in main
+    pdf_data = create_pdf_report(data, sim_inflation=inf_val, sim_return=ret_val)
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/caching/cache_utils.py", line 227, in __call__
+    return self._get_or_create_cached_value(args, kwargs, spinner_message)
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/caching/cache_utils.py", line 269, in _get_or_create_cached_value
+    return self._handle_cache_miss(cache, value_key, func_args, func_kwargs)
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/caching/cache_utils.py", line 328, in _handle_cache_miss
+    computed_value = self._info.func(*func_args, **func_kwargs)
+  File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/app.py", line 519, in create_pdf_report
+    pio.write_image(fig_nw, tmp_nw.name, format="png", width=800, height=400, scale=2)
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/plotly/io/_kaleido.py", line 528, in write_image
+    img_data = to_image(
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/plotly/io/_kaleido.py", line 398, in to_image
+    img_bytes = kaleido.calc_fig_sync(
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/kaleido/__init__.py", line 171, in calc_fig_sync
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/kaleido/_sync_server.py", line 131, in oneshot_async_run
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/kaleido/_sync_server.py", line 122, in run
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/asyncio/runners.py", line 44, in run
+    return loop.run_until_complete(main)
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/asyncio/base_events.py", line 642, in run_until_complete
+    return future.result()
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/kaleido/__init__.py", line 102, in calc_fig
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/kaleido/kaleido.py", line 412, in calc_fig
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/asyncio/tasks.py", line 481, in wait_for
+    return fut.result()
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/kaleido/_kaleido_tab.py", line 323, in _calc_fig
+kaleido._kaleido_tab.JavascriptError: {'result': {'type': 'object', 'subtype': 'error', 'className': 'ReferenceError', 'description': 'ReferenceError: kaleido_scopes is not defined\n    at <anonymous>:1:26', 'objectId': '7406717755531261168.1.1'}, 'exceptionDetails': {'exceptionId': 1, 'text': 'Uncaught', 'lineNumber': 0, 'columnNumber': 25, 'scriptId': '14', 'stackTrace': {'callFrames': [{'functionName': '', 'scriptId': '14', 'url': '', 'lineNumber': 0, 'columnNumber': 25}]}, 'exception': {'type': 'object', 'subtype': 'error', 'className': 'ReferenceError', 'description': 'ReferenceError: kaleido_scopes is not defined\n    at <anonymous>:1:26', 'objectId': '7406717755531261168.1.2'}}}
+Raising error on Retirement_Projection.png
+2026-01-29 20:44:23.486 Uncaught app execution
+Traceback (most recent call last):
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/exec_code.py", line 128, in exec_func_with_error_handling
+    result = func()
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/script_runner.py", line 669, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+  File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/app.py", line 2328, in <module>
+    main()
+  File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/app.py", line 949, in main
+    pdf_data = create_pdf_report(data, sim_inflation=inf_val, sim_return=ret_val)
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/caching/cache_utils.py", line 227, in __call__
+    return self._get_or_create_cached_value(args, kwargs, spinner_message)
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/caching/cache_utils.py", line 269, in _get_or_create_cached_value
+    return self._handle_cache_miss(cache, value_key, func_args, func_kwargs)
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/caching/cache_utils.py", line 328, in _handle_cache_miss
+    computed_value = self._info.func(*func_args, **func_kwargs)
+  File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/app.py", line 620, in create_pdf_report
+    pio.write_image(fig_proj_pdf, tmp_pr.name, format="png", width=800, height=400, scale=2)
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/plotly/io/_kaleido.py", line 528, in write_image
+    img_data = to_image(
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/plotly/io/_kaleido.py", line 398, in to_image
+    img_bytes = kaleido.calc_fig_sync(
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/kaleido/__init__.py", line 171, in calc_fig_sync
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/kaleido/_sync_server.py", line 131, in oneshot_async_run
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/kaleido/_sync_server.py", line 122, in run
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/asyncio/runners.py", line 44, in run
+    return loop.run_until_complete(main)
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/asyncio/base_events.py", line 642, in run_until_complete
+    return future.result()
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/kaleido/__init__.py", line 102, in calc_fig
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/kaleido/kaleido.py", line 412, in calc_fig
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/asyncio/tasks.py", line 481, in wait_for
+    return fut.result()
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/kaleido/_kaleido_tab.py", line 323, in _calc_fig
+kaleido._kaleido_tab.JavascriptError: {'result': {'type': 'object', 'subtype': 'error', 'className': 'ReferenceError', 'description': 'ReferenceError: kaleido_scopes is not defined\n    at <anonymous>:1:26', 'objectId': '-8489819375060249773.1.1'}, 'exceptionDetails': {'exceptionId': 1, 'text': 'Uncaught', 'lineNumber': 0, 'columnNumber': 25, 'scriptId': '14', 'stackTrace': {'callFrames': [{'functionName': '', 'scriptId': '14', 'url': '', 'lineNumber': 0, 'columnNumber': 25}]}, 'exception': {'type': 'object', 'subtype': 'error', 'className': 'ReferenceError', 'description': 'ReferenceError: kaleido_scopes is not defined\n    at <anonymous>:1:26', 'objectId': '-8489819375060249773.1.2'}}}
+Raising error on Retirement_Projection.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Retirement_Projection.png
+Raising error on Retirement_Projection.png
+Raising error on Retirement_Projection.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Retirement_Projection.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Retirement_Projection.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Retirement_Projection.png
+2026-01-29 22:04:28.337 Uncaught app execution
+Traceback (most recent call last):
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/state/session_state.py", line 469, in __getitem__
+    return self._getitem(widget_id, key)
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/state/session_state.py", line 517, in _getitem
+    raise KeyError
+KeyError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/state/session_state_proxy.py", line 130, in __getattr__
+    return self[key]
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/state/session_state_proxy.py", line 101, in __getitem__
+    return get_session_state()[key]
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/state/safe_session_state.py", line 104, in __getitem__
+    return self._state[key]
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/state/session_state.py", line 471, in __getitem__
+    raise KeyError(_missing_key_error_message(key))
+KeyError: 'st.session_state has no key "annual_list_demo". Did you forget to initialize it? More info: https://docs.streamlit.io/develop/concepts/architecture/session-state#initialization'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/exec_code.py", line 128, in exec_func_with_error_handling
+    result = func()
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/script_runner.py", line 669, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+  File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/app.py", line 2409, in <module>
+    main()
+  File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/app.py", line 1540, in main
+    total_ann_header = sum(float(i.get("amount", 0)) for i in st.session_state.annual_list_demo)
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/state/session_state_proxy.py", line 132, in __getattr__
+    raise AttributeError(_missing_attr_error_message(key))
+AttributeError: st.session_state has no attribute "annual_list_demo". Did you forget to initialize it? More info: https://docs.streamlit.io/develop/concepts/architecture/session-state#initialization
+Raising error on Retirement_Projection.png
+2026-01-29 22:06:26.068 Uncaught app execution
+Traceback (most recent call last):
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/state/session_state.py", line 469, in __getitem__
+    return self._getitem(widget_id, key)
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/state/session_state.py", line 517, in _getitem
+    raise KeyError
+KeyError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/state/session_state_proxy.py", line 130, in __getattr__
+    return self[key]
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/state/session_state_proxy.py", line 101, in __getitem__
+    return get_session_state()[key]
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/state/safe_session_state.py", line 104, in __getitem__
+    return self._state[key]
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/state/session_state.py", line 471, in __getitem__
+    raise KeyError(_missing_key_error_message(key))
+KeyError: 'st.session_state has no key "annual_list_demo". Did you forget to initialize it? More info: https://docs.streamlit.io/develop/concepts/architecture/session-state#initialization'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/exec_code.py", line 128, in exec_func_with_error_handling
+    result = func()
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/script_runner.py", line 669, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+  File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/app.py", line 2409, in <module>
+    main()
+  File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/app.py", line 1540, in main
+    total_ann_header = sum(float(i.get("amount", 0)) for i in st.session_state.annual_list_demo)
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/state/session_state_proxy.py", line 132, in __getattr__
+    raise AttributeError(_missing_attr_error_message(key))
+AttributeError: st.session_state has no attribute "annual_list_demo". Did you forget to initialize it? More info: https://docs.streamlit.io/develop/concepts/architecture/session-state#initialization
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Retirement_Projection.png
+Raising error on Retirement_Projection.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Retirement_Projection.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+2026-01-29 22:30:11.969 Script compilation error
+Traceback (most recent call last):
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/script_runner.py", line 571, in _run_script
+    code = self._script_cache.get_bytecode(script_path)
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/script_cache.py", line 72, in get_bytecode
+    filebody = magic.add_magic(filebody, script_path)
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/magic.py", line 45, in add_magic
+    tree = ast.parse(code, script_path, "exec")
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/ast.py", line 50, in parse
+    return compile(source, filename, mode, flags,
+  File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/app.py", line 2425
+    if st.session_state.get("scenarios_list_demo"):
+                                                  ^
+SyntaxError: invalid syntax
+2026-01-29 22:30:12.041 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-01-29 22:30:12.027 Script compilation error
+Traceback (most recent call last):
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/script_runner.py", line 571, in _run_script
+    code = self._script_cache.get_bytecode(script_path)
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/script_cache.py", line 72, in get_bytecode
+    filebody = magic.add_magic(filebody, script_path)
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/magic.py", line 45, in add_magic
+    tree = ast.parse(code, script_path, "exec")
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/ast.py", line 50, in parse
+    return compile(source, filename, mode, flags,
+  File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/app.py", line 2425
+    if st.session_state.get("scenarios_list_demo"):
+                                                  ^
+SyntaxError: invalid syntax
+2026-01-29 22:30:12.042 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Net_Worth_Over_Time.png
+Raising error on Retirement_Projection.png
+Raising error on Retirement_Projection.png
+Raising error on Retirement_Projection.png
