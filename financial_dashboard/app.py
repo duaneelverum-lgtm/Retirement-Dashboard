@@ -2202,58 +2202,6 @@ def main():
         
         # 3. Visualization
         
-        sim_years = list(range(max_years + 1))
-        sim_years = list(range(max_years + 1))
-        # sim_ages = [calc_age + y for y in sim_years] <-- We use base_a now
-        sim_ages = base_a
-        if len(base_a) > len(base_h): sim_ages = base_a[:len(base_h)] # Safety match
-        # Ensure we have enough X points for the chart if base_h was filled
-        if len(sim_ages) < len(base_h):
-             # Extrapolate age
-             sim_ages = [calc_age + (i/12.0) for i in range(len(base_h))]
-        
-        fig_comp = go.Figure()
-        
-        # Base Case
-        fig_comp.add_trace(go.Scatter(
-            x=sim_ages, y=base_h, 
-            name="Current Plan (Base)",
-            line=dict(color="#636EFA", width=2, dash='dot')
-        ))
-        
-        # Scenario Case
-        fig_comp.add_trace(go.Scatter(
-            x=sim_ages, y=scen_h, 
-            name="What-If Scenario",
-            line=dict(color="#00CC96", width=4)
-        ))
-
-        # Add vertical lines for each scenario event
-        for s in st.session_state.get("scenarios_list_demo", []):
-            s_age = s.get("age")
-            if s_age:
-                fig_comp.add_vline(
-                    x=s_age, 
-                    line_width=1, 
-                    line_dash="dash", 
-                    line_color="gray", 
-                    annotation_text=s.get("name", ""), 
-                    annotation_position="top left",
-                    annotation=dict(font=dict(size=12, color="gray"))
-                )
-        
-        fig_comp.update_layout(
-            xaxis_title="Age",
-            yaxis_title="Account Balance",
-            yaxis=dict(tickformat='$,.0f'),
-            hovermode="x unified",
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
-            margin=dict(l=20, r=50, t=10, b=20),
-            height=450,
-            font=dict(size=14)
-        )
-        
-        # Add Retirement line
         st.markdown(f"### Comparison: Net Worth Over Time")
         
         # --- Missing Sliders Section ---
@@ -2263,9 +2211,7 @@ def main():
              inflation = st.slider("Inflation (%)", 0.0, 10.0, 3.0, 0.1, key="hl_inf_main", help="Projected annual inflation rate")
              annual_return = st.slider("Annual Return (%)", 0.0, 15.0, 5.0, 0.1, key="hl_ret_main", help="Projected annual investment return")
              
-             # Persist for PDF
-             st.session_state["hl_inflation"] = inflation
-             st.session_state["hl_return"] = annual_return
+             # Re-run simulation with slider values
 
              # Re-run simulation with slider values
              base_h, base_a, _, _ = run_financial_simulation(
