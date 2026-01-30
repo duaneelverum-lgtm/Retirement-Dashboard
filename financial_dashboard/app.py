@@ -920,7 +920,7 @@ def main():
             
             if pdf_data:
                 st.download_button(
-                    label="📄 PDF Report", 
+                    label="PDF", 
                     data=pdf_data, 
                     file_name=f"retirement_plan_visual_{datetime.now().strftime('%Y%m%d')}.pdf",
                     mime="application/pdf",
