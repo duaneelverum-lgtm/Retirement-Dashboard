@@ -2202,95 +2202,72 @@ def main():
         
         # 3. Visualization
         
-        st.markdown(f"### Comparison: Net Worth Over Time")
+        # 3. Visualization
+        st.markdown("#### Projected Net Worth")
         
-        # --- Missing Sliders Section ---
-        c_chart, c_vars = st.columns([3, 1])
-        with c_vars:
-             st.markdown("#### Market Variables")
-             inflation = st.slider("Inflation (%)", 0.0, 10.0, 3.0, 0.1, key="hl_inf_main", help="Projected annual inflation rate")
-             annual_return = st.slider("Annual Return (%)", 0.0, 15.0, 5.0, 0.1, key="hl_ret_main", help="Projected annual investment return")
-             
-             # Re-run simulation with slider values
-
-             # Re-run simulation with slider values
-             base_h, base_a, _, _ = run_financial_simulation(
-                 current_age, principal, monthly_income, monthly_expenses, annual_return, inflation,
-                 planned_ret_age, gov, inh, data.get("annual_expenditures", []), 
-                 max_years=max_years, fill_zeros=True
-             )
-             scen_h, scen_a, _, _ = run_financial_simulation(
-                 current_age, principal, monthly_income, monthly_expenses, annual_return, inflation,
-                 planned_ret_age, gov, inh, data.get("annual_expenditures", []),
-                 scenarios=st.session_state.get("scenarios_list_demo", []),
-                 max_years=max_years, fill_zeros=True
-             )
+        fig_comp = go.Figure()
         
-        with c_chart:
-            # 3. Chart Generation (Re-implemented)
-            fig_comp = go.Figure()
-            
-            # Base Plan Line
+        # Base Plan Line
+        fig_comp.add_trace(go.Scatter(
+            x=base_a, 
+            y=base_h,
+            mode='lines',
+            name='Base Plan',
+            line=dict(color='#1f77b4', width=3),
+            hovertemplate="Age: %{x:.1f}<br>Net Worth: $%{y:,.0f}<extra></extra>"
+        ))
+        
+        # Scenario Line (only if scenarios exist)
+        if st.session_state.get("scenarios_list_demo", []):
             fig_comp.add_trace(go.Scatter(
-                x=base_a, 
-                y=base_h,
+                x=scen_a, 
+                y=scen_h,
                 mode='lines',
-                name='Base Plan',
-                line=dict(color='#1f77b4', width=3),
+                name='With Scenarios',
+                line=dict(color='#ff7f0e', width=3, dash='dash'),
                 hovertemplate="Age: %{x:.1f}<br>Net Worth: $%{y:,.0f}<extra></extra>"
             ))
-            
-            # Scenario Line (only if scenarios exist)
-            if st.session_state.get("scenarios_list_demo", []):
-                fig_comp.add_trace(go.Scatter(
-                    x=scen_a, 
-                    y=scen_h,
-                    mode='lines',
-                    name='With Scenarios',
-                    line=dict(color='#ff7f0e', width=3, dash='dash'),
-                    hovertemplate="Age: %{x:.1f}<br>Net Worth: $%{y:,.0f}<extra></extra>"
-                ))
-            
-            # Chart Layout
-            fig_comp.update_layout(
-                title="",
-                xaxis_title="Age",
-                yaxis_title="Net Worth ($)",
-                height=450,
-                hovermode="x unified",
-                legend=dict(
-                    orientation="h",
-                    yanchor="bottom",
-                    y=1.02,
-                    xanchor="right",
-                    x=1
-                ),
-                margin=dict(l=20, r=20, t=30, b=20)
+        
+        # Chart Layout
+        fig_comp.update_layout(
+            title="",
+            xaxis_title="Age",
+            yaxis_title="Net Worth ($)",
+            height=450,
+            hovermode="x unified",
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="right",
+                x=1
+            ),
+            margin=dict(l=20, r=20, t=30, b=20)
+        )
+        
+        # Add Limit Line (Zero)
+        fig_comp.add_shape(
+            type="line",
+            x0=current_age,
+            y0=0,
+            x1=current_age + max_years,
+            y1=0,
+            line=dict(color="red", width=1, dash="dot"),
+        )
+        
+        # Retirement Marker
+        ret_yr = planned_ret_age
+        if ret_yr > current_age and ret_yr < (current_age + max_years):
+            fig_comp.add_vline(
+                x=ret_yr,
+                line_width=2,
+                line_dash="dot",
+                line_color="green",
+                annotation_text="Retirement",
+                annotation_position="top left"
             )
-            
-            # Add Limit Line (Zero)
-            fig_comp.add_shape(
-                type="line",
-                x0=current_age,
-                y0=0,
-                x1=current_age + max_years,
-                y1=0,
-                line=dict(color="red", width=1, dash="dot"),
-            )
-            
-            # Retirement Marker
-            ret_yr = planned_ret_age
-            if ret_yr > current_age and ret_yr < (current_age + max_years):
-                fig_comp.add_vline(
-                    x=ret_yr,
-                    line_width=2,
-                    line_dash="dot",
-                    line_color="green",
-                    annotation_text="Retirement",
-                    annotation_position="top left"
-                )
 
-            st.plotly_chart(fig_comp, use_container_width=True)
+        st.plotly_chart(fig_comp, use_container_width=True)
         
         st.divider()
 
