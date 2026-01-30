@@ -2056,10 +2056,10 @@ def main():
 
             
             # Reverse Calculator Section
-            st.subheader("Reverse Calculator")
-            st.info("💡 **Tip:** Check to see how much more money you can withdraw")
-            
-            with st.container():
+            with st.container(border=True):
+                st.subheader("Reverse Calculator")
+                st.info("💡 **Tip:** Check to see how much more money you can withdraw")
+                
                 col_rev_1, col_rev_2 = st.columns([1, 3])
                 with col_rev_1:
                     target_years_input = st.number_input("For your savings to last (Years):", value=None, step=1, key="hl_target", placeholder="30")
@@ -2097,6 +2097,7 @@ def main():
                         (Total allowable monthly spending: ${best_expenses:,.0f})
                     </div>
                     """, unsafe_allow_html=True)
+
     # --- TAB: What If? ---
     # --- What If Section (Merged) ---
         st.write("") # Padding
