@@ -1917,7 +1917,7 @@ def main():
                 fig_proj.add_vline(x=inherit_age, line_width=1, line_dash="dash", line_color="#a855f7", annotation_text="Inheritance", annotation_position="top right", annotation=dict(y=0.95))
 
             with st.container(border=True):
-                st.markdown("#### Investments Over Time")
+
                 # Display Graph and Sliders side-by-side
                 c_graph, c_vars = st.columns([3, 1])
                 with c_graph:
@@ -2085,7 +2085,7 @@ def main():
         
         # Unified Container for all Scenarios + Chart
         with st.container(border=True):
-            st.markdown("#### Scenarios")
+
             # Custom Row-Based Editor for Single-Click Dropdowns
             if "scenarios_list_demo" not in st.session_state:
                 loaded_scenarios = data.get("scenarios", [])
@@ -2188,7 +2188,7 @@ def main():
                     st.toast("✅ Scenarios saved!", icon="🚀")
                     st.rerun()
 
-            st.divider()
+
 
             # 2. Calculation Logic
             # Run Simulations
@@ -2214,7 +2214,7 @@ def main():
                  )
 
             with c_chart:
-                st.markdown("#### Projected Net Worth")
+
                 fig_comp = go.Figure()
                 
                 # Base Plan Line
