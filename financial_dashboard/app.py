@@ -2289,6 +2289,8 @@ def main():
                     annotation_text="Retirement",
                     annotation_position="top left"
                 )
+
+            st.plotly_chart(fig_comp, use_container_width=True)
         
         st.divider()
 
