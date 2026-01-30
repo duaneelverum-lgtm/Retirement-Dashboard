@@ -628,7 +628,7 @@ def create_pdf_report(data, sim_inflation=3.0, sim_return=5.0):
     for b in current_budget:
         pdf.cell(80, 8, sanitize_for_pdf(b.get("name","")), 1)
         pdf.cell(30, 8, sanitize_for_pdf(b.get("type","")), 1)
-        pdf.cell(40, 8, sanitize_for_pdf(f"${float(b.get('amount',0)):,.2f}"), 1)
+        pdf.cell(40, 8, sanitize_for_pdf(f"${float(b.get('amount',0)):,.0f}"), 1)
         pdf.ln()
     
     pdf.ln(10)
@@ -645,7 +645,7 @@ def create_pdf_report(data, sim_inflation=3.0, sim_return=5.0):
     for a in annual_exp_global:
         pdf.cell(80, 8, sanitize_for_pdf(a.get("name","")), 1)
         pdf.cell(30, 8, sanitize_for_pdf(str(a.get("start_age",""))), 1)
-        pdf.cell(40, 8, sanitize_for_pdf(f"${float(a.get('amount',0)):,.2f}"), 1)
+        pdf.cell(40, 8, sanitize_for_pdf(f"${float(a.get('amount',0)):,.0f}"), 1)
         pdf.ln()
 
     return bytes(pdf.output())
@@ -1088,7 +1088,7 @@ def main():
             with c_cpp2:
                 st.markdown(f"""
                 <div style="font-size: 14px; color: rgba(49, 51, 63, 0.6); margin-bottom: 2px;">CPP Amount ($/mo)</div>
-                <div style="font-size: 24px; font-weight: 600; color: #31333F;">${st.session_state.p_cpp_amt_direct:,.2f}</div>
+                <div style="font-size: 24px; font-weight: 600; color: #31333F;">${st.session_state.p_cpp_amt_direct:,.0f}</div>
                 <div style="font-size: 12px; color: rgba(49, 51, 63, 0.4); font-style: italic;">National Average (2025)</div>
                 """, unsafe_allow_html=True)
             
@@ -1104,7 +1104,7 @@ def main():
             with c_oas2:
                 st.markdown(f"""
                 <div style="font-size: 14px; color: rgba(49, 51, 63, 0.6); margin-bottom: 2px;">OAS Amount ($/mo)</div>
-                <div style="font-size: 24px; font-weight: 600; color: #31333F;">${st.session_state.p_oas_amt_direct:,.2f}</div>
+                <div style="font-size: 24px; font-weight: 600; color: #31333F;">${st.session_state.p_oas_amt_direct:,.0f}</div>
                 <div style="font-size: 12px; color: rgba(49, 51, 63, 0.4); font-style: italic;">National Average (2025)</div>
                 """, unsafe_allow_html=True)
 
@@ -1261,15 +1261,15 @@ def main():
              """, unsafe_allow_html=True)
 
              col_metric1, col_metric2, col_metric3, col_metric4 = st.columns(4, gap="large")
-             col_metric1.metric("Total Assets", f"${assets:,.2f}")
-             col_metric2.metric("Total Liabilities", f"${liabilities:,.2f}")
+             col_metric1.metric("Total Assets", f"${assets:,.0f}")
+             col_metric2.metric("Total Liabilities", f"${liabilities:,.0f}")
              
              if len(df_hist_metrics) > 1:
-                 col_metric3.metric("Net Worth", f"${net_worth:,.2f}", f"${growth:,.2f}")
+                 col_metric3.metric("Net Worth", f"${net_worth:,.0f}", f"${growth:,.0f}")
              else:
-                 col_metric3.metric("Net Worth", f"${net_worth:,.2f}")
+                 col_metric3.metric("Net Worth", f"${net_worth:,.0f}")
                  
-             col_metric4.metric("Extra Monthly Cash", f"${net_cashflow_global:,.2f}")
+             col_metric4.metric("Extra Monthly Cash", f"${net_cashflow_global:,.0f}")
              
 
 
@@ -1300,7 +1300,7 @@ def main():
                 line=dict(color='#0068c9', width=3),
                 marker=dict(size=12, color='#0068c9'),
                 fillcolor='rgba(0, 104, 201, 0.2)',
-                hovertemplate='<b>%{x}</b><br>Net Worth: $%{y:,.2f}<extra></extra>'
+                hovertemplate='<b>%{x}</b><br>Net Worth: $%{y:,.0f}<extra></extra>'
             ))
             
             fig_hist.update_layout(
@@ -1507,7 +1507,7 @@ def main():
                 cat_val = r_cols_i[1].text_input("Notes", value="", placeholder=row.get("category", "") or "Notes", key=f"i_cat_demo_{idx}", label_visibility="collapsed")
                 new_cat = cat_val if cat_val else row.get("category", "")
                 
-                amt_val = r_cols_i[2].number_input("Amount", value=None, placeholder="5,000.00" if float(row['amount']) == 0 else f"{float(row['amount']):.2f}", key=f"i_amt_demo_{idx}", label_visibility="collapsed", format="%.2f")
+                amt_val = r_cols_i[2].number_input("Amount", value=None, placeholder="5,000" if float(row['amount']) == 0 else f"{float(row['amount']):.0f}", key=f"i_amt_demo_{idx}", label_visibility="collapsed", format="%.0f")
                 new_amt = amt_val if amt_val is not None else float(row["amount"])
                 
                 if r_cols_i[3].button("🗑️", key=f"i_del_inc_demo_{idx}"): to_delete_income = idx
@@ -1545,7 +1545,7 @@ def main():
                 cat_val = r_cols_e[1].text_input("Cat", value="", placeholder=row.get("category", "") or "Category", key=f"e_cat_demo_{idx}", label_visibility="collapsed")
                 new_cat = cat_val if cat_val else row.get("category", "")
                 
-                amt_val = r_cols_e[2].number_input("Amt", value=None, placeholder="2,000.00" if float(row['amount']) == 0 else f"{float(row['amount']):.2f}", key=f"e_amt_demo_{idx}", label_visibility="collapsed", format="%.2f")
+                amt_val = r_cols_e[2].number_input("Amt", value=None, placeholder="2,000" if float(row['amount']) == 0 else f"{float(row['amount']):.0f}", key=f"e_amt_demo_{idx}", label_visibility="collapsed", format="%.0f")
                 new_amt = amt_val if amt_val is not None else float(row["amount"])
                 
                 freq_opts = ["Monthly", "Annually"]
@@ -1591,7 +1591,7 @@ def main():
                 name_val = r_cols_a[0].text_input("Name", value="", placeholder=row["name"] or "Activity", key=f"ann_n_demo_{idx}", label_visibility="collapsed")
                 a_name = name_val if name_val else row["name"]
                 
-                amt_val = r_cols_a[1].number_input("Amt", value=None, placeholder="5,000.00" if float(row['amount']) == 0 else f"{float(row['amount']):.2f}", key=f"ann_a_demo_{idx}", label_visibility="collapsed", format="%.2f")
+                amt_val = r_cols_a[1].number_input("Amt", value=None, placeholder="5,000" if float(row['amount']) == 0 else f"{float(row['amount']):.0f}", key=f"ann_a_demo_{idx}", label_visibility="collapsed", format="%.0f")
                 a_amt = amt_val if amt_val is not None else float(row["amount"])
                 
                 ann_f_opts = ["One-time", "Every Year", "Every 2 Years", "Every 5 Years", "Every 10 Years"]
@@ -1633,7 +1633,7 @@ def main():
                 
                 try: curr_bal = float(row.get("balance", 0.0))
                 except: curr_bal = 0.0
-                bal_val = r_cols_ass[1].number_input("Balance", value=None, placeholder=f"{curr_bal:.2f}", key=f"a_bal_cmb_{idx}", label_visibility="collapsed", format="%.2f")
+                bal_val = r_cols_ass[1].number_input("Balance", value=None, placeholder=f"{curr_bal:.0f}", key=f"a_bal_cmb_{idx}", label_visibility="collapsed", format="%.0f")
                 a_bal = bal_val if bal_val is not None else curr_bal
                 
                 if r_cols_ass[2].button("🗑️", key=f"a_del_cmb_{idx}"): to_delete_asset = idx
@@ -1670,7 +1670,7 @@ def main():
                 
                 try: curr_l_bal = float(row.get("balance", 0.0))
                 except: curr_l_bal = 0.0
-                bal_val = r_cols_lia[1].number_input("Balance", value=None, placeholder=f"{curr_l_bal:.2f}", key=f"l_bal_cmb_{idx}", label_visibility="collapsed", format="%.2f")
+                bal_val = r_cols_lia[1].number_input("Balance", value=None, placeholder=f"{curr_l_bal:.0f}", key=f"l_bal_cmb_{idx}", label_visibility="collapsed", format="%.0f")
                 l_bal = bal_val if bal_val is not None else curr_l_bal
                 
                 if r_cols_lia[2].button("🗑️", key=f"l_del_cmb_{idx}"): to_delete_liab = idx
@@ -1742,20 +1742,20 @@ def main():
         # Row 1: Cashflow
         st.markdown("##### Monthly Cashflow")
         c1, c2, c3 = st.columns(3)
-        c1.metric("Total Income", f"${subtotal_income:,.2f}")
-        c2.metric("Total Expenses", f"${sub_exp_monthly:,.2f}", delta_color="inverse")
+        c1.metric("Total Income", f"${subtotal_income:,.0f}")
+        c2.metric("Total Expenses", f"${sub_exp_monthly:,.0f}", delta_color="inverse")
         net_cash_live = subtotal_income - sub_exp_monthly
-        c3.metric("Net Cashflow", f"${net_cash_live:,.2f}", delta=f"{'Surplus' if net_cash_live >= 0 else 'Deficit'}", delta_color="normal" if net_cash_live >= 0 else "inverse")
+        c3.metric("Net Cashflow", f"${net_cash_live:,.0f}", delta=f"{'Surplus' if net_cash_live >= 0 else 'Deficit'}", delta_color="normal" if net_cash_live >= 0 else "inverse")
         
         st.divider()
         
         # Row 2: Net Worth
         st.markdown("##### Net Worth")
         n1, n2, n3 = st.columns(3)
-        n1.metric("Total Assets", f"${subtotal_assets:,.2f}")
-        n2.metric("Total Liabilities", f"${subtotal_liabilities:,.2f}", delta_color="inverse")
+        n1.metric("Total Assets", f"${subtotal_assets:,.0f}")
+        n2.metric("Total Liabilities", f"${subtotal_liabilities:,.0f}", delta_color="inverse")
         net_worth_val = subtotal_assets - subtotal_liabilities
-        n3.metric("Total Net Worth", f"${net_worth_val:,.2f}")
+        n3.metric("Total Net Worth", f"${net_worth_val:,.0f}")
 
         
 
@@ -2002,9 +2002,9 @@ def main():
                 st.markdown("#### Financial Inputs")
                 st.markdown(f"""
                 <div style="font-size:14px; margin-bottom: 5px;">
-                <b>Work Income / Salary:</b> ${total_income_global:,.2f}<br>
-                <b>Base Monthly Expenses:</b> ${base_monthly_expenses:,.2f}<br>
-                <b>Annuals (Averaged):</b> ${avg_annual_monthly:,.2f}<br>
+                <b>Work Income / Salary:</b> ${total_income_global:,.0f}<br>
+                <b>Base Monthly Expenses:</b> ${base_monthly_expenses:,.0f}<br>
+                <b>Annuals (Averaged):</b> ${avg_annual_monthly:,.0f}<br>
                 <hr style="margin: 5px 0; opacity: 0.3;">
                 <b>Investments:</b> ${principal:,.0f}
                 </div>
@@ -2022,8 +2022,8 @@ def main():
                 st.markdown(f"""
                 <div style="font-size:14px; margin-bottom: 5px;">
                 <b>Current Age:</b> {current_age} &nbsp;|&nbsp; <b>Retire Age:</b> {planned_ret_age}<br>
-                <b>CPP:</b> ${cpp_amount:,.2f}/mo at age {cpp_start_age}<br>
-                <b>OAS:</b> ${oas_amount:,.2f}/mo at age {oas_start_age}<br>
+                <b>CPP:</b> ${cpp_amount:,.0f}/mo at age {cpp_start_age}<br>
+                <b>OAS:</b> ${oas_amount:,.0f}/mo at age {oas_start_age}<br>
                 <b>Inheritance:</b> {inh_str}
                 </div>
                 """, unsafe_allow_html=True)
@@ -2069,8 +2069,8 @@ def main():
                     st.markdown(f"""
                     <div style="background-color: #fff3cd; color: #856404; padding: 15px; border-radius: 5px; border: 1px solid #ffeeba;">
                         <strong>Result:</strong> To last <b>{target_years} years</b>, you can withdraw an additional
-                        <h3 style="margin: 5px 0;">${monthly_withdrawal:,.2f} / month</h3>
-                        (Total allowable monthly spending: ${best_expenses:,.2f})
+                        <h3 style="margin: 5px 0;">${monthly_withdrawal:,.0f} / month</h3>
+                        (Total allowable monthly spending: ${best_expenses:,.0f})
                     </div>
                     """, unsafe_allow_html=True)
     # --- TAB: What If? ---
@@ -2134,7 +2134,7 @@ def main():
                 age_val = r_cols[1].number_input("Age", value=None, placeholder=str(int(row["age"])), min_value=18, max_value=110, key=f"sc_age_demo_{idx}", label_visibility="collapsed")
                 new_age = age_val if age_val is not None else int(row["age"])
                 
-                impact_val = r_cols[2].number_input("Cost", value=None, placeholder="50,000.00" if float(row['impact']) == 0 else f"{float(row['impact']):.2f}", key=f"sc_impact_demo_{idx}", label_visibility="collapsed")
+                impact_val = r_cols[2].number_input("Cost", value=None, placeholder="50,000" if float(row['impact']) == 0 else f"{float(row['impact']):.0f}", key=f"sc_impact_demo_{idx}", label_visibility="collapsed", format="%.0f")
                 new_impact = impact_val if impact_val is not None else float(row["impact"])
                 
                 freq_opts = ["One-time", "Monthly", "Twice per year", "Annually", "Every 2 years", "Every 3 years", "Every 5 years", "Every 10 years", "Until End of Plan"]
