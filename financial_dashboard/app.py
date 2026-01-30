@@ -936,9 +936,6 @@ def main():
     # --- Sidebar: Actions ---
     # --- Sidebar removed as per request ---
 
-
-
-
     # --- Main Dashboard ---
     # Calculate PDF Data (Pre-compute to avoid layout issues)
     pdf_data = None
@@ -946,24 +943,28 @@ def main():
     try:
         inf_val = st.session_state.get("hl_inflation", 3.0)
         ret_val = st.session_state.get("hl_return", 5.0)
-        pdf_data = create_pdf_report(data, sim_inflation=inf_val, sim_return=ret_val)
+        # DEBUG: Isolating source of 'None'
+        # PDF generation temporarily disabled to prevent UI artifact ("None" text)
+        # pdf_data = create_pdf_report(data, sim_inflation=inf_val, sim_return=ret_val)
+        pdf_data = None
     except Exception as e:
         pdf_error = str(e)
-
     # --- Main Dashboard ---
-    col_title, col_clear = st.columns([4, 1.5])
+    col_title, col_btns = st.columns([3, 1])
     with col_title:
         st.title("The Retirement Dashboard")
-    with col_clear:
+    with col_btns:
+        # Spacers to align buttons with the text of the title
+        st.markdown("<div style='height: 25px;'></div>", unsafe_allow_html=True)
         c_reset, c_pdf = st.columns(2)
         with c_reset:
-            if st.button("🗑️ Reset", type="secondary", use_container_width=True, help="Clear all data and results"):
+            if st.button("Reset Dashboard", type="secondary", use_container_width=True, disabled=False, help="Clear all data and results"):
                 confirm_reset_dialog()
 
         with c_pdf:
             if pdf_data:
                 st.download_button(
-                    label="PDF", 
+                    label="📄 Export PDF", 
                     data=pdf_data, 
                     file_name=f"retirement_plan_visual_{datetime.now().strftime('%Y%m%d')}.pdf",
                     mime="application/pdf",
@@ -971,9 +972,9 @@ def main():
                     help="Download the full 4-page visual dashboard report"
                 )
             else:
-                # Show error state
-                err_msg = pdf_error if pdf_error else "Generation failed"
-                st.button("PDF", disabled=True, use_container_width=True, help=f"PDF generation failed: {err_msg}")
+                # Show error state or disabled state
+                err_msg = pdf_error if pdf_error else "Generation disabled"
+                st.button("📄 Export PDF", disabled=True, use_container_width=True, help=f"PDF generation unavailable: {err_msg}")
 
     st.markdown("<br>", unsafe_allow_html=True)
     
