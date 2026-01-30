@@ -643,8 +643,9 @@ def create_pdf_report(data, sim_inflation=3.0, sim_return=5.0):
 
     return bytes(pdf.output())
 
+@st.dialog("Reset Dashboard")
 def confirm_reset_dialog():
-    st.warning("Are you sure you want to reset? This will clear all your data and cannot be undone.")
+    st.write("Are you sure you want to reset? This will clear all your data and cannot be undone.")
     c1, c2 = st.columns(2)
     with c1:
         if st.button("Yes, Reset Everything", type="primary", use_container_width=True):
