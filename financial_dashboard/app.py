@@ -73,6 +73,29 @@ def display_custom_metric(label, value, delta=None, help_text=None):
     </div>
     """, unsafe_allow_html=True)
 
+# Global custom CSS for premium "frames"
+st.markdown("""
+<style>
+    /* Styling for st.container(border=True) to look like premium dashboard cards */
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+        background-color: #ffffff !important;
+        border: 1px solid #f0f2f6 !important;
+        border-radius: 12px !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+        padding: 20px !important;
+        margin-bottom: 15px !important;
+    }
+    
+    /* Remove nested borders and padding around Plotly charts */
+    [data-testid="stPlotlyChart"] {
+        border: none !important;
+        padding: 0 !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+
+
 def save_data(data):
     if DEMO_MODE:
         # In demo mode, save to session state instead of file
@@ -2030,7 +2053,7 @@ def main():
                     """, unsafe_allow_html=True)
                     st.caption("Change these values on the **Profile** tab.")
 
-            st.markdown("---")
+
             
             # Reverse Calculator Section
             st.subheader("Reverse Calculator")
