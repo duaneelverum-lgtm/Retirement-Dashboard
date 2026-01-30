@@ -67,8 +67,8 @@ def display_custom_metric(label, value, delta=None, help_text=None):
 
     st.markdown(f"""
     <div style="margin-bottom: 2px; width: 100%;">
-        <div style="font-size: 12px; font-weight: bold; color: rgba(49, 51, 63, 0.6); margin-bottom: 2px; font-family: 'Source Sans Pro', sans-serif;">{label}</div>
-        <div style="font-size: 21px; font-weight: 700; color: rgb(49, 51, 63); line-height: 1.1; word-wrap: break-word; font-family: 'Source Sans Pro', sans-serif;">{value}</div>
+        <div style="font-size: 14px; font-weight: bold; color: rgba(49, 51, 63, 0.8); margin-bottom: 2px; font-family: 'Source Sans Pro', sans-serif;">{label}</div>
+        <div style="font-size: 25px; font-weight: bold; color: rgb(49, 51, 63); line-height: 1.1; word-wrap: break-word; font-family: 'Source Sans Pro', sans-serif;">{value}</div>
         {delta_html}
     </div>
     """, unsafe_allow_html=True)
@@ -1243,13 +1243,14 @@ def main():
              st.markdown("""
              <style>
              [data-testid="stMetricValue"] {
-                 font-size: 21px !important;
+                 font-size: 25px !important;
+                 font-weight: bold !important;
                  word-wrap: break-word !important;
                  white-space: normal !important;
                  line-height: 1.1 !important;
              }
              [data-testid="stMetricLabel"] {
-                 font-size: 12px !important;
+                 font-size: 14px !important;
                  font-weight: bold !important;
              }
              [data-testid="stMetric"] {
