@@ -1916,118 +1916,119 @@ def main():
             if inherit_amount > 0 and inherit_age > current_age and inherit_age <= (current_age + max_years):
                 fig_proj.add_vline(x=inherit_age, line_width=1, line_dash="dash", line_color="#a855f7", annotation_text="Inheritance", annotation_position="top right", annotation=dict(y=0.95))
 
-            st.markdown("#### Investments Over Time")
-            # Display Graph and Sliders side-by-side
-            c_graph, c_vars = st.columns([3, 1])
-            with c_graph:
-                # Add vertical marker for Retirement
-                if planned_ret_age > current_age:
-                    fig_proj.add_vline(
-                        x=planned_ret_age, 
-                        line_width=2, 
-                        line_dash="dash", 
-                        line_color="rgba(0,0,0,0.3)",
-                        annotation_text="Retire Age", 
-                        annotation_position="top left"
-                    )
+            with st.container(border=True):
+                st.markdown("#### Investments Over Time")
+                # Display Graph and Sliders side-by-side
+                c_graph, c_vars = st.columns([3, 1])
+                with c_graph:
+                    # Add vertical marker for Retirement
+                    if planned_ret_age > current_age:
+                        fig_proj.add_vline(
+                            x=planned_ret_age, 
+                            line_width=2, 
+                            line_dash="dash", 
+                            line_color="rgba(0,0,0,0.3)",
+                            annotation_text="Retire Age", 
+                            annotation_position="top left"
+                        )
 
-                st.plotly_chart(fig_proj, use_container_width=True)
-            with c_vars:
-                st.markdown("<br>", unsafe_allow_html=True) # Spacer
-                st.markdown("##### Market Variables")
+                    st.plotly_chart(fig_proj, use_container_width=True)
+                with c_vars:
+                    # st.markdown("<br>", unsafe_allow_html=True) # Removed spacer
+                    st.markdown("##### Market Variables")
+                    
+                    inflation = st.slider("Inflation (%)", 0.0, 10.0, 3.0, 0.1, key="hl_inflation")
+                    annual_return = st.slider("Annual Return (%)", 0.0, 15.0, 5.0, 0.1, key="hl_return")
+
+                # --- 2. Render Result Box (Middle) ---
+                # st.markdown("<br>", unsafe_allow_html=True) # Removed spacer
                 
-                inflation = st.slider("Inflation (%)", 0.0, 10.0, 3.0, 0.1, key="hl_inflation")
-                annual_return = st.slider("Annual Return (%)", 0.0, 15.0, 5.0, 0.1, key="hl_return")
+                # Result Box Logic
+                years_last = months / 12
+                y_val = int(months // 12)
+                m_val = int(months % 12)
+                
+                # Get First Name for personalization
+                full_name = data.get("personal", {}).get("name", "there")
+                first_name = full_name.split()[0] if full_name else "there"
 
-            # --- 2. Render Result Box (Middle) ---
-            st.markdown("<br>", unsafe_allow_html=True)
-            
-            # Result Box Logic
-            years_last = months / 12
-            y_val = int(months // 12)
-            m_val = int(months % 12)
-            
-            # Get First Name for personalization
-            full_name = data.get("personal", {}).get("name", "there")
-            first_name = full_name.split()[0] if full_name else "there"
+                # Styling based on outcome
+                if not run_out:
+                    # Green box
+                    box_color = "#d4edda"
+                    text_color = "#155724"
+                    border_color = "#c3e6cb"
+                    result_text = "You'll never run out of money!"
+                    sub_text = "Savings grow faster than spending."
+                elif y_val <= 0:
+                    # Immediate warning
+                    box_color = "#f8d7da"
+                    text_color = "#721c24"
+                    border_color = "#f5c6cb"
+                    result_text = "Your money will run out immediately."
+                    sub_text = "Better start saving!"
+                else:
+                    # Warning/Info box (Orange/Blue)
+                    box_color = "#cce5ff"
+                    text_color = "#004085"
+                    border_color = "#b8daff"
+                    result_text = f"Your money runs out in {y_val} years, {m_val} months."
+                    sub_text = f"(Until {datetime.now().year + y_val})"
 
-            # Styling based on outcome
-            if not run_out:
-                # Green box
-                box_color = "#d4edda"
-                text_color = "#155724"
-                border_color = "#c3e6cb"
-                result_text = "You'll never run out of money!"
-                sub_text = "Savings grow faster than spending."
-            elif y_val <= 0:
-                # Immediate warning
-                box_color = "#f8d7da"
-                text_color = "#721c24"
-                border_color = "#f5c6cb"
-                result_text = "Your money will run out immediately."
-                sub_text = "Better start saving!"
-            else:
-                # Warning/Info box (Orange/Blue)
-                box_color = "#cce5ff"
-                text_color = "#004085"
-                border_color = "#b8daff"
-                result_text = f"Your money runs out in {y_val} years, {m_val} months."
-                sub_text = f"(Until {datetime.now().year + y_val})"
-
-            # Result Box HTML (Single Line Flex)
-            st.markdown(f"""
-            <div style="
-                background-color: {box_color};
-                color: {text_color};
-                border: 1px solid {border_color};
-                padding: 8px 10px;
-                border-radius: 5px;
-                text-align: center;
-                margin-bottom: 20px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 10px;
-            ">
-                <span style="font-size: 18px; font-weight: bold;">{result_text}</span>
-                <span style="font-size: 14px; opacity: 0.8;">{sub_text}</span>
-            </div>
-            """, unsafe_allow_html=True)
-
-            # --- 3. Render Inputs & Assumptions (Bottom) ---
-            st.markdown("<br>", unsafe_allow_html=True)
-            c_inputs_btm, col_space_btm, c_assump_btm = st.columns([1, 0.4, 1])
-            
-            with c_inputs_btm:
-                st.markdown("#### Financial Inputs")
+                # Result Box HTML (Single Line Flex)
                 st.markdown(f"""
-                <div style="font-size:14px; margin-bottom: 5px;">
-                <b>Work Income / Salary:</b> ${total_income_global:,.0f}<br>
-                <b>Base Monthly Expenses:</b> ${base_monthly_expenses:,.0f}<br>
-                <b>Annuals (Averaged):</b> ${avg_annual_monthly:,.0f}<br>
-                <hr style="margin: 5px 0; opacity: 0.3;">
-                <b>Investments:</b> ${principal:,.0f}
+                <div style="
+                    background-color: {box_color};
+                    color: {text_color};
+                    border: 1px solid {border_color};
+                    padding: 8px 10px;
+                    border-radius: 5px;
+                    text-align: center;
+                    margin-bottom: 20px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 10px;
+                ">
+                    <span style="font-size: 18px; font-weight: bold;">{result_text}</span>
+                    <span style="font-size: 14px; opacity: 0.8;">{sub_text}</span>
                 </div>
                 """, unsafe_allow_html=True)
-                st.caption("Work income stops at retirement age. Adjust on **Budget** & **Assets** tabs.")
 
-            with c_assump_btm:
-                st.markdown("#### Assumptions")
-                inh_str = "None"
-                if inherit_amount > 0:
-                    inh_str = f"${inherit_amount:,.0f} at age {inherit_age}"
-                    if inherit_type != "Cash / Investments":
-                        inh_str += f" ({inherit_type})"
+                # --- 3. Render Inputs & Assumptions (Bottom) ---
+                # st.markdown("<br>", unsafe_allow_html=True) # Removed spacer
+                c_inputs_btm, col_space_btm, c_assump_btm = st.columns([1, 0.4, 1])
+                
+                with c_inputs_btm:
+                    st.markdown("#### Financial Inputs")
+                    st.markdown(f"""
+                    <div style="font-size:14px; margin-bottom: 5px;">
+                    <b>Work Income / Salary:</b> ${total_income_global:,.0f}<br>
+                    <b>Base Monthly Expenses:</b> ${base_monthly_expenses:,.0f}<br>
+                    <b>Annuals (Averaged):</b> ${avg_annual_monthly:,.0f}<br>
+                    <hr style="margin: 5px 0; opacity: 0.3;">
+                    <b>Investments:</b> ${principal:,.0f}
+                    </div>
+                    """, unsafe_allow_html=True)
+                    st.caption("Work income stops at retirement age. Adjust on **Budget** & **Assets** tabs.")
 
-                st.markdown(f"""
-                <div style="font-size:14px; margin-bottom: 5px;">
-                <b>Current Age:</b> {current_age} &nbsp;|&nbsp; <b>Retire Age:</b> {planned_ret_age}<br>
-                <b>CPP:</b> ${cpp_amount:,.0f}/mo at age {cpp_start_age}<br>
-                <b>OAS:</b> ${oas_amount:,.0f}/mo at age {oas_start_age}<br>
-                <b>Inheritance:</b> {inh_str}
-                </div>
-                """, unsafe_allow_html=True)
-                st.caption("Change these values on the **Profile** tab.")
+                with c_assump_btm:
+                    st.markdown("#### Assumptions")
+                    inh_str = "None"
+                    if inherit_amount > 0:
+                        inh_str = f"${inherit_amount:,.0f} at age {inherit_age}"
+                        if inherit_type != "Cash / Investments":
+                            inh_str += f" ({inherit_type})"
+
+                    st.markdown(f"""
+                    <div style="font-size:14px; margin-bottom: 5px;">
+                    <b>Current Age:</b> {current_age} &nbsp;|&nbsp; <b>Retire Age:</b> {planned_ret_age}<br>
+                    <b>CPP:</b> ${cpp_amount:,.0f}/mo at age {cpp_start_age}<br>
+                    <b>OAS:</b> ${oas_amount:,.0f}/mo at age {oas_start_age}<br>
+                    <b>Inheritance:</b> {inh_str}
+                    </div>
+                    """, unsafe_allow_html=True)
+                    st.caption("Change these values on the **Profile** tab.")
 
             st.markdown("---")
             
