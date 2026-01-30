@@ -769,3 +769,41 @@ Traceback (most recent call last):
     return fut.result()
   File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/kaleido/_kaleido_tab.py", line 323, in _calc_fig
 kaleido._kaleido_tab.JavascriptError: {'result': {'type': 'object', 'subtype': 'error', 'className': 'ReferenceError', 'description': 'ReferenceError: kaleido_scopes is not defined\n    at <anonymous>:1:26', 'objectId': '3589896068498655030.1.1'}, 'exceptionDetails': {'exceptionId': 1, 'text': 'Uncaught', 'lineNumber': 0, 'columnNumber': 25, 'scriptId': '14', 'stackTrace': {'callFrames': [{'functionName': '', 'scriptId': '14', 'url': '', 'lineNumber': 0, 'columnNumber': 25}]}, 'exception': {'type': 'object', 'subtype': 'error', 'className': 'ReferenceError', 'description': 'ReferenceError: kaleido_scopes is not defined\n    at <anonymous>:1:26', 'objectId': '3589896068498655030.1.2'}}}
+2026-01-29 18:33:30.232 Uncaught app execution
+Traceback (most recent call last):
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/exec_code.py", line 128, in exec_func_with_error_handling
+    result = func()
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/script_runner.py", line 669, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+  File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/app.py", line 2369, in <module>
+    main()
+  File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/app.py", line 2267, in main
+    st.session_state["hl_inflation"] = inflation
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/metrics_util.py", line 443, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/state/session_state_proxy.py", line 114, in __setitem__
+    get_session_state()[key] = value
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/state/safe_session_state.py", line 109, in __setitem__
+    self._state[key] = value
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/state/session_state.py", line 533, in __setitem__
+    raise StreamlitAPIException(
+streamlit.errors.StreamlitAPIException: `st.session_state.hl_inflation` cannot be modified after the widget with key `hl_inflation` is instantiated.
+2026-01-29 18:33:30.363 Uncaught app execution
+Traceback (most recent call last):
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/exec_code.py", line 128, in exec_func_with_error_handling
+    result = func()
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/script_runner.py", line 669, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+  File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/app.py", line 2369, in <module>
+    main()
+  File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/app.py", line 2267, in main
+    st.session_state["hl_inflation"] = inflation
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/metrics_util.py", line 443, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/state/session_state_proxy.py", line 114, in __setitem__
+    get_session_state()[key] = value
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/state/safe_session_state.py", line 109, in __setitem__
+    self._state[key] = value
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/state/session_state.py", line 533, in __setitem__
+    raise StreamlitAPIException(
+streamlit.errors.StreamlitAPIException: `st.session_state.hl_inflation` cannot be modified after the widget with key `hl_inflation` is instantiated.

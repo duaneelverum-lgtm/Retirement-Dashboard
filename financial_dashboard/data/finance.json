@@ -117,7 +117,7 @@
   "personal": {
     "name": "John Doe",
     "dob": "1982-05-15",
-    "city": "Seattle",
+    "city": "Vancouver",
     "retirement_age": 65,
     "life_expectancy": 90
   },
