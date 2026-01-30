@@ -2,11 +2,13 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import plotly.io as pio
 import json
 import os
 from datetime import datetime
 import zipfile
 import io
+from fpdf import FPDF
 
 # --- Configuration ---
 st.set_page_config(
@@ -156,7 +158,491 @@ def create_project_backup():
     buffer.seek(0)
     return buffer, f"financial_dashboard_backup_{timestamp}.zip"
 
-@st.dialog("Reset Dashboard?")
+def sanitize_for_pdf(text):
+    """Sanitizes text to ensure it is compatible with FPDF (Latin-1)."""
+    if text is None:
+        return ""
+    text = str(text)
+    # Replace common incompatible characters
+    replacements = {
+        "•": "-",
+        "–": "-",
+        "—": "-",
+        "’": "'",
+        "“": '"',
+        "”": '"',
+        "…": "..."
+    }
+    for old, new in replacements.items():
+        text = text.replace(old, new)
+        
+    # Standardize to Latin-1, replacing unsupported chars (like emojis) with ?
+    return text.encode('latin-1', 'replace').decode('latin-1')
+
+# --- HELPER: Chart Generation Functions ---
+def get_net_worth_history_fig(data, net_worth):
+    """Generates the Net Worth History Figure."""
+    if data["history"]:
+        df_hist_g = pd.DataFrame(data["history"])
+        df_hist_g['date'] = pd.to_datetime(df_hist_g['date'])
+        df_hist_g['date_label'] = df_hist_g['date'].dt.strftime('%b %Y')
+        
+        current_value_g = net_worth
+        max_val_in_data = max(current_value_g, df_hist_g['net_worth'].max()) if not df_hist_g.empty else current_value_g
+        target_million = float(((int(max_val_in_data) // 1000000) + 1) * 1000000)
+        y_min = 0
+        y_max = target_million * 1.1
+
+        fig_hist = go.Figure()
+        fig_hist.add_trace(go.Scatter(
+            x=df_hist_g['date_label'],
+            y=df_hist_g['net_worth'],
+            mode='lines+markers',
+            fill='tozeroy',
+            line=dict(color='#0068c9', width=3),
+            marker=dict(size=12, color='#0068c9'),
+            fillcolor='rgba(0, 104, 201, 0.2)',
+        ))
+        
+        fig_hist.update_layout(
+            title="Net Worth Over Time",
+            xaxis_title="Date",
+            yaxis_title="Net Worth",
+            yaxis_tickformat='$,.0f',
+            yaxis_range=[y_min, y_max],
+            title_font=dict(size=20, color='#31333F'),
+            font=dict(family="sans-serif", size=12, color="#31333F"),
+            margin=dict(l=40, r=40, t=60, b=40),
+            plot_bgcolor='white',
+            paper_bgcolor='white'
+        )
+        return fig_hist
+    return None
+
+def get_projection_fig(years_axis, history_bal, current_age, max_years, y_max_proj, y_dtick, custom_ticks, 
+                       planned_ret_age, is_retired, cpp_start, oas_start, inh_age, inh_amt):
+    """Generates the Projection Figure."""
+    fig_proj = px.line(x=years_axis, y=history_bal, labels={'x': 'Age', 'y': 'Balance'})
+    fig_proj.update_layout(
+        title="Retirement Projection",
+        yaxis=dict(range=[0, y_max_proj], tickformat='$,.0f', dtick=y_dtick),
+        xaxis=dict(
+            range=[current_age, current_age + max_years],
+            tickvals=custom_ticks,
+            tickmode='array',
+            tickangle=0
+        ),
+        margin=dict(l=40, r=40, t=60, b=40),
+        font=dict(size=12),
+        plot_bgcolor='white',
+        paper_bgcolor='white'
+    )
+    
+    # Annotations
+    if not is_retired and planned_ret_age > current_age and planned_ret_age <= (current_age + max_years):
+        fig_proj.add_vline(x=planned_ret_age, line_width=2, line_dash="solid", line_color="#ff2b2b", annotation_text="Retire", annotation_position="top left", annotation=dict(y=0.85))
+
+    if cpp_start > current_age and cpp_start <= (current_age + max_years):
+        fig_proj.add_vline(x=cpp_start, line_width=1, line_dash="dash", line_color="#21c354", annotation_text="CPP", annotation_position="top left", annotation=dict(y=0.90))
+        
+    if oas_start > current_age and oas_start <= (current_age + max_years):
+            fig_proj.add_vline(x=oas_start, line_width=1, line_dash="dash", line_color="#21c354", annotation_text="OAS", annotation_position="top left", annotation=dict(y=0.95))
+
+    if inh_amt > 0 and inh_age > current_age and inh_age <= (current_age + max_years):
+        fig_proj.add_vline(x=inh_age, line_width=1, line_dash="dash", line_color="#a855f7", annotation_text="Inheritance", annotation_position="top right", annotation=dict(y=0.95))
+        
+    return fig_proj
+
+def run_financial_simulation(
+    current_age,
+    principal,
+    monthly_income,
+    monthly_expenses,
+    annual_return,
+    inflation,
+    planned_ret_age,
+    gov_data,
+    inheritance_data,
+    annual_expenditures,
+    scenarios=None,
+    max_years=60,
+    fill_zeros=False
+):
+    import math
+    
+    bal = float(principal)
+    # Convert percentages to decimals
+    curr_return = float(annual_return)
+    curr_inflation = float(inflation)
+    
+    # Setup
+    history_bal = [bal]
+    age_axis = [float(current_age)]
+    
+    c_inc = float(monthly_income)
+    c_exp = float(monthly_expenses)
+    
+    cpp_start_age = gov_data.get("cpp_start_age", 65)
+    cpp_amount = gov_data.get("cpp_amount", 0.0)
+    oas_start_age = gov_data.get("oas_start_age", 65)
+    oas_amount = gov_data.get("oas_amount", 0.0)
+    
+    inh_age = inheritance_data.get("age", 0)
+    inh_amt = inheritance_data.get("amount", 0.0)
+    inh_type = inheritance_data.get("type", "Cash / Investments")
+    inh_sell = inheritance_data.get("sell_property", False)
+    inh_sell_age = inheritance_data.get("sell_age", 0)
+    
+    months_survived = 0
+    ran_out = False
+    
+    total_months = max_years * 12
+    
+    for m in range(1, total_months + 1):
+        months_survived = m
+        age_mo = (current_age * 12) + m
+        age_yr = age_mo / 12.0
+        
+        eff_inc = c_inc
+        # Salary Stop Logic
+        if float(planned_ret_age) > float(current_age) and age_yr >= float(planned_ret_age):
+            eff_inc = 0.0
+            
+        # Pensions
+        if age_mo >= (cpp_start_age * 12): eff_inc += cpp_amount
+        if age_mo >= (oas_start_age * 12): eff_inc += oas_amount
+        
+        # Inheritance
+        if inh_age > 0 and inh_amt > 0:
+            if inh_type == "Cash / Investments" and age_mo == (inh_age * 12):
+                bal += inh_amt
+            elif inh_type == "Property / House" and inh_sell and age_mo == (inh_sell_age * 12):
+                bal += inh_amt
+                
+        # Scenarios
+        if scenarios:
+             for ev in scenarios:
+                e_age = ev.get("age", 0)
+                e_impact = ev.get("impact", 0)
+                e_ret = ev.get("sc_return", 0)
+                e_inf = ev.get("sc_inflation", 0)
+                e_type = ev.get("type", "Cost")
+                e_freq = ev.get("frequency", "One-time")
+                
+                is_trigger = False
+                if e_freq == "One-time": is_trigger = (age_mo == (e_age * 12))
+                elif e_freq in ["Monthly", "Until End of Plan"]: is_trigger = (age_mo >= (e_age * 12))
+                elif e_freq == "Annually": is_trigger = (age_mo >= (e_age * 12)) and ((age_mo - (e_age * 12)) % 12 == 0)
+                elif e_freq == "Twice per year": is_trigger = (age_mo >= (e_age * 12)) and ((age_mo - (e_age * 12)) % 6 == 0)
+                elif e_freq == "Every 2 years": is_trigger = (age_mo >= (e_age * 12)) and ((age_mo - (e_age * 12)) % 24 == 0)
+                elif e_freq == "Every 3 years": is_trigger = (age_mo >= (e_age * 12)) and ((age_mo - (e_age * 12)) % 36 == 0)
+                elif e_freq == "Every 5 years": is_trigger = (age_mo >= (e_age * 12)) and ((age_mo - (e_age * 12)) % 60 == 0)
+                elif e_freq == "Every 10 years": is_trigger = (age_mo >= (e_age * 12)) and ((age_mo - (e_age * 12)) % 120 == 0)
+                
+                if is_trigger:
+                    if e_type in ["Financial Gain", "Income", "Asset"]:
+                        if e_freq == "One-time": bal += e_impact
+                        else: eff_inc += e_impact
+                    else: # Cost
+                        if e_freq == "One-time": bal -= abs(e_impact)
+                        else: eff_inc -= abs(e_impact)
+                    
+                    if e_ret > 0: curr_return = e_ret
+                    if e_inf > 0: curr_inflation = e_inf
+
+        # Interest & Cashflow
+        interest = bal * (curr_return / 100 / 12)
+        bal += interest
+        bal += (eff_inc - c_exp)
+        
+        # Annual Expenditures
+        if m % 12 == 1:
+            age_floor = int(age_yr)
+            for exp in annual_expenditures:
+                 e_amt = float(exp.get("amount", 0.0))
+                 e_freq = exp.get("frequency", "One-time")
+                 e_start = int(exp.get("start_age", 65))
+                 
+                 should_apply = False
+                 if e_freq == "One-time" and age_floor == e_start: should_apply = True
+                 elif e_freq == "Every Year" and age_floor >= e_start: should_apply = True
+                 elif e_freq == "Every 2 Years" and age_floor >= e_start and (age_floor - e_start) % 2 == 0: should_apply = True
+                 elif e_freq == "Every 5 Years" and age_floor >= e_start and (age_floor - e_start) % 5 == 0: should_apply = True
+                 elif e_freq == "Every 10 Years" and age_floor >= e_start and (age_floor - e_start) % 10 == 0: should_apply = True
+                 
+                 if should_apply:
+                     bal -= e_amt
+
+        if bal < 0: bal = 0
+        
+        history_bal.append(bal)
+        age_axis.append(float(current_age + (m / 12.0)))
+        
+        if bal <= 0:
+            ran_out = True
+            if not fill_zeros:
+                break
+            
+        if m % 12 == 0:
+            c_exp *= (1 + curr_inflation / 100)
+
+    # Fill Zeros Logic if requested and we broke out early (only if we didn't use the fill loop above)
+    # The loop above continues if fill_zeros is True because we only break if not fill_zeros.
+    # So if fill_zeros=True, we already have full length unless we ran out and balance stayed 0 (which it does)
+    
+    return history_bal, age_axis, ran_out, months_survived
+    
+
+@st.cache_data(show_spinner=False)
+def create_pdf_report(data, sim_inflation=3.0, sim_return=5.0):
+    """Creates a 4-Page PDF report attempting to mirror the visual dashboard."""
+    import tempfile
+    import math
+
+    pdf = FPDF()
+    
+    # --- PAGE 1: Profile & Metrics ---
+    pdf.add_page()
+    pdf.set_font("Helvetica", "B", 20)
+    pdf.cell(0, 15, sanitize_for_pdf("The Retirement Dashboard"), ln=1, align="C")
+    pdf.set_font("Helvetica", "I", 10)
+    pdf.cell(0, 10, sanitize_for_pdf(f"Report Generated: {datetime.now().strftime('%Y-%m-%d')}"), ln=1, align="C")
+    pdf.ln(5)
+    
+    pdf.set_font("Helvetica", "B", 14)
+    pdf.cell(0, 10, sanitize_for_pdf("1. Profile Summary"), ln=1, fill=False)
+    pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+    pdf.ln(5)
+    
+    personal = data.get("personal", {})
+    gov = data.get("government", {})
+    
+    pdf.set_font("Helvetica", "", 12)
+    # 2-column layout simulation
+    col_width = 90
+    
+    # Left Col (Personal)
+    start_y = pdf.get_y()
+    pdf.cell(col_width, 8, sanitize_for_pdf(f"Name: {personal.get('name', 'N/A')}"), ln=1)
+    pdf.cell(col_width, 8, sanitize_for_pdf(f"Retirement Age: {personal.get('retirement_age', 65)}"), ln=1)
+    pdf.cell(col_width, 8, sanitize_for_pdf(f"Life Expectancy: {personal.get('life_expectancy', 95)}"), ln=1)
+    
+    # Right Col (Gov) - Reset Y, Move X
+    pdf.set_xy(10 + col_width + 10, start_y)
+    pdf.cell(col_width, 8, sanitize_for_pdf(f"CPP Start: {gov.get('cpp_start_age', 65)} (${gov.get('cpp_amount', 0):,.0f}/mo)"), ln=1)
+    pdf.cell(col_width, 8, sanitize_for_pdf(f"OAS Start: {gov.get('oas_start_age', 65)} (${gov.get('oas_amount', 0):,.0f}/mo)"), ln=1)
+    
+    pdf.ln(20)
+    pdf.set_x(10)
+    
+    # High Level Calcs
+    net_worth, assets, liabilities = get_net_worth(data)
+    
+    # Calculate Income/Expenses
+    current_budget = data.get("budget", [])
+    total_income = sum(float(i.get("amount", 0)) for i in current_budget if i.get("type") == "Income")
+    
+    total_expenses = 0.0
+    for item in current_budget:
+        if item["type"] == "Expense":
+            amt = float(item.get("amount", 0))
+            if item.get("frequency") == "Annually": total_expenses += amt / 12
+            else: total_expenses += amt
+    annual_exp_global = data.get("annual_expenditures", [])
+    avg_annual_monthly = sum(float(ann.get("amount", 0.0)) / 12 for ann in annual_exp_global)
+    total_expenses += avg_annual_monthly
+    
+    monthly_cashflow = total_income - total_expenses
+    
+    pdf.set_font("Helvetica", "B", 14)
+    pdf.cell(0, 10, sanitize_for_pdf("Snapshot Metrics"), ln=1)
+    pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+    pdf.ln(5)
+    
+    pdf.set_font("Helvetica", "B", 12)
+    pdf.cell(60, 10, sanitize_for_pdf("Net Worth"), border=1, align="C")
+    pdf.cell(60, 10, sanitize_for_pdf("Monthly Cashflow"), border=1, align="C")
+    pdf.cell(60, 10, sanitize_for_pdf("Est. Nest Egg Need"), border=1, align="C")
+    pdf.ln()
+    pdf.set_font("Helvetica", "", 12)
+    pdf.cell(60, 12, sanitize_for_pdf(f"${net_worth:,.0f}"), border=1, align="C")
+    pdf.cell(60, 12, sanitize_for_pdf(f"${monthly_cashflow:,.0f}"), border=1, align="C")
+    
+    # Quick Nest Egg Calc
+    p_cpp = gov.get("cpp_amount", 0.0)
+    p_oas = gov.get("oas_amount", 0.0)
+    net_spend = max(0, total_expenses - (p_cpp + p_oas))
+    nest_egg = (net_spend * 12) / 0.04
+    pdf.cell(60, 12, sanitize_for_pdf(f"${nest_egg:,.0f}"), border=1, align="C")
+    
+    # --- PAGE 2: The Big Picture (Chart + Tables) ---
+    pdf.add_page()
+    pdf.set_font("Helvetica", "B", 16)
+    pdf.cell(0, 10, sanitize_for_pdf("2. The Big Picture"), ln=1)
+    pdf.ln(5)
+    
+    # CHART: Net Worth History
+    fig_nw = get_net_worth_history_fig(data, net_worth)
+    if fig_nw:
+        # Save temp image
+        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_nw:
+            pio.write_image(fig_nw, tmp_nw.name, format="png", width=800, height=400, scale=2)
+            pdf.image(tmp_nw.name, x=10, w=190)
+            tmp_nw_path = tmp_nw.name
+        # Clean up later or rely on OS temp clean. 
+        # (For strictness we should remove it, but in Streamlit threading it's tricky. 
+        # OS temp is safe enough for "download as is".)
+    
+    pdf.ln(5)
+    
+    # Asset/Liab Tables
+    pdf.set_font("Helvetica", "B", 12)
+    col1_x = 10
+    col2_x = 110
+    
+    # Assets Title
+    pdf.set_xy(col1_x, pdf.get_y())
+    pdf.cell(90, 8, sanitize_for_pdf("Assets"), ln=1)
+    
+    # Assets Table
+    pdf.set_font("Helvetica", "", 10)
+    accs = data.get("accounts", [])
+    assets_l = [a for a in accs if a.get("type") not in ["Liability", "Credit Card", "Loan", "Mortgage"] and a.get("balance", 0) >= 0]
+    
+    # Store Y to align liabilities column
+    top_table_y = pdf.get_y()
+    
+    for a in assets_l:
+        pdf.cell(60, 6, sanitize_for_pdf(a.get("name","")), border=1)
+        pdf.cell(30, 6, sanitize_for_pdf(f"${a.get('balance',0):,.0f}"), border=1, align="R")
+        pdf.ln()
+    
+    # Liabilities Column
+    pdf.set_xy(col2_x, top_table_y - 8) # Move up to title level
+    pdf.set_font("Helvetica", "B", 12)
+    pdf.cell(90, 8, sanitize_for_pdf("Liabilities"), ln=1)
+    
+    pdf.set_xy(col2_x, top_table_y)
+    pdf.set_font("Helvetica", "", 10)
+    liabs = [a for a in accs if a.get("type") in ["Liability", "Credit Card", "Loan", "Mortgage"] or a.get("balance", 0) < 0]
+    
+    for l in liabs:
+        pdf.set_x(col2_x)
+        pdf.cell(60, 6, sanitize_for_pdf(l.get("name","")), border=1)
+        pdf.cell(30, 6, sanitize_for_pdf(f"${abs(l.get('balance',0)):,.0f}"), border=1, align="R")
+        pdf.ln()
+
+    # --- PAGE 3: Projections ---
+    pdf.add_page()
+    pdf.set_font("Helvetica", "B", 16)
+    pdf.cell(0, 10, sanitize_for_pdf("3. How Long Will It Last?"), ln=1)
+    pdf.set_font("Helvetica", "", 10)
+    pdf.cell(0, 6, sanitize_for_pdf(f"Simulation Parameters: Inflation {sim_inflation}%, Return {sim_return}%"), ln=1)
+    pdf.ln(5)
+    
+    # Re-Run Logic for Chart
+    # (Copied minimal logic from dashboard to generate axes)
+    
+    # Calculate Age
+    current_age = 0
+    p_dob_str = personal.get("dob")
+    if p_dob_str:
+        try:
+            p_dob_dt = datetime.strptime(p_dob_str, "%Y-%m-%d").date()
+            today = datetime.now().date()
+            current_age = today.year - p_dob_dt.year - ((today.month, today.day) < (p_dob_dt.month, p_dob_dt.day))
+        except:
+            pass
+    current_age = int(current_age)
+    
+    # Calculate Income/Expenses for Simulation
+    # Note: run_financial_simulation uses monthly_income and monthly_expenses.
+    # total_income is mostly Budget Income.
+    # total_expenses already includes avg_annual_monthly BUT run_financial_simulation handles annuals separately.
+    # We should exclude avg_annual_monthly from the monthly_expenses passed to the simulation.
+    
+    sim_monthly_expenses = total_expenses - avg_annual_monthly
+
+    # Run Simulation
+    sim_bal_arr, sim_yr_arr, ran_out, months_survived = run_financial_simulation(
+        current_age, net_worth, total_income, sim_monthly_expenses, sim_return, sim_inflation,
+        personal.get("retirement_age", 65), gov, data.get("inheritance", {}), annual_exp_global, max_years=60
+    )
+
+    # Generate Chart
+    max_proj = max(sim_bal_arr) if sim_bal_arr else net_worth
+    target_mil = math.ceil(max_proj / 1000000.0) * 1000000.0 if max_proj > 0 else 1000000
+    
+    custom_ticks_p = [current_age]
+    nxt = ((current_age // 5) + 1) * 5
+    for v in range(nxt, current_age + 61, 5): custom_ticks_p.append(v)
+    
+    planned_ret_age = personal.get("retirement_age", 65)
+
+    fig_proj_pdf = get_projection_fig(
+        sim_yr_arr, sim_bal_arr, current_age, 60, target_mil, 1000000 if target_mil > 5000000 else 500000, 
+        custom_ticks_p, planned_ret_age, (current_age >= planned_ret_age),
+        gov.get("cpp_start_age",65), gov.get("oas_start_age",65), 
+        data.get("inheritance",{}).get("age",0), data.get("inheritance",{}).get("amount",0.0)
+    )
+    
+    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_pr:
+        pio.write_image(fig_proj_pdf, tmp_pr.name, format="png", width=800, height=400, scale=2)
+        pdf.image(tmp_pr.name, x=10, w=190)
+    
+    pdf.ln(10)
+    # Result Box
+    final_age_ro = current_age + (months_survived / 12)
+    
+    pdf.set_fill_color(220, 240, 220) if not ran_out else pdf.set_fill_color(240, 220, 220)
+    pdf.rect(10, pdf.get_y(), 190, 20, 'DF')
+    pdf.set_xy(10, pdf.get_y() + 5)
+    pdf.set_font("Helvetica", "B", 14)
+    res_text = f"Money lasts until Age {int(final_age_ro)}" if ran_out else "Money lasts forever (60+ years)"
+    pdf.cell(190, 10, sanitize_for_pdf(res_text), align="C")
+    
+    # --- PAGE 4: Financial Data ---
+    pdf.add_page()
+    pdf.set_font("Helvetica", "B", 16)
+    pdf.cell(0, 10, sanitize_for_pdf("4. Financial Data Inputs"), ln=1)
+    pdf.ln(5)
+    
+    # Re-use table logic from before for Income/Expenses but cleaner
+    pdf.set_font("Helvetica", "B", 12)
+    pdf.cell(0, 8, sanitize_for_pdf("Monthly Budget"), ln=1)
+    
+    pdf.set_font("Helvetica", "B", 10)
+    pdf.cell(80, 8, "Item", 1)
+    pdf.cell(30, 8, "Type", 1)
+    pdf.cell(40, 8, "Amount", 1)
+    pdf.ln()
+    
+    pdf.set_font("Helvetica", "", 10)
+    for b in current_budget:
+        pdf.cell(80, 8, sanitize_for_pdf(b.get("name","")), 1)
+        pdf.cell(30, 8, sanitize_for_pdf(b.get("type","")), 1)
+        pdf.cell(40, 8, sanitize_for_pdf(f"${float(b.get('amount',0)):,.2f}"), 1)
+        pdf.ln()
+    
+    pdf.ln(10)
+    pdf.set_font("Helvetica", "B", 12)
+    pdf.cell(0, 8, sanitize_for_pdf("Annual One-Time Items"), ln=1)
+    
+    pdf.set_font("Helvetica", "B", 10)
+    pdf.cell(80, 8, "Activity", 1)
+    pdf.cell(30, 8, "Age", 1)
+    pdf.cell(40, 8, "Amount", 1)
+    pdf.ln()
+    
+    pdf.set_font("Helvetica", "", 10)
+    for a in annual_exp_global:
+        pdf.cell(80, 8, sanitize_for_pdf(a.get("name","")), 1)
+        pdf.cell(30, 8, sanitize_for_pdf(str(a.get("start_age",""))), 1)
+        pdf.cell(40, 8, sanitize_for_pdf(f"${float(a.get('amount',0)):,.2f}"), 1)
+        pdf.ln()
+
+    return bytes(pdf.output())
+
 def confirm_reset_dialog():
     st.warning("Are you sure you want to reset? This will clear all your data and cannot be undone.")
     c1, c2 = st.columns(2)
@@ -172,7 +658,7 @@ def confirm_reset_dialog():
             # 1. Reset Data Object
             st.session_state["finance_data"] = {
                 "accounts": [], "transactions": [], "history": [], 
-                "personal": {}, "budget": [], "government": {}, "inheritance": {}, "annual_expenditures": []
+                "personal": {}, "budget": [], "government": {}, "inheritance": {}, "annual_expenditures": [], "scenarios": []
             }
             st.rerun()
     with c2:
@@ -414,12 +900,35 @@ def main():
 
 
     # --- Main Dashboard ---
-    col_title, col_clear = st.columns([5, 1])
+    col_title, col_clear = st.columns([4, 1.5])
     with col_title:
         st.title("The Retirement Dashboard")
     with col_clear:
-        if st.button("🗑️ Clear Session", type="secondary", use_container_width=True, help="Clear all data and results"):
-            confirm_reset_dialog()
+        c_reset, c_pdf = st.columns(2)
+        with c_reset:
+            if st.button("🗑️ Reset", type="secondary", use_container_width=True, help="Clear all data and results"):
+                confirm_reset_dialog()
+
+        with c_pdf:
+            # Wrap generation in empty container to suppress rogue "None" output
+            placeholder = st.empty()
+            with placeholder:
+                inf_val = st.session_state.get("hl_inflation", 3.0)
+                ret_val = st.session_state.get("hl_return", 5.0)
+                pdf_data = create_pdf_report(data, sim_inflation=inf_val, sim_return=ret_val)
+            placeholder.empty()
+            
+            if pdf_data:
+                st.download_button(
+                    label="📄 PDF Report", 
+                    data=pdf_data, 
+                    file_name=f"retirement_plan_visual_{datetime.now().strftime('%Y%m%d')}.pdf",
+                    mime="application/pdf",
+                    use_container_width=True,
+                    help="Download the full 4-page visual dashboard report"
+                )
+            else:
+                st.error("PDF Generation Failed")
 
     st.markdown("<br>", unsafe_allow_html=True)
     
@@ -1315,86 +1824,13 @@ def main():
             curr_expenses = (monthly_expenses or 0.0)
             
             history_bal = [balance]
-            years_axis = [0]
             
-            run_out = False
-            months = max_years * 12
-            
-# ... (lines 1603-1785 remain same, I will use precise TargetContent to bridge) ...
-# Actually, I am jumping to line 1591 to insert the fetch logic first, 
-# then I will do a separate call for the graph sliders to keep it clean.
-# Let's DO ONE CALL for the fetch logic at ~line 1591.
-
-            
-            run_out = False
-            months = max_years * 12
-            
-            for m in range(1, max_years * 12 + 1):
-                # Calculate effective income for this month based on age
-                sim_age_months = (current_age * 12) + m
-                sim_age_years = sim_age_months / 12.0
-                
-                # Base Income Logic (Salary vs Pension)
-                # Salary stops at planned_ret_age regardless of current status
-                # Salary/Work Income stops at planned_ret_age ONLY IF it's in the future.
-                # If user is already retired, we assume Budget Income is their recurring retirement income.
-                effective_income = float(curr_income)
-                if float(planned_ret_age) > float(current_age) and sim_age_years >= float(planned_ret_age):
-                    effective_income = 0.0 
-                
-                # Pension Triggers
-                if sim_age_months >= (cpp_start_age * 12):
-                    effective_income += (cpp_amount or 0.0)
-                if sim_age_months >= (oas_start_age * 12):
-                    effective_income += (oas_amount or 0.0)
-                
-                # Inheritance Trigger
-                if inherit_age > 0 and (inherit_amount or 0.0) > 0:
-                    # Case 1: Cash/Investments -> Add at inheritance age
-                    if inherit_type == "Cash / Investments":
-                         if sim_age_months == (inherit_age * 12):
-                             balance += (inherit_amount or 0.0)
-                    
-                    # Case 2: Property -> Add only if selling
-                    elif inherit_type == "Property / House":
-                        if sell_property and sim_age_months == (sell_age * 12):
-                            balance += (inherit_amount or 0.0)
-
-                interest = balance * monthly_return
-                balance += interest
-                balance += (effective_income - curr_expenses)
-                
-                # Subtract Annual Expenditures if it's the right month (e.g. month 1 of the year)
-                if m % 12 == 1:
-                        sim_age_floor = int(sim_age_years)
-                        for exp in data.get("annual_expenditures", []):
-                            e_amt = float(exp.get("amount", 0.0))
-                            e_freq = exp.get("frequency", "One-time")
-                            e_start = int(exp.get("start_age", 65))
-                            
-                            should_apply = False
-                            if e_freq == "One-time" and sim_age_floor == e_start: should_apply = True
-                            elif e_freq == "Every Year" and sim_age_floor >= e_start: should_apply = True
-                            elif e_freq == "Every 2 Years" and sim_age_floor >= e_start and (sim_age_floor - e_start) % 2 == 0: should_apply = True
-                            elif e_freq == "Every 5 Years" and sim_age_floor >= e_start and (sim_age_floor - e_start) % 5 == 0: should_apply = True
-                            elif e_freq == "Every 10 Years" and sim_age_floor >= e_start and (sim_age_floor - e_start) % 10 == 0: should_apply = True
-                            
-                            if should_apply:
-                                balance -= e_amt
-
-                history_bal.append(max(0, balance))
-                # years_axis.append(m / 12) <-- Old "Years from Now" logic
-                years_axis.append(current_age + (m / 12)) # New "Age" logic
-                
-                if balance <= 0:
-                    months = m
-                    run_out = True
-                    break
-                
-                if m % 12 == 0:
-                    # Non-indexed Base Income (Conservative)
-                    # curr_income *= (1.0) 
-                    curr_expenses *= (1 + inflation / 100)
+            history_bal, years_axis, run_out, months = run_financial_simulation(
+                current_age, (principal or 0.0), (monthly_income or 0.0), (monthly_expenses or 0.0), 
+                annual_return, inflation,
+                planned_ret_age, gov, inh, data.get("annual_expenditures", []), 
+                max_years=max_years, fill_zeros=False
+            )
 
                 # Result box moved below chart
 
@@ -1601,36 +2037,13 @@ def main():
                     best_expenses = 0.0
                     for _ in range(20):
                         mid = (low + high) / 2
-                        sim_bal = principal
-                        sim_inc = monthly_income
-                        sim_exp = mid
-                        ok = True
-                        for m in range(1, int(target_years * 12) + 1):
-                            # Effective Income (Base + Pensions)
-                            eff_inc = sim_inc
-                            s_age_mo = (current_age * 12) + m
-                            if s_age_mo >= (cpp_start_age * 12):
-                                eff_inc += cpp_amount
-                            if s_age_mo >= (oas_start_age * 12):
-                                eff_inc += oas_amount
-                            
-                            sim_bal += (sim_bal * monthly_return)
-                            sim_bal += (eff_inc - sim_exp)
-                            
-                            # Subtract Annual Expenditures
-                            if m % 12 == 1:
-                                s_age_floor = int(s_age_mo / 12)
-                                for exp in data.get("annual_expenditures", []):
-                                    if exp.get("frequency") == "One-time" and s_age_floor == exp.get("start_age"): sim_bal -= exp.get("amount", 0)
-                                    elif exp.get("frequency") == "Every Year" and s_age_floor >= exp.get("start_age"): sim_bal -= exp.get("amount", 0)
-                                    # (Simplified for reverse calc to prevent performance hit, basic every year/one-time check)
-
-                            if sim_bal < 0:
-                                ok = False
-                                break
-                            if m % 12 == 0:
-                                # sim_inc *= (1 + inflation / 100)
-                                sim_exp *= (1 + inflation / 100)
+                        # Use helper to test 'mid' expenses
+                        _, _, ran_out, _ = run_financial_simulation(
+                            current_age, principal, monthly_income, mid, annual_return, inflation,
+                            planned_ret_age, gov, inh, data.get("annual_expenditures", []), 
+                            max_years=int(target_years), fill_zeros=False
+                        )
+                        ok = not ran_out
                         
                         if ok:
                             best_expenses = mid # valid, try higher spending
@@ -1766,135 +2179,43 @@ def main():
         st.write("") # Extra padding
 
         # 2. Calculation Logic
-        def run_sim(p_income, p_expenses, p_principal, p_return, p_inflation, events=None):
-            bal = p_principal
-            curr_return = p_return
-            curr_inflation = p_inflation
-            hist = [bal]
-            curr_age_sim = calc_age
-            
-            c_inc = p_income
-            c_exp = p_expenses
-            
-            for m in range(1, max_years * 12 + 1):
-                sim_age_mo = (curr_age_sim * 12) + m
-                sim_age_yr = sim_age_mo / 12.0
-                
-                eff_inc = float(c_inc)
-                if float(planned_ret_age) > float(curr_age_sim) and sim_age_yr >= float(planned_ret_age): 
-                    eff_inc = 0.0
-                
-                # Pensions
-                if sim_age_mo >= (cpp_start_age * 12): eff_inc += cpp_amount
-                if sim_age_mo >= (oas_start_age * 12): eff_inc += oas_amount
-                
-                # Default Inheritance Logic
-                if inherit_age > 0 and inherit_amount > 0:
-                    if inherit_type == "Cash / Investments" and sim_age_mo == (inherit_age * 12):
-                        bal += inherit_amount
-                    elif inherit_type == "Property / House" and sell_property and sim_age_mo == (sell_age * 12):
-                        bal += inherit_amount
-
-                # --- Apply Scenario Events ---
-                if events:
-                    for ev in events:
-                        e_age = ev.get("age", 0)
-                        e_impact = ev.get("impact", 0)
-                        e_ret = ev.get("sc_return", 0)
-                        e_inf = ev.get("sc_inflation", 0)
-                        e_type = ev.get("type", "Expense")
-                        e_freq = ev.get("frequency", "One-time")
-                        
-                        # Check if the event triggers this month
-                        is_trigger = False
-                        if e_freq == "One-time":
-                            is_trigger = (sim_age_mo == (e_age * 12))
-                        elif e_freq in ["Monthly", "Until End of Plan"]:
-                            is_trigger = (sim_age_mo >= (e_age * 12))
-                        elif e_freq == "Annually":
-                            is_trigger = (sim_age_mo >= (e_age * 12)) and ((sim_age_mo - (e_age * 12)) % 12 == 0)
-                        elif e_freq == "Twice per year":
-                            is_trigger = (sim_age_mo >= (e_age * 12)) and ((sim_age_mo - (e_age * 12)) % 6 == 0)
-                        elif e_freq == "Every 2 years":
-                            is_trigger = (sim_age_mo >= (e_age * 12)) and ((sim_age_mo - (e_age * 12)) % 24 == 0)
-                        elif e_freq == "Every 3 years":
-                            is_trigger = (sim_age_mo >= (e_age * 12)) and ((sim_age_mo - (e_age * 12)) % 36 == 0)
-                        elif e_freq == "Every 5 years":
-                            is_trigger = (sim_age_mo >= (e_age * 12)) and ((sim_age_mo - (e_age * 12)) % 60 == 0)
-                        elif e_freq == "Every 10 years":
-                            is_trigger = (sim_age_mo >= (e_age * 12)) and ((sim_age_mo - (e_age * 12)) % 120 == 0)
-
-                        if is_trigger:
-                            # Cashflows
-                            if e_type in ["Financial Gain", "Income", "Asset"]: 
-                                if e_freq == "One-time": bal += e_impact # One-time income hits balance
-                                else: eff_inc += e_impact # Recurring income hits monthly flow
-                            elif e_type in ["Cost", "Expense", "Financial Cost"]: 
-                                if e_freq == "One-time": bal -= abs(e_impact) # One-time expense hits balance
-                                else: eff_inc -= abs(e_impact) # Recurring expense hits monthly flow
-                            else: 
-                                # Fallback: treat as Cost if type is unknown/null
-                                if e_freq == "One-time": bal -= abs(e_impact)
-                                else: eff_inc -= abs(e_impact)
-                            
-                            # Rates (Update if non-zero)
-                            if e_ret > 0: curr_return = e_ret
-                            if e_inf > 0: curr_inflation = e_inf
-                
-                # Standard Growth
-                interest = bal * (curr_return / 100 / 12)
-                bal += interest
-                bal += (eff_inc - c_exp)
-                
-                # Annual Expenditures (Real)
-                if m % 12 == 1:
-                    sim_age_f = int(sim_age_yr)
-                    for exp in data.get("annual_expenditures", []):
-                        e_amt = float(exp.get("amount", 0.0))
-                        e_freq = exp.get("frequency", "One-time")
-                        e_start = int(exp.get("start_age", 65))
-                        
-                        should_apply = False
-                        if e_freq == "One-time" and sim_age_f == e_start: should_apply = True
-                        elif e_freq == "Every Year" and sim_age_f >= e_start: should_apply = True
-                        elif e_freq == "Every 2 Years" and sim_age_f >= e_start and (sim_age_f - e_start) % 2 == 0: should_apply = True
-                        elif e_freq == "Every 5 Years" and sim_age_f >= e_start and (sim_age_f - e_start) % 5 == 0: should_apply = True
-                        elif e_freq == "Every 10 Years" and sim_age_f >= e_start and (sim_age_f - e_start) % 10 == 0: should_apply = True
-                        
-                        if should_apply:
-                            bal -= e_amt
-
-                hist.append(max(0, bal))
-                if bal <= 0 and m < max_years * 12:
-                    hist += [0] * (max_years * 12 - m)
-                    break
-                
-                if m % 12 == 0:
-                    c_exp *= (1 + curr_inflation / 100)
-            
-            return hist
-
         # Run Simulations
-        base_h = run_sim(monthly_income, monthly_expenses, principal, annual_return, inflation)
-        scen_h = run_sim(monthly_income, monthly_expenses, principal, annual_return, inflation, events=st.session_state.get("scenarios_list_demo", []))
+        base_h, base_a, _, _ = run_financial_simulation(
+             current_age, principal, monthly_income, monthly_expenses, annual_return, inflation,
+             planned_ret_age, gov, inh, data.get("annual_expenditures", []), 
+             max_years=max_years, fill_zeros=True
+        )
+        scen_h, scen_a, _, _ = run_financial_simulation(
+             current_age, principal, monthly_income, monthly_expenses, annual_return, inflation,
+             planned_ret_age, gov, inh, data.get("annual_expenditures", []),
+             scenarios=st.session_state.get("scenarios_list_demo", []),
+             max_years=max_years, fill_zeros=True
+        )
         
         # 3. Visualization
         
         sim_years = list(range(max_years + 1))
-        sim_ages = [calc_age + y for y in sim_years]
+        sim_years = list(range(max_years + 1))
+        # sim_ages = [calc_age + y for y in sim_years] <-- We use base_a now
+        sim_ages = base_a
+        if len(base_a) > len(base_h): sim_ages = base_a[:len(base_h)] # Safety match
+        # Ensure we have enough X points for the chart if base_h was filled
+        if len(sim_ages) < len(base_h):
+             # Extrapolate age
+             sim_ages = [calc_age + (i/12.0) for i in range(len(base_h))]
         
         fig_comp = go.Figure()
         
         # Base Case
         fig_comp.add_trace(go.Scatter(
-            x=sim_ages, y=base_h[::12] if len(base_h) > max_years else base_h, 
+            x=sim_ages, y=base_h, 
             name="Current Plan (Base)",
             line=dict(color="#636EFA", width=2, dash='dot')
         ))
         
         # Scenario Case
         fig_comp.add_trace(go.Scatter(
-            x=sim_ages, y=scen_h[::12] if len(scen_h) > max_years else scen_h, 
+            x=sim_ages, y=scen_h, 
             name="What-If Scenario",
             line=dict(color="#00CC96", width=4)
         ))

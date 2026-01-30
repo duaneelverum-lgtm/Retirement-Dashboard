@@ -193,3 +193,4 @@ Traceback (most recent call last):
   File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/app.py", line 855, in main
     {later_content}
 NameError: name 'later_content' is not defined
+  Stopping...
