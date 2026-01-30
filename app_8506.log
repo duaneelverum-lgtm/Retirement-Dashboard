@@ -697,3 +697,75 @@ The parameter "ln" is deprecated since v2.5.2. Instead of ln=1 use new_x=XPos.LM
 
 The parameter "ln" is deprecated since v2.5.2. Instead of ln=1 use new_x=XPos.LMARGIN, new_y=YPos.NEXT.
 
+Raising error on Retirement_Projection.png
+2026-01-29 18:11:53.744 Uncaught app execution
+Traceback (most recent call last):
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/exec_code.py", line 128, in exec_func_with_error_handling
+    result = func()
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/script_runner.py", line 669, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+  File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/app.py", line 2284, in <module>
+    main()
+  File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/app.py", line 919, in main
+    pdf_data = create_pdf_report(data, sim_inflation=inf_val, sim_return=ret_val)
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/caching/cache_utils.py", line 227, in __call__
+    return self._get_or_create_cached_value(args, kwargs, spinner_message)
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/caching/cache_utils.py", line 269, in _get_or_create_cached_value
+    return self._handle_cache_miss(cache, value_key, func_args, func_kwargs)
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/caching/cache_utils.py", line 328, in _handle_cache_miss
+    computed_value = self._info.func(*func_args, **func_kwargs)
+  File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/app.py", line 590, in create_pdf_report
+    pio.write_image(fig_proj_pdf, tmp_pr.name, format="png", width=800, height=400, scale=2)
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/plotly/io/_kaleido.py", line 528, in write_image
+    img_data = to_image(
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/plotly/io/_kaleido.py", line 398, in to_image
+    img_bytes = kaleido.calc_fig_sync(
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/kaleido/__init__.py", line 171, in calc_fig_sync
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/kaleido/_sync_server.py", line 131, in oneshot_async_run
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/kaleido/_sync_server.py", line 122, in run
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/asyncio/runners.py", line 44, in run
+    return loop.run_until_complete(main)
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/asyncio/base_events.py", line 642, in run_until_complete
+    return future.result()
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/kaleido/__init__.py", line 102, in calc_fig
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/kaleido/kaleido.py", line 412, in calc_fig
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/asyncio/tasks.py", line 481, in wait_for
+    return fut.result()
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/kaleido/_kaleido_tab.py", line 323, in _calc_fig
+kaleido._kaleido_tab.JavascriptError: {'result': {'type': 'object', 'subtype': 'error', 'className': 'ReferenceError', 'description': 'ReferenceError: kaleido_scopes is not defined\n    at <anonymous>:1:26', 'objectId': '4532786354763137900.1.1'}, 'exceptionDetails': {'exceptionId': 1, 'text': 'Uncaught', 'lineNumber': 0, 'columnNumber': 25, 'scriptId': '14', 'stackTrace': {'callFrames': [{'functionName': '', 'scriptId': '14', 'url': '', 'lineNumber': 0, 'columnNumber': 25}]}, 'exception': {'type': 'object', 'subtype': 'error', 'className': 'ReferenceError', 'description': 'ReferenceError: kaleido_scopes is not defined\n    at <anonymous>:1:26', 'objectId': '4532786354763137900.1.2'}}}
+Raising error on Retirement_Projection.png
+2026-01-29 18:15:20.423 Uncaught app execution
+Traceback (most recent call last):
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/exec_code.py", line 128, in exec_func_with_error_handling
+    result = func()
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/script_runner.py", line 669, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+  File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/app.py", line 2284, in <module>
+    main()
+  File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/app.py", line 919, in main
+    pdf_data = create_pdf_report(data, sim_inflation=inf_val, sim_return=ret_val)
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/caching/cache_utils.py", line 227, in __call__
+    return self._get_or_create_cached_value(args, kwargs, spinner_message)
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/caching/cache_utils.py", line 269, in _get_or_create_cached_value
+    return self._handle_cache_miss(cache, value_key, func_args, func_kwargs)
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/streamlit/runtime/caching/cache_utils.py", line 328, in _handle_cache_miss
+    computed_value = self._info.func(*func_args, **func_kwargs)
+  File "/Users/Home/Documents/FinancialDashboard/financial_dashboard/app.py", line 590, in create_pdf_report
+    pio.write_image(fig_proj_pdf, tmp_pr.name, format="png", width=800, height=400, scale=2)
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/plotly/io/_kaleido.py", line 528, in write_image
+    img_data = to_image(
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/plotly/io/_kaleido.py", line 398, in to_image
+    img_bytes = kaleido.calc_fig_sync(
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/kaleido/__init__.py", line 171, in calc_fig_sync
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/kaleido/_sync_server.py", line 131, in oneshot_async_run
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/kaleido/_sync_server.py", line 122, in run
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/asyncio/runners.py", line 44, in run
+    return loop.run_until_complete(main)
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/asyncio/base_events.py", line 642, in run_until_complete
+    return future.result()
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/kaleido/__init__.py", line 102, in calc_fig
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/kaleido/kaleido.py", line 412, in calc_fig
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/asyncio/tasks.py", line 481, in wait_for
+    return fut.result()
+  File "/Users/Home/Documents/FinancialDashboard/venv/lib/python3.9/site-packages/kaleido/_kaleido_tab.py", line 323, in _calc_fig
+kaleido._kaleido_tab.JavascriptError: {'result': {'type': 'object', 'subtype': 'error', 'className': 'ReferenceError', 'description': 'ReferenceError: kaleido_scopes is not defined\n    at <anonymous>:1:26', 'objectId': '3589896068498655030.1.1'}, 'exceptionDetails': {'exceptionId': 1, 'text': 'Uncaught', 'lineNumber': 0, 'columnNumber': 25, 'scriptId': '14', 'stackTrace': {'callFrames': [{'functionName': '', 'scriptId': '14', 'url': '', 'lineNumber': 0, 'columnNumber': 25}]}, 'exception': {'type': 'object', 'subtype': 'error', 'className': 'ReferenceError', 'description': 'ReferenceError: kaleido_scopes is not defined\n    at <anonymous>:1:26', 'objectId': '3589896068498655030.1.2'}}}

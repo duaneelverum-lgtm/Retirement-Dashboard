@@ -30,7 +30,14 @@ os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
 
 # --- Data Handling ---
 def load_data():
-    # Return empty structure for Demo to ensure fields are clear
+    try:
+        if os.path.exists(DATA_FILE):
+             with open(DATA_FILE, "r") as f:
+                 return json.load(f)
+    except Exception as e:
+        print(f"Error loading data: {e}")
+
+    # Fallback to empty structure
     return {
         "accounts": [],
         "transactions": [],

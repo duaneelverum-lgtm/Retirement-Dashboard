@@ -1,357 +1,139 @@
 {
   "accounts": [
     {
-      "name": "Billy",
-      "institution": null,
-      "type": "Loan",
-      "balance": 25.0,
-      "id": "liab_1769277155_0_Loan"
-    },
-    {
-      "id": "acc_8",
-      "name": "Inheritance",
-      "institution": "Other",
-      "type": "Other",
-      "balance": 200000.0,
-      "currency": "USD"
-    },
-    {
-      "id": "acc_9",
-      "name": "Inheritance Insurance",
-      "institution": "Other",
-      "type": "Other",
+      "name": "Checking Account",
+      "institution": "Chase",
+      "type": "Bank",
       "balance": 25000.0,
-      "currency": "USD"
+      "currency": "USD",
+      "id": "acc_001"
     },
     {
-      "id": "acc_1769321932_9_Investments",
-      "name": "Ethereum",
-      "institution": "Wealth Simple",
-      "type": "Other",
-      "balance": 4000.0,
-      "currency": ""
-    },
-    {
-      "id": "acc_1",
-      "name": "Fidelity Non-registered",
-      "institution": "Fidelity",
-      "type": "Investments",
-      "balance": 130602.92,
-      "currency": "CAD"
-    },
-    {
-      "id": "acc_2",
-      "name": "Fidelity TFSA",
-      "institution": "Fidelity",
-      "type": "Investments",
-      "balance": 122727.63,
-      "currency": "CAD"
-    },
-    {
-      "id": "acc_3",
-      "name": "Fidelity RRSP",
-      "institution": "Fidelity",
-      "type": "Investments",
-      "balance": 106499.26,
-      "currency": "CAD"
-    },
-    {
-      "id": "acc_4",
-      "name": "Fidelity FHSA",
-      "institution": "Fidelity",
-      "type": "Investments",
-      "balance": 17835.16,
-      "currency": "CAD"
-    },
-    {
-      "id": "acc_5",
-      "name": "Fidelity RRSP (Empty)",
-      "institution": "Fidelity",
-      "type": "Investments",
-      "balance": 0.0,
-      "currency": "CAD"
-    },
-    {
-      "id": "acc_1769128184_6_Investment",
-      "name": "IA",
-      "institution": "",
-      "type": "Investments",
-      "balance": 6700.0,
-      "currency": ""
-    },
-    {
-      "id": "acc_1769135893_7_Investment",
-      "name": "Vancity RRSP",
-      "institution": "Vancity",
-      "type": "Investments",
-      "balance": 24000.0,
-      "currency": ""
-    },
-    {
-      "id": "acc_1769276216_7_Investments",
-      "name": "Beneva",
-      "institution": "Beneva",
-      "type": "Investments",
-      "balance": 101000.0,
-      "currency": ""
-    },
-    {
-      "id": "acc_1769321966_9_Investments",
-      "name": "Sunlife etc",
-      "institution": "WS",
-      "type": "Investments",
-      "balance": 7500.0,
-      "currency": ""
-    },
-    {
-      "id": "acc_6",
-      "name": "BMO Checking",
-      "institution": "BMO",
+      "name": "High Yield Savings",
+      "institution": "Ally",
       "type": "Bank",
-      "balance": 44000.0,
-      "currency": "USD"
+      "balance": 50000.0,
+      "currency": "USD",
+      "id": "acc_002"
     },
     {
-      "id": "acc_7",
-      "name": "CIBC Account",
-      "institution": "CIBC",
-      "type": "Bank",
-      "balance": 11000.0,
-      "currency": "USD"
+      "name": "Vanguard 401k",
+      "institution": "Vanguard",
+      "type": "Investments",
+      "balance": 350000.0,
+      "currency": "USD",
+      "id": "acc_003"
     },
     {
-      "id": "acc_10",
-      "name": "Boat Q",
-      "institution": "Personal",
-      "type": "Assets",
-      "balance": 100000.0,
-      "currency": "USD"
+      "name": "Fidelity Roth IRA",
+      "institution": "Fidelity",
+      "type": "Investments",
+      "balance": 125000.0,
+      "currency": "USD",
+      "id": "acc_004"
     },
     {
-      "id": "acc_11",
-      "name": "Van M",
-      "institution": "Personal",
-      "type": "Assets",
-      "balance": 20000.0,
-      "currency": "USD"
-    },
-    {
-      "id": "acc_1769128259_2_Asset",
-      "name": "Cash",
-      "institution": "Personal",
-      "type": "Assets",
-      "balance": 2400.0,
-      "currency": ""
+      "name": "Robinhood Brokerage",
+      "institution": "Robinhood",
+      "type": "Investments",
+      "balance": 45000.0,
+      "currency": "USD",
+      "id": "acc_005"
     }
   ],
   "transactions": [],
   "history": [
     {
-      "date": "2026-01-22",
-      "net_worth": 694664.97
-    },
-    {
-      "date": "2026-01-23",
-      "net_worth": 592664.97
-    },
-    {
-      "date": "2026-01-24",
-      "net_worth": 571839.97
-    },
-    {
-      "date": "2026-01-25",
-      "net_worth": 571839.97
-    },
-    {
-      "date": "2026-01-26",
-      "net_worth": 571839.97
-    },
-    {
-      "date": "2026-01-27",
-      "net_worth": 571839.97
-    },
-    {
-      "date": "2026-01-28",
-      "net_worth": 571839.97
-    },
-    {
       "date": "2026-01-29",
-      "net_worth": 571839.97
+      "net_worth": 595000.0
     }
   ],
   "budget": [
     {
-      "id": "bud_1769137416_0",
-      "name": "ECU",
-      "category": "Uncategorized",
-      "amount": 750.0,
+      "id": "inc_001",
+      "name": "Salary",
+      "category": "Employment",
+      "amount": 5500.0,
       "type": "Income",
       "frequency": "Monthly"
     },
     {
-      "id": "bud_1769216367_1",
-      "name": "Salary from investments",
-      "category": "monthly",
-      "amount": 2600.0,
-      "type": "Income",
-      "frequency": "Monthly"
-    },
-    {
-      "id": "bud_1769139522_0_exp",
-      "name": "Rent",
-      "category": "General",
-      "amount": 1349.0,
+      "id": "exp_001",
+      "name": "Mortgage",
+      "category": "Housing",
+      "amount": 2500.0,
       "type": "Expense",
       "frequency": "Monthly"
     },
     {
-      "id": "bud_1769139644_1_exp",
-      "name": "Partking",
-      "category": "General",
-      "amount": 125.0,
-      "type": "Expense",
-      "frequency": "Monthly"
-    },
-    {
-      "id": "bud_1769139680_2_exp",
-      "name": "Moorage",
-      "category": "General",
-      "amount": 537.0,
-      "type": "Expense",
-      "frequency": "Monthly"
-    },
-    {
-      "id": "bud_1769139746_3_exp",
+      "id": "exp_002",
       "name": "Groceries",
-      "category": "General",
+      "category": "Living",
+      "amount": 600.0,
+      "type": "Expense",
+      "frequency": "Monthly"
+    },
+    {
+      "id": "exp_003",
+      "name": "Utilities",
+      "category": "Living",
+      "amount": 250.0,
+      "type": "Expense",
+      "frequency": "Monthly"
+    },
+    {
+      "id": "exp_004",
+      "name": "Car Payment",
+      "category": "Transport",
+      "amount": 450.0,
+      "type": "Expense",
+      "frequency": "Monthly"
+    },
+    {
+      "id": "exp_005",
+      "name": "Waitrose",
+      "category": "Living",
+      "amount": 300.0,
+      "type": "Expense",
+      "frequency": "Monthly"
+    },
+    {
+      "id": "exp_006",
+      "name": "Entertainment",
+      "category": "Fun",
       "amount": 400.0,
       "type": "Expense",
       "frequency": "Monthly"
     },
     {
-      "id": "bud_1769139746_4_exp",
-      "name": "Internet",
-      "category": "General",
-      "amount": 45.0,
-      "type": "Expense",
-      "frequency": "Monthly"
-    },
-    {
-      "id": "bud_1769139746_5_exp",
-      "name": "Phone",
-      "category": "General",
-      "amount": 50.0,
-      "type": "Expense",
-      "frequency": "Monthly"
-    },
-    {
-      "id": "bud_1769139746_6_exp",
-      "name": "Heat",
-      "category": "General",
-      "amount": 15.0,
-      "type": "Expense",
-      "frequency": "Monthly"
-    },
-    {
-      "id": "bud_1769139746_7_exp",
-      "name": "Spotify",
-      "category": "General",
-      "amount": 13.0,
-      "type": "Expense",
-      "frequency": "Monthly"
-    },
-    {
-      "id": "bud_1769147021_8_exp",
-      "name": "Health",
-      "category": "General",
-      "amount": 100.0,
-      "type": "Expense",
-      "frequency": "Monthly"
-    },
-    {
-      "id": "bud_1769147021_9_exp",
-      "name": "Watches",
-      "category": "General",
-      "amount": 50.0,
-      "type": "Expense",
-      "frequency": "Monthly"
-    },
-    {
-      "id": "bud_1769147021_10_exp",
-      "name": "Boat Maintenance",
-      "category": "General",
-      "amount": 2000.0,
-      "type": "Expense",
-      "frequency": "Annually"
-    },
-    {
-      "id": "bud_1769149722_11_exp",
-      "name": "Boat insurance",
-      "category": "General",
-      "amount": 600.0,
-      "type": "Expense",
-      "frequency": "Annually"
-    },
-    {
-      "id": "bud_1769149722_12_exp",
-      "name": "Minty",
-      "category": "General",
-      "amount": 2000.0,
+      "id": "exp_007",
+      "name": "Property Tax",
+      "category": "Housing",
+      "amount": 6000.0,
       "type": "Expense",
       "frequency": "Annually"
     }
   ],
   "personal": {
-    "name": "Duane Elverum",
-    "dob": "1962-12-01",
-    "city": "Vancouver",
-    "retirement_age": 68,
-    "life_expectancy": 101
+    "name": "John Doe",
+    "dob": "1982-05-15",
+    "city": "Seattle",
+    "retirement_age": 65,
+    "life_expectancy": 90
   },
   "government": {
-    "cpp_start_age": 70,
-    "cpp_amount": 750.0,
+    "cpp_start_age": 65,
+    "cpp_amount": 1200.0,
     "oas_start_age": 65,
-    "oas_amount": 800.0
+    "oas_amount": 700.0
   },
   "inheritance": {
-    "age": 70,
-    "amount": 200000.0,
+    "age": 54,
+    "amount": 1000000.0,
     "type": "Cash / Investments",
     "sell_property": false,
     "sell_age": 0
   },
   "annual_expenditures": [],
-  "scenarios": [
-    {
-      "id": "scen_1769491151",
-      "name": "Egypt",
-      "age": 64,
-      "type": "Cost",
-      "impact": 10000.0,
-      "sc_return": 0.0,
-      "sc_inflation": 0.0,
-      "frequency": "Annually"
-    },
-    {
-      "id": "scen_1769491441",
-      "name": "Lambo",
-      "age": 70,
-      "type": "Cost",
-      "impact": 100000.0,
-      "sc_return": 0.0,
-      "sc_inflation": 0.0,
-      "frequency": "One-time"
-    },
-    {
-      "id": "scen_1769491601",
-      "name": "McLaren",
-      "age": 75,
-      "type": "Cost",
-      "impact": 100000.0,
-      "sc_return": 0.0,
-      "sc_inflation": 0.0,
-      "frequency": "One-time"
-    }
-  ]
+  "scenarios": []
 }
