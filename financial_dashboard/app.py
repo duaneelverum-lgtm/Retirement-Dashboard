@@ -1250,7 +1250,7 @@ def main():
     # --- TAB: Summary/Big Picture ---
     with tab_summary:
         st.markdown("### ⛰️ The Big Picture")
-        st.info("💡 **Tip:** Please fill out the Profile, Budget, and Assets & Liabilities pages to see the big picture.")
+        st.info("💡 **Tip:** Please fill out the Financial Data page to see the big picture.")
         # Calculate Correct Net Worth (Investments + Other Assets + Inheritance - Liabilities)
         liquid_nw, raw_assets, liabilities = get_net_worth(data)
         inheritance_val = data.get("inheritance", {}).get("amount", 0.0)
