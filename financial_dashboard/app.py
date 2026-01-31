@@ -682,7 +682,7 @@ def create_pdf_report(data, sim_inflation=3.0, sim_return=5.0):
 
     return bytes(pdf.output())
 
-@st.dialog("Reset Dashboard")
+@st.dialog("Reset")
 def confirm_reset_dialog():
     st.write("Are you sure you want to reset? This will clear all your data and cannot be undone.")
     c1, c2 = st.columns(2)
@@ -792,7 +792,7 @@ def render_full_post(post):
 def render_reset_button(key_suffix):
     with st.expander("Reset All Data", expanded=False):
         st.caption("This will clear all inputs and start fresh.")
-        if st.button("Reset Dashboard", key=f"btn_reset_{key_suffix}", type="primary", use_container_width=True):
+        if st.button("Reset", key=f"btn_reset_{key_suffix}", type="primary", use_container_width=True):
             confirm_reset_dialog()
 
 def main():
@@ -958,13 +958,13 @@ def main():
         st.markdown("<div style='height: 25px;'></div>", unsafe_allow_html=True)
         c_reset, c_pdf = st.columns(2)
         with c_reset:
-            if st.button("Reset Dashboard", type="secondary", use_container_width=True, disabled=False, help="Clear all data and results"):
+            if st.button("Reset", type="secondary", use_container_width=True, disabled=False, help="Clear all data and results"):
                 confirm_reset_dialog()
 
         with c_pdf:
             if pdf_data:
                 st.download_button(
-                    label="📄 Export PDF", 
+                    label="📄 PDF", 
                     data=pdf_data, 
                     file_name=f"retirement_plan_visual_{datetime.now().strftime('%Y%m%d')}.pdf",
                     mime="application/pdf",
@@ -974,7 +974,7 @@ def main():
             else:
                 # Show error state or disabled state
                 err_msg = pdf_error if pdf_error else "Generation disabled"
-                st.button("📄 Export PDF", disabled=True, use_container_width=True, help=f"PDF generation unavailable: {err_msg}")
+                st.button("📄 PDF", disabled=True, use_container_width=True, help=f"PDF generation unavailable: {err_msg}")
 
     st.markdown("<br>", unsafe_allow_html=True)
     
@@ -1069,7 +1069,7 @@ def main():
             st.toast("Please add your information to the Financial Data page next", icon="👤")
             st.session_state.profile_save_success = False
 
-        st.info("💡 **Tip:** Start here. Changes on this page will update totals across the site. Your data is not being saved.")
+        st.info("💡 **Tip:** Start here. Changes on this page will update totals across the site. Your data is not being stored.")
         
         personal = data.get("personal", {})
         gov = data.get("government", {})
@@ -1080,7 +1080,7 @@ def main():
             st.markdown("#### Personal Details")
             col1, col2 = st.columns(2)
             with col1:
-                name_input = st.text_input("Full Name", value="", placeholder=personal.get("name", "Enter your name"))
+                name_input = st.text_input("Name", value="", placeholder=personal.get("name", "Enter your name"))
                 name = name_input if name_input else personal.get("name", "")
                 
                 dob_val = None
@@ -1096,10 +1096,10 @@ def main():
                 city = city_input if city_input else personal.get("city", "")
             
             with col2:
-                ret_age_input = st.number_input("Target Retirement Age", value=None, min_value=0, max_value=120, placeholder="55" if not personal.get("retirement_age") else str(personal.get("retirement_age")))
+                ret_age_input = st.number_input("When Do You Want to Retire?", value=None, min_value=0, max_value=120, placeholder="55" if not personal.get("retirement_age") else str(personal.get("retirement_age")))
                 ret_age = ret_age_input if ret_age_input is not None else personal.get("retirement_age")
                 
-                life_exp_input = st.number_input("Plan Until Age (Life Expectancy)", value=None, min_value=0, max_value=120, placeholder=str(personal.get("life_expectancy", 95)))
+                life_exp_input = st.number_input("Life Expectancy", value=None, min_value=0, max_value=120, placeholder=str(personal.get("life_expectancy", 95)))
                 life_exp = life_exp_input if life_exp_input is not None else personal.get("life_expectancy")
 
             st.markdown("---")
@@ -1472,7 +1472,7 @@ def main():
     # --- TAB: Financial Data ---
     with tab_budget:
         st.markdown("### 💰 Financial Data")
-        st.info("💡 **Tip:** Please provide financial information here. This data powers the entire dashboard.")
+        st.info("💡 **Tip:** Please provide financial information here. This data powers the dashboard.")
 
         # ==========================================
         # 1. INITIALIZE SESSION STATE (Budget + Assets)
