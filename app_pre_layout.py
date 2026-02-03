@@ -189,16 +189,15 @@ def inject_select_on_focus():
             /* GLOBAL: Vertically align and style buttons in columns */
             
             /* 1. Target the COLUMN containing the button. 
-               ONLY target columns where we want this specific centered behavior (like trash cans).
-               We use a specific kind/style check to avoid hitting number inputs or radios. */
-            div[data-testid="stColumn"]:has(button[kind="secondary"]):not(:has(input)), 
-            div[data-testid="column"]:has(button[kind="secondary"]):not(:has(input)) {
-                align-self: center !important; 
+               Use 'align-self: center' to position the column in the middle of the row. 
+               Use flexbox on the column itself to center the button within it. */
+            div[data-testid="stColumn"]:has(button), div[data-testid="column"]:has(button) {
+                align-self: center !important; /* Centers the column vertically in the row */
                 display: flex !important;
                 flex-direction: column !important;
-                justify-content: center !important; 
-                align-items: center !important;     
-                height: 100% !important; 
+                justify-content: center !important; /* Centers content vertically in the column */
+                align-items: center !important;     /* Centers content horizontally */
+                height: 100% !important; /* Ensure column takes full height if possible */
             }
 
             /* 2. Remove frames (borders/bg) from the buttons */
@@ -301,37 +300,12 @@ def inject_select_on_focus():
 
 def render_screen_0():
     """Screen 0: Entrance Survey"""
-    # Justification and Scaling CSS
-    st.markdown("""
-        <style>
-            /* Increase font sizes for inputs and labels */
-            .stNumberInput label, .stRadio label, .stCheckbox label, .stTextInput label {
-                font-size: 1.25rem !important;
-                font-weight: 600 !important;
-            }
-            .stNumberInput input, .stRadio div[role="radiogroup"] {
-                font-size: 1.2rem !important;
-            }
-            /* Increase padding between fields (20% increase) */
-            div[data-testid="stNumberInput"], div[data-testid="stTextInput"], 
-            div[data-testid="stRadio"], div[data-testid="stCheckbox"] {
-                margin-bottom: 1.5rem !important;
-            }
-            /* Adjust estimated benefits text - Negative margin to pull closer to field */
-            .est-benefits {
-                text-align: right; 
-                color: gray; 
-                font-size: 1rem; 
-                margin-top: -35px;
-            }
-        </style>
-    """, unsafe_allow_html=True)
-
-    st.markdown("## Profile")
     rc = st.session_state['reset_count']
     
+    st.markdown("## Profile")
+    
     # Load persisted values
-    def_name = st.session_state.get('name', 'Freddy Mercury')
+    def_name = st.session_state.get('name', "Freddy Mercury")
     def_age = st.session_state.get('age', 0)
     def_target = st.session_state.get('target_retirement', 65)
     cpp_stored = st.session_state.get('cpp_contribution', "Yes")
@@ -340,47 +314,54 @@ def render_screen_0():
     
     def_cpp_start = st.session_state.get('cpp_start_age', 65)
     def_oas_start = st.session_state.get('oas_start_age', 65)
+    # Name Input
+    name = st.text_input("Name", value=def_name, key=f"name_input_{rc}")
 
-    # Personal Stats & Benefits
-    # ROW 1: Name
-    name_val = st.text_input("Name", value=def_name, key=f"name_input_{rc}")
-    
-    # ROW 2: Age | Retirement Age
+    # Age and Retirement Age (side by side)
     col1, col2 = st.columns(2)
     with col1:
-        age_val = st.number_input("Current Age", min_value=0, value=def_age, step=1, key=f"age_input_{rc}")
+        age_val = st.number_input("Age", min_value=0, value=def_age, step=1, key=f"age_input_{rc}")
     with col2:
         target_ret_val = st.number_input("Retirement Age", min_value=0, value=def_target, step=1, key=f"target_ret_input_{rc}")
     
-    # ROW 3: CPP Contribution | Retired Toggle
-    col1, col2 = st.columns(2)
-    with col1:
-        cpp_toggle = st.radio("Are you contributing to CPP?", ["Yes", "No"], index=cpp_idx, horizontal=True, key=f"cpp_contrib_input_{rc}")
-    with col2:
-        # Spacer to push checkbox down to align with radio label
-        st.markdown("<div style='height: 32px;'></div>", unsafe_allow_html=True)
-        auto_retired_val = retired_stored
-        if age_val >= target_ret_val:
-            auto_retired_val = True
-        is_retired = st.checkbox("I am retired", value=auto_retired_val, key=f"retired_toggle_{rc}")
+    # CPP Contribution and Retired Toggle (side by side)
+    col3, col4 = st.columns(2)
+    with col3:
+        cpp_toggle = st.radio("CPP Contribution", ["Yes", "No"], index=cpp_idx, horizontal=True, key=f"cpp_contrib_input_{rc}")
+    # Auto-toggle Retired Checkbox based on age vs retirement age
+    auto_retired_val = retired_stored
+    if age_val >= target_ret_val:
+        auto_retired_val = True
+    elif age_val < target_ret_val and retired_stored:
+        # If they were retired but lowered their age or raised retirement age, maybe keep it?
+        # For now, let's keep it simple: if age < retirement age, default to false unless manually checked
+        # But if we want it to be "automatic", we should probably just set it.
+        pass
 
-    # ROW 4: CPP Start Age | OAS Start Age
-    col1, col2 = st.columns(2)
-    with col1:
+    with col4:
+        is_retired = st.checkbox("I am retired", value=auto_retired_val, key=f"retired_toggle_{rc}")
+        if is_retired:
+            # st.caption("✨ Retiree Mode Active") # Removed as per user request
+            pass
+
+    # CPP/OAS Start Ages (side by side)
+    col5, col6 = st.columns(2)
+    with col5:
         cpp_age = st.number_input("When will you take CPP?", min_value=60, max_value=70, value=def_cpp_start, step=1, key=f"cpp_age_input_{rc}")
-    with col2:
+    with col6:
         oas_age = st.number_input("When will you take OAS?", min_value=65, max_value=70, value=def_oas_start, step=1, key=f"oas_age_input_{rc}")
-        
-        # AUTO-CALCULATION OF BENEFITS (Below OAS Age)
-        calc_cpp, calc_oas = get_benefit_calculations(cpp_age, oas_age, cpp_toggle)
-        st.markdown(f"<div class='est-benefits'>"
-                    f"Estimated: CPP ${calc_cpp}/mo | OAS ${calc_oas}/mo"
-                    f"</div>", unsafe_allow_html=True)
+
+    # AUTO-CALCULATION OF BENEFITS
+    calc_cpp, calc_oas = get_benefit_calculations(cpp_age, oas_age, cpp_toggle)
+
+    st.markdown(f"<div style='text-align: right; color: gray; font-size: 0.85em; margin-top: -10px;'>"
+                f"Estimated: CPP ${calc_cpp}/mo | OAS ${calc_oas}/mo"
+                f"</div>", unsafe_allow_html=True)
 
     st.markdown("###")
     
     # SYNC STATE (Auto-save for other tabs)
-    st.session_state['name'] = name_val
+    st.session_state['name'] = name
     st.session_state['age'] = age_val
     st.session_state['target_retirement'] = target_ret_val
     st.session_state['cpp_contribution'] = cpp_toggle
@@ -465,7 +446,6 @@ def render_screen_1():
 
 def render_screen_2():
     """Screen 2: Finances"""
-    st.markdown("## Finances")
     
     # Initialize data structures in session state
     if 'income_rows' not in st.session_state:
@@ -480,6 +460,8 @@ def render_screen_2():
         st.session_state['asset_rows'] = [{'kind': '', 'value': 0}]
     if 'liability_rows' not in st.session_state:
         st.session_state['liability_rows'] = [{'kind': '', 'amount': 0}]
+    
+    st.markdown("## Finances")
     
     # ========== ALL CATEGORIES FRAME ==========
     with st.container(border=True):
@@ -689,7 +671,6 @@ def render_screen_2():
 @st.fragment
 def render_screen_3():
     """Screen 3: The Big Picture & 'What-If' Engine"""
-    st.markdown("## The Big Picture")
     rc = st.session_state.get('reset_count', 0)
     from engine import calculate_trajectory
     import plotly.graph_objects as go
@@ -708,6 +689,8 @@ def render_screen_3():
             width=0
         )
         st.session_state['scroll_to_top'] = False
+
+    st.markdown("## The Big Picture")
     
     # 1. INITIALIZE WHAT-IF STATE
     if 'inflation_rate' not in st.session_state:

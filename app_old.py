@@ -333,7 +333,7 @@ def render_screen_0():
     # Load persisted values
     def_name = st.session_state.get('name', 'Freddy Mercury')
     def_age = st.session_state.get('age', 0)
-    def_target = st.session_state.get('target_retirement', 65)
+    def_target = st.session_state.get('target_retirement', 55)
     cpp_stored = st.session_state.get('cpp_contribution', "Yes")
     cpp_idx = 0 if cpp_stored == "Yes" else 1
     retired_stored = st.session_state.get('is_retired', False)
@@ -467,15 +467,22 @@ def render_screen_2():
     """Screen 2: Finances"""
     st.markdown("## Finances")
     
-    # Initialize data structures in session state
+    # Initialize data structures in session state with defaults
     if 'income_rows' not in st.session_state:
-        st.session_state['income_rows'] = [{'source': '', 'amount': 0}]
+        st.session_state['income_rows'] = [{'source': 'Salary', 'amount': 10000}]
     if 'expense_rows' not in st.session_state:
-        st.session_state['expense_rows'] = [{'kind': '', 'amount': 0, 'frequency': 'Monthly'}]
+        st.session_state['expense_rows'] = [
+            {'kind': 'Rent', 'amount': 3000, 'frequency': 'Monthly'},
+            {'kind': 'Food', 'amount': 1000, 'frequency': 'Monthly'},
+            {'kind': 'Phone', 'amount': 100, 'frequency': 'Monthly'}
+        ]
     if 'bucket_rows' not in st.session_state:
         st.session_state['bucket_rows'] = [{'activity': '', 'amount': 0, 'start_age': None}]
     if 'investment_rows' not in st.session_state:
-        st.session_state['investment_rows'] = [{'name': '', 'balance': 0}]
+        st.session_state['investment_rows'] = [
+            {'name': 'Stocks', 'balance': 100000},
+            {'name': 'Savings', 'balance': 50000}
+        ]
     if 'asset_rows' not in st.session_state:
         st.session_state['asset_rows'] = [{'kind': '', 'value': 0}]
     if 'liability_rows' not in st.session_state:
@@ -492,9 +499,9 @@ def render_screen_2():
         for i, row in enumerate(st.session_state['income_rows']):
             col1, col2, col3 = st.columns([3, 2, 0.5])
             with col1:
-                source = st.text_input("Source", value=row['source'], key=f"income_source_{i}", label_visibility="collapsed", placeholder="Salary, Tips, etc")
+                source = st.text_input("Source", value=row['source'], key=f"income_source_{i}", label_visibility="collapsed", placeholder="Salary")
             with col2:
-                amount = st.number_input("Amount", value=row['amount'], step=1, format="%d", key=f"income_amount_{i}", label_visibility="collapsed", placeholder="Amount")
+                amount = st.number_input("Amount", value=row['amount'], step=1, format="%d", key=f"income_amount_{i}", label_visibility="collapsed", placeholder="10000")
             with col3:
                 if i > 0:
                     if st.button("🗑️", key=f"income_delete_{i}"):
@@ -521,11 +528,11 @@ def render_screen_2():
         for i, row in enumerate(st.session_state['expense_rows']):
             col1, col2, col3, col4 = st.columns([3, 2, 2, 0.5])
             with col1:
-                kind = st.text_input("Kind", value=row['kind'], key=f"expense_kind_{i}", label_visibility="collapsed", placeholder="Rent, Food, Phone, etc")
+                kind = st.text_input("Kind", value=row['kind'], key=f"expense_kind_{i}", label_visibility="collapsed", placeholder="Rent")
             with col2:
                 frequency = st.selectbox("Frequency", ["Monthly", "Annually"], index=0 if row['frequency'] == 'Monthly' else 1, key=f"expense_freq_{i}", label_visibility="collapsed")
             with col3:
-                amount = st.number_input("Amount", value=row['amount'], step=1, format="%d", key=f"expense_amount_{i}", label_visibility="collapsed", placeholder="Amount")
+                amount = st.number_input("Amount", value=row['amount'], step=1, format="%d", key=f"expense_amount_{i}", label_visibility="collapsed", placeholder="3000")
             with col4:
                 if i > 0:
                     if st.button("🗑️", key=f"expense_delete_{i}"):
@@ -549,11 +556,11 @@ def render_screen_2():
         for i, row in enumerate(st.session_state['bucket_rows']):
             col1, col2, col3, col4 = st.columns([3.5, 1.5, 2, 0.5])
             with col1:
-                activity = st.text_input("Activity", value=row['activity'], key=f"bucket_activity_{i}", label_visibility="collapsed", placeholder="Trip, etc.")
+                activity = st.text_input("Activity", value=row['activity'], key=f"bucket_activity_{i}", label_visibility="collapsed", placeholder="Trip")
             with col2:
-                start_age = st.number_input("Age", value=row['start_age'], step=1, format="%d", key=f"bucket_age_{i}", label_visibility="collapsed", placeholder="Age")
+                start_age = st.number_input("Age", value=row['start_age'], step=1, format="%d", key=f"bucket_age_{i}", label_visibility="collapsed", placeholder="65")
             with col3:
-                amount = st.number_input("Amount", value=row['amount'], step=1, format="%d", key=f"bucket_amount_{i}", label_visibility="collapsed", placeholder="Amount")
+                amount = st.number_input("Amount", value=row['amount'], step=1, format="%d", key=f"bucket_amount_{i}", label_visibility="collapsed", placeholder="5000")
             with col4:
                 if i > 0:
                     if st.button("🗑️", key=f"bucket_delete_{i}"):
@@ -580,9 +587,9 @@ def render_screen_2():
         for i, row in enumerate(st.session_state['investment_rows']):
             col1, col2, col3 = st.columns([3, 2, 0.5])
             with col1:
-                name = st.text_input("Name", value=row['name'], key=f"inv_name_{i}", label_visibility="collapsed", placeholder="RSP's, Stocks, Savings, etc.")
+                name = st.text_input("Name", value=row['name'], key=f"inv_name_{i}", label_visibility="collapsed", placeholder="Stocks")
             with col2:
-                balance = st.number_input("Balance", value=row['balance'], step=1, format="%d", key=f"inv_balance_{i}", label_visibility="collapsed", placeholder="Balance")
+                balance = st.number_input("Balance", value=row['balance'], step=1, format="%d", key=f"inv_balance_{i}", label_visibility="collapsed", placeholder="100000")
             with col3:
                 if i > 0:
                     if st.button("🗑️", key=f"inv_delete_{i}"):
@@ -606,9 +613,9 @@ def render_screen_2():
         for i, row in enumerate(st.session_state['asset_rows']):
             col1, col2, col3 = st.columns([3, 2, 0.5])
             with col1:
-                kind = st.text_input("Kind", value=row['kind'], key=f"asset_kind_{i}", label_visibility="collapsed", placeholder="Car, Inheritance, etc.")
+                kind = st.text_input("Kind", value=row['kind'], key=f"asset_kind_{i}", label_visibility="collapsed", placeholder="Car")
             with col2:
-                value = st.number_input("Value", value=row['value'], step=1, format="%d", key=f"asset_value_{i}", label_visibility="collapsed", placeholder="Estimated Value")
+                value = st.number_input("Value", value=row['value'], step=1, format="%d", key=f"asset_value_{i}", label_visibility="collapsed", placeholder="25000")
             with col3:
                 if i > 0:
                     if st.button("🗑️", key=f"asset_delete_{i}"):
@@ -632,9 +639,9 @@ def render_screen_2():
         for i, row in enumerate(st.session_state['liability_rows']):
             col1, col2, col3 = st.columns([3, 2, 0.5])
             with col1:
-                kind = st.text_input("Kind", value=row['kind'], key=f"liab_kind_{i}", label_visibility="collapsed", placeholder="Loans, Credit Cards, etc.")
+                kind = st.text_input("Kind", value=row['kind'], key=f"liab_kind_{i}", label_visibility="collapsed", placeholder="Visa")
             with col2:
-                amount = st.number_input("Amount", value=row['amount'], step=1, format="%d", key=f"liab_amount_{i}", label_visibility="collapsed", placeholder="Amount")
+                amount = st.number_input("Amount", value=row['amount'], step=1, format="%d", key=f"liab_amount_{i}", label_visibility="collapsed", placeholder="5000")
             with col3:
                 if i > 0:
                     if st.button("🗑️", key=f"liab_delete_{i}"):
@@ -881,11 +888,11 @@ def render_screen_3():
             # Adjusted ratio to fill width [Item(3), Cost(1.5), Age(1), Delete(0.3)]
             c1, c2, c3, c4 = st.columns([3, 1.5, 1, 0.3])
             with c1:
-                s_item = st.text_input("Splurge Item", value=item['item'], placeholder="e.g. Lamborghini", key=f"splurge_item_{i}_{rc}", label_visibility="collapsed")
-            with c2:
-                s_cost = st.number_input("Cost ($)", value=item['cost'], step=1000, format="%d", key=f"splurge_cost_{i}_{rc}", label_visibility="collapsed", placeholder="Amount")
+                s_item = st.text_input("Splurge Item", value=item['item'], placeholder="Trip", key=f"splurge_item_{i}_{rc}", label_visibility="collapsed")
+            with col2:
+                s_cost = st.number_input("Cost ($)", value=item['cost'], step=1000, format="%d", key=f"splurge_cost_{i}_{rc}", label_visibility="collapsed", placeholder="20000")
             with c3:
-                s_age_val = st.number_input("Age", value=item['age'], step=1, format="%d", key=f"splurge_age_{i}_{rc}", label_visibility="collapsed", placeholder="Age")
+                s_age_val = st.number_input("Age", value=item['age'], step=1, format="%d", key=f"splurge_age_{i}_{rc}", label_visibility="collapsed", placeholder="65")
             with c4:
                 # First row should check if > 1 for delete functionality or simply just pass if i == 0
                 if i > 0:
@@ -907,12 +914,12 @@ def render_screen_3():
             # allow None for placeholder to show
             amt_val = st.session_state['inheritance_amount']
             if amt_val == 0: amt_val = None
-            st.number_input("Inheritance Amount", value=amt_val, step=5000, key="inheritance_amount", label_visibility="collapsed", placeholder="Inheritance Amount")
+            st.number_input("Inheritance Amount", value=amt_val, step=5000, key="inheritance_amount", label_visibility="collapsed", placeholder="100000")
         with i_col2:
             # allow None for placeholder to show
             age_val = st.session_state['inheritance_age']
             if age_val == 80: age_val = None 
-            st.number_input("Age Received", value=age_val, step=1, key="inheritance_age", label_visibility="collapsed", placeholder="Age of Inheritance")
+            st.number_input("Age Received", value=age_val, step=1, key="inheritance_age", label_visibility="collapsed", placeholder="80")
 
     # 5. The Bottom Line
     st.markdown("### The Bottom Line")
