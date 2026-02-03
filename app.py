@@ -889,7 +889,7 @@ def render_screen_3():
     for item in st.session_state['splurge_items']:
         age = item.get('age', 0)
         label = item.get('item', 'Splurge')
-        if age >= current_age and item.get('cost', 0) > 0:
+        if age and age >= current_age and (item.get('cost') or 0) > 0:
              fig.add_shape(type="line", x0=age, y0=0, x1=age, y1=max_y,
                            line=dict(color="#FF4B4B", width=1, dash="dot"))
              fig.add_annotation(x=age, y=max_y, text=label, showarrow=False, yshift=60, font=dict(color="#FF4B4B"))
@@ -939,7 +939,7 @@ def render_screen_3():
         
         # Add Line Button
         if st.button("➕ Add a Line", key=f"add_splurge_btn_{rc}"):
-            st.session_state['splurge_items'].append({'item': '', 'cost': 0, 'age': st.session_state.get('age', 30) + 10})
+            st.session_state['splurge_items'].append({'item': '', 'cost': None, 'age': None})
             st.rerun()
             
         st.session_state['splurge_items'] = splurge_data
@@ -1010,7 +1010,7 @@ def render_screen_3():
         interest_rate=st.session_state['interest_rate'] / 100,
         inflation_rate=st.session_state['inflation_rate'] / 100,
         is_scenario=True, # Changed to TRUE to include splurges/inheritance
-        splurge_items=st.session_state['splurge_items'],
+        splurge_items=[s for s in st.session_state['splurge_items'] if s.get('cost') is not None and s.get('age') is not None],
         inheritance_amount=st.session_state['inheritance_amount'],
         inheritance_age=st.session_state['inheritance_age'],
         cpp_start_age=cpp_age,
@@ -1033,7 +1033,7 @@ def render_screen_3():
             interest_rate=st.session_state['interest_rate'] / 100,
             inflation_rate=st.session_state['inflation_rate'] / 100,
             is_scenario=True, # Match baseline assumption
-            splurge_items=st.session_state['splurge_items'],
+            splurge_items=[s for s in st.session_state['splurge_items'] if s.get('cost') is not None and s.get('age') is not None],
             inheritance_amount=st.session_state['inheritance_amount'],
             inheritance_age=st.session_state['inheritance_age'],
             cpp_start_age=cpp_age,
