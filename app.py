@@ -29,6 +29,8 @@ st.markdown("""
     /* Hide Streamlit UI Elements */
     [data-testid="stToolbar"] { display: none; }
     [data-testid="stHeader"] { display: none; }
+    [data-testid="stSidebarCollapsedControl"] { display: none; }
+    [data-testid="stSidebar"] { display: none; }
 
     /* Header Stability */
     h1 {
