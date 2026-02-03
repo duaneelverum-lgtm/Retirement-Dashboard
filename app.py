@@ -306,7 +306,6 @@ def render_screen_0():
     def_name = st.session_state.get('name', "Freddy Mercury")
     def_age = st.session_state.get('age', 0)
     def_target = st.session_state.get('target_retirement', 65)
-    def_savings = st.session_state.get('current_savings', 0.00)
     cpp_stored = st.session_state.get('cpp_contribution', "Yes")
     cpp_idx = 0 if cpp_stored == "Yes" else 1
     retired_stored = st.session_state.get('is_retired', False)
@@ -322,9 +321,6 @@ def render_screen_0():
         age_val = st.number_input("Age", min_value=0, value=def_age, step=1, key=f"age_input_{rc}")
     with col2:
         target_ret_val = st.number_input("Retirement Age", min_value=0, value=def_target, step=1, key=f"target_ret_input_{rc}")
-
-    # Current Total Savings
-    savings_val = st.number_input("Current Total Savings", min_value=0, value=int(def_savings), step=1000, format="%d", key=f"savings_input_{rc}")
     
     # CPP Contribution and Retired Toggle (side by side)
     col3, col4 = st.columns(2)
@@ -362,34 +358,20 @@ def render_screen_0():
 
     st.markdown("###")
     
-    # Calibrate & Continue Button
-    # Calibrate & Continue Button
-    nav_placeholder_0 = st.empty()
-    st.markdown("###")
-    # Ratio [2.8, 1] in Left Col (~63% width) results in button width ~1/6 of Page (same as Clear button)
-    col_space, col_btn = st.columns([2.8, 1])
-    with col_btn:
-        if st.button("Next Stage →", type="primary", key=f"calibrate_btn_{rc}", use_container_width=True):
-            # Save to session state
-            st.session_state['name'] = name
-            st.session_state['age'] = age_val
-            st.session_state['target_retirement'] = target_ret_val
-            st.session_state['current_savings'] = savings_val
-            st.session_state['cpp_contribution'] = cpp_toggle
-            st.session_state['is_retired'] = is_retired
-            
-            st.session_state['cpp_start_age'] = cpp_age
-            st.session_state['oas_start_age'] = oas_age
-            
-            # Background calculations
-            st.session_state['oas_benefit'] = calc_oas
-            st.session_state['cpp_benefit'] = calc_cpp
-            st.session_state['max_age'] = 100
-            
-            # st.session_state['flow_stage'] = 1  <-- Removed flow logic
-            st.rerun()
+    # SYNC STATE (Auto-save for other tabs)
+    st.session_state['name'] = name
+    st.session_state['age'] = age_val
+    st.session_state['target_retirement'] = target_ret_val
+    st.session_state['cpp_contribution'] = cpp_toggle
+    st.session_state['is_retired'] = is_retired
+    st.session_state['cpp_start_age'] = cpp_age
+    st.session_state['oas_start_age'] = oas_age
+    
+    # Background calculations
+    st.session_state['oas_benefit'] = calc_oas
+    st.session_state['cpp_benefit'] = calc_cpp
+    st.session_state['max_age'] = 100
 
-    # Nav Placeholder removed
     pass
 
 
@@ -1136,6 +1118,34 @@ st.markdown("<br>", unsafe_allow_html=True)
 # MAIN LAYOUT
 # Tabs for Navigation
 tab_profile, tab_finance, tab_results, tab_read_more = st.tabs(["Profile", "Add Details", "Big Picture", "Read More"])
+
+# PROGRAMMATIC TAB SWITCHER (JS)
+if st.session_state.get('jump_to_tab'):
+    tab_idx = st.session_state['jump_to_tab']
+    st.markdown(f"""
+        <script>
+            (function() {{
+                var pdoc = window.parent.document;
+                function attemptTabClick() {{
+                    var tabs = pdoc.querySelectorAll('button[role="tab"]');
+                    if (tabs.length > {tab_idx}) {{
+                        tabs[{tab_idx}].click();
+                        window.parent.scrollTo(0, 0);
+                        return true;
+                    }}
+                    return false;
+                }}
+                if (!attemptTabClick()) {{
+                    var observer = new MutationObserver(function(mutations, obs) {{
+                        if (attemptTabClick()) {{ obs.disconnect(); }}
+                    }});
+                    observer.observe(pdoc.body, {{ childList: true, subtree: true }});
+                    setTimeout(function() {{ observer.disconnect(); }}, 3000);
+                }}
+            }})();
+        </script>
+    """, unsafe_allow_html=True)
+    st.session_state['jump_to_tab'] = None
 
 with tab_profile:
     left_col, right_col = st.columns([1.72, 1], gap="large")
