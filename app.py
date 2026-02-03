@@ -715,7 +715,7 @@ def render_screen_3():
     if 'interest_rate' not in st.session_state:
         st.session_state['interest_rate'] = 5.0
     if 'splurge_items' not in st.session_state:
-        st.session_state['splurge_items'] = [{'item': '', 'cost': 0, 'age': st.session_state.get('age', 30) + 10}]
+        st.session_state['splurge_items'] = [{'item': '', 'cost': None, 'age': None}]
     if 'inheritance_amount' not in st.session_state:
         st.session_state['inheritance_amount'] = None
     if 'inheritance_age' not in st.session_state:
@@ -883,9 +883,15 @@ def render_screen_3():
             with c1:
                 s_item = st.text_input("Splurge Item", value=item['item'], placeholder="e.g. Lamborghini", key=f"splurge_item_{i}_{rc}", label_visibility="collapsed")
             with c2:
-                s_cost = st.number_input("Cost ($)", value=item['cost'], step=1000, format="%d", key=f"splurge_cost_{i}_{rc}", label_visibility="collapsed", placeholder="Amount")
+                # Use None for value if 0 or None to ensure placeholder "Cost" shows
+                cost_val = item['cost']
+                if cost_val == 0: cost_val = None
+                s_cost = st.number_input("Cost ($)", value=cost_val, step=1000, format="%d", key=f"splurge_cost_{i}_{rc}", label_visibility="collapsed", placeholder="Cost")
             with c3:
-                s_age_val = st.number_input("Age", value=item['age'], step=1, format="%d", key=f"splurge_age_{i}_{rc}", label_visibility="collapsed", placeholder="Age")
+                # Use None for value if 0 or None to ensure placeholder "Age" shows
+                age_val = item['age']
+                if age_val == 0: age_val = None
+                s_age_val = st.number_input("Age", value=age_val, step=1, format="%d", key=f"splurge_age_{i}_{rc}", label_visibility="collapsed", placeholder="Age")
             with c4:
                 # First row should check if > 1 for delete functionality or simply just pass if i == 0
                 if i > 0:
