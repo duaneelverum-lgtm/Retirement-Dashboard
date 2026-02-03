@@ -1045,10 +1045,10 @@ def render_screen_3():
 
     # Encouraging Header mapping
     encouragement = {
-        "BUILDER": "Great job, your nest egg is growing!",
-        "OPTIMIZER": "Excellent progress, your strategy is paying off!",
-        "ENJOYMENT": "Wonderful news, you're living the dream safely!",
-        "LEGACY": "Incredible work, you're building a lasting legacy!",
+        "BUILDER": "Good work, your nest egg is growing",
+        "OPTIMIZER": "Good progress, your strategy is paying off",
+        "ENJOYMENT": "Great news, you're living the dream and have a solid plan",
+        "LEGACY": "Great work, you're building a lasting legacy",
         "CAUTION": "Heads up, let's look at some adjustments."
     }
     
