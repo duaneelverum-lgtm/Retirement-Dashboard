@@ -1152,7 +1152,11 @@ with tab_finance:
         render_blog_sidebar()
 
 with tab_results:
-    render_screen_3()
+    left_col, right_col = st.columns([1.72, 1], gap="large")
+    with left_col:
+        render_screen_3()
+    with right_col:
+        render_blog_sidebar()
 
 with tab_read_more:
     left_col, right_col = st.columns([1.72, 1], gap="large")
