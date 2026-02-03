@@ -873,7 +873,7 @@ def render_screen_3():
         with col2:
             st.slider("Inflation Rate (%)", 0.0, 10.0, value=st.session_state['inflation_rate'], step=0.5, key="inflation_rate")
 
-        st.markdown("#### 🏎️ Future Splurges (Dotted Line)")
+        st.markdown("#### 🏎️ Future Splurges")
         
         # Multi-Splurge Row Logic
         splurge_data = []
@@ -907,7 +907,7 @@ def render_screen_3():
             
         st.session_state['splurge_items'] = splurge_data
 
-        st.markdown("#### ⚓ The Inheritance Anchor")
+        st.markdown("#### ⚓ Future Inheritance")
         i_col1, i_col2 = st.columns(2)
         with i_col1:
             # allow None for placeholder to show
