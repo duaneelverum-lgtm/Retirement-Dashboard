@@ -1024,7 +1024,7 @@ def render_screen_3():
             safe_spend_mo = (safe_spend_mo // 10) * 10
             
             if safe_spend_mo > 100:
-                surplus_msg = f" ** Including splurges, you can spend an extra ${int(safe_spend_mo):,}/mo and still be safe until age 110. ** "
+                surplus_msg = f"Including splurges, you can spend an extra ${int(safe_spend_mo):,}/mo and still be safe until age 110."
     
     
     if final_nw > net_worth:
