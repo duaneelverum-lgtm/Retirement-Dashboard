@@ -1,0 +1,50 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2639
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 # V2 MASTER SPECIFICATION: "THE RETIREMENT DASHBOARD"\
+\
+## I. SYSTEM-WIDE TECHNICAL CONSTRAINTS (NON-NEGOTIABLE)\
+1. **State Initialization:** Every session variable must be defined in `st.session_state` at the top of `app.py`. No "UndefinedVariable" errors allowed.\
+2. **Input Hygiene (Select-on-Focus):** All numeric inputs must use a custom wrapper that auto-selects existing text on click. New entries must REPLACE values, never APPEND (Fixes the 5000050000 bug).\
+3. **Callback Enforcement:** All widgets must update state via `on_change` callbacks. No direct state-writing inside the main script flow.\
+\
+## II. SCREEN-BY-SCREEN ARCHITECTURE\
+\
+### SCREEN 1: THE ENTRANCE WIZARD\
+* **UI:** Multi-step survey; no tabs visible.\
+* **Inputs:** Name, Current Age, Target Retirement, Savings.\
+* **Government Benefit Logic:**\
+    * **OAS:** Default baseline: $728/mo.\
+    * **CPP:** Toggle for "Contributed?" If Yes, use $804/mo baseline.\
+    * **Age-Pivoting:** If Age < 65, label as "Projected." If Age >= 65, move to "Active Cash Flow".\
+* **Routing:** Categorize user: Builder (40-55), Optimizer (55-65), Traveler (65-75), or Cruiser (75+).\
+\
+### SCREEN 2: THE INSIGHT POP-UP (TRANSITION)\
+* **Trigger:** Appears immediately after Wizard submission.\
+* **Content:** Display 3 placeholder blog cards tailored to the user's Age Category.\
+* **Action:** Button labeled "Continue to Financial Data" unlocks the next phase.\
+\
+### SCREEN 3: FINANCIAL DATA (TAB UNLOCK 1)\
+* **Navigation:** Reveal Tabs: **[Start Here]** (persistent) and **[Financial Data]**.\
+* **Structure:**\
+    * **Net Worth:** Split into Personal Property, Depreciating Assets (show current value), and Liabilities.\
+    * **Cash Flow:** Income vs. Expenses with Monthly/Annual toggles.\
+    * **Budgeting:** An optional expander for granular line-item entry.\
+* **Action:** Bottom button: "Take me to the Big Picture".\
+\
+### SCREEN 4: THE BIG PICTURE (TAB UNLOCK 2)\
+* **Navigation:** Reveal all Tabs: **[Start Here]**, **[Financial Data]**, and **[The Big Picture]**.\
+* **Simulation:** Net Worth line graph to age 100 with vertical markers for "Retirement" and "CPP Start".\
+* **Splurge Logic:** User inputs "Age of Splurge" (No frequency inputs). Overlay a dashed scenario line.\
+* **The Verdict:**\
+    * **Pre-Retiree:** Statement on monthly savings gap.\
+    * **Retiree:** Calculate Safe Withdrawal Rate. If spending is low, include "Fun Check": "You can safely spend an extra $X/mo".\
+\
+## III. STOP-WORK VERIFICATION GATES\
+1. **Gate 1:** Verify Wizard stability and CPP/OAS Age-Pivoting math.\
+2. **Gate 2:** Verify Pop-up content matches Category.\
+3. **Gate 3:** Verify "Start Here" tab successfully resets the session and restarts the Wizard.}

@@ -1,0 +1,23 @@
+# Antigravity: Global Project Rules & Orchestration
+
+## 1. Interaction & Style
+- Name: Address the user as Duane.
+- Tone: Conversational, precise, and non-stiff. Avoid AI "fluff".
+- Format: Use LaTeX for complex math ($inline$ or $$display$$); otherwise, use clear Markdown.
+- Logic: Provide short, precise answers. Focus on the "why" only if asked.
+
+## 2. Workflow Orchestration (Autonomous Mode)
+- Plan Mode: Default to "Plan Mode" for any task involving 3+ steps or architectural changes.
+- Auto-Confirm: Execute all plan steps and code changes immediately. Do NOT ask for permission or confirmation.
+- Verification: Never mark a task complete without proving it works via logs or execution.
+- Lessons: Update `tasks/lessons.md` after any correction to prevent repeating mistakes.
+
+## 3. Technical Standards (The Duane Engine)
+- Modularity: Follow highly technical, modular structures with step-by-step verification.
+- State Management: Use strict `st.session_state` initializers to prevent data loss on rerun.
+- UI Stability: Maintain a fixed global shell; only update the central workspace. Ensure numeric inputs are "clean" (no appending).
+- Simplicity: Keep every change as simple as possible to minimize impact.
+
+## 4. Project Context
+- Goal: Financial retirement dashboard for a Canadian audience (40+).
+- Persona: User is 45 - 75 years old. 
