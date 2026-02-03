@@ -1044,10 +1044,6 @@ def render_screen_3():
 
     # Nav buttons removed in favor of Tabs
     pass
-    
-    with col_nav2:
-        # Forward button removed from Big Picture page as per user request
-        pass
 
 
 def render_blog_sidebar():
