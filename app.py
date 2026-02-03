@@ -1082,46 +1082,7 @@ def render_screen_3():
 
     st.info(f"{verdict}\n\n{desc}")
     
-    # RECOMMENDED READING (Matching Style of Screen 1)
-    st.markdown("#### Recommended Reading")
-    
-    # Define posts locally based on phase_name (which is strictly age-based now)
-    # Reusing content from render_blog_sidebar logic but strictly keyed to phase_name string
-    if phase_name == "ENJOYMENT":
-        recs = [
-            ("OAS & CPP Optimization", "When to start benefits to maximize your lifetime government income."),
-            ("Sustainable Withdrawal Rates", "The 4% rule and modern approaches to retirement spending."),
-            ("Travel on a Budget", "See the world without breaking the bank using these travel hacks.")
-        ]
-    elif phase_name == "BUILDER":
-        recs = [
-            ("The Power of Compound Interest", "Learn how small savings today can grow into a mountain of wealth tomorrow."),
-            ("RRSP vs TFSA: Which is Right for You?", "Understand the tax implications and benefits of each account type."),
-            ("Debt Repayment Strategies", "Smart approaches to eliminate debt while building wealth.")
-        ]
-    elif phase_name == "OPTIMIZER":
-        recs = [
-            ("Retirement Readiness Assessment", "Are you on track? Tools to evaluate your retirement preparedness."),
-            ("Tax-Efficient Withdrawal Strategies", "Minimize taxes when transitioning from accumulation to distribution."),
-            ("Catch-Up Contribution Opportunities", "Maximize your final working years to close savings gaps.")
-        ]
-    elif phase_name == "LEGACY":
-        recs = [
-            ("Estate Planning Essentials", "Ensuring your legacy is protected and passed on according to your wishes."),
-            ("Minimizing Estate Taxes", "Strategies to reduce the tax burden on your beneficiaries."),
-            ("Charitable Giving Strategies", "Maximize impact and tax benefits of philanthropic contributions.")
-        ]
-    else:
-        recs = []
-
-    if recs:
-        r_col1, r_col2, r_col3 = st.columns(3)
-        with r_col1:
-            st.info(f"**{recs[0][0]}**\n\n{recs[0][1]}")
-        with r_col2:
-            st.info(f"**{recs[1][0]}**\n\n{recs[1][1]}")
-        with r_col3:
-            st.info(f"**{recs[2][0]}**\n\n{recs[2][1]}")
+    # Recommended Reading removed as per user request
 
     # NAV BUTTONS
     nav_placeholder_3 = st.empty()
