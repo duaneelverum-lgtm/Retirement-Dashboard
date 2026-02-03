@@ -1139,19 +1139,12 @@ st.markdown("<br>", unsafe_allow_html=True)
 
 # MAIN LAYOUT
 # Tabs for Navigation
-tab_profile, tab_phase, tab_finance, tab_results = st.tabs(["Profile", "Read More", "Financial Data", "Big Picture"])
+tab_profile, tab_finance, tab_results, tab_read_more = st.tabs(["Profile", "Financial Data", "Big Picture", "Read More"])
 
 with tab_profile:
     left_col, right_col = st.columns([1.72, 1], gap="large")
     with left_col:
         render_screen_0()
-    with right_col:
-        render_blog_sidebar()
-
-with tab_phase:
-    left_col, right_col = st.columns([1.72, 1], gap="large")
-    with left_col:
-        render_screen_1()
     with right_col:
         render_blog_sidebar()
 
@@ -1164,6 +1157,13 @@ with tab_finance:
 
 with tab_results:
     render_screen_3()
+
+with tab_read_more:
+    left_col, right_col = st.columns([1.72, 1], gap="large")
+    with left_col:
+        render_screen_1()
+    with right_col:
+        render_blog_sidebar()
 
 # INJECT JAVASCRIPT
 inject_select_on_focus()
