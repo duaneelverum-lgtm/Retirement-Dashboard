@@ -1018,9 +1018,31 @@ def render_screen_3():
         # Running Out
         desc = "Your current spending trajectory may deplete your assets. Consider adjusting your withdrawal rate."
 
-    verdict = f"#### Phase: **{phase_name}**"
-
-    st.info(f"{verdict}\n\n{desc}")
+    # Encouraging Header mapping
+    encouragement = {
+        "BUILDER": "Great job, your nest egg is growing!",
+        "OPTIMIZER": "Excellent progress, your strategy is paying off!",
+        "ENJOYMENT": "Wonderful news, you're living the dream safely!",
+        "LEGACY": "Incredible work, you're building a lasting legacy!",
+        "CAUTION": "Heads up, let's look at some adjustments."
+    }
+    
+    header_text = encouragement.get(phase_name, "Your financial path looks solid!")
+    
+    # Premium Styled Banner
+    st.markdown(f"""
+        <div style="
+            background-color: #f0f7ff; 
+            border-left: 5px solid #2E5BFF; 
+            padding: 24px; 
+            border-radius: 12px; 
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(46, 91, 255, 0.08);
+        ">
+            <h2 style="color: #2E5BFF; margins: 0 0 12px 0; font-family: 'Outfit', sans-serif; font-size: 1.5rem; font-weight: 600;">{header_text}</h2>
+            <p style="color: #334155; margin: 0; line-height: 1.6; font-size: 1.1rem;">{desc}</p>
+        </div>
+    """, unsafe_allow_html=True)
     
     # Recommended Reading removed as per user request
 
