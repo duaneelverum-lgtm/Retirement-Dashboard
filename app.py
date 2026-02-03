@@ -302,6 +302,8 @@ def render_screen_0():
     """Screen 0: Entrance Survey"""
     rc = st.session_state['reset_count']
     
+    st.markdown("## Profile")
+    
     # Load persisted values
     def_name = st.session_state.get('name', "Freddy Mercury")
     def_age = st.session_state.get('age', 0)
@@ -1134,8 +1136,6 @@ st.title("Your Retirement Dashboard")
 
 # Handle Global Scroll (REMOVED - Handled inline)
 # handle_scroll_to_top()
-
-st.markdown("<br>", unsafe_allow_html=True)
 
 # MAIN LAYOUT
 # Tabs for Navigation
