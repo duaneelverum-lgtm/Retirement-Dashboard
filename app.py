@@ -386,12 +386,11 @@ def render_screen_0():
             st.session_state['cpp_benefit'] = calc_cpp
             st.session_state['max_age'] = 100
             
-            # Transition to next screen
-            st.session_state['flow_stage'] = 1
-            # EXECUTE CLEAN SWAP SCROLL via Placeholder
-            with nav_placeholder_0:
-                st.markdown('<script>window.parent.scrollTo(0, 0);</script>', unsafe_allow_html=True)
+            # st.session_state['flow_stage'] = 1  <-- Removed flow logic
             st.rerun()
+
+    # Nav Placeholder removed
+    pass
 
 
 def render_screen_1():
@@ -457,27 +456,8 @@ def render_screen_1():
     
     st.markdown("###")
     
-    # Proceed button
-    nav_placeholder = st.empty()
-    st.markdown("###")
-    # Ratio [1, 1.8, 1] in Left Col (~63% width) results in button width ~1/6 of Page (same as Clear button)
-    col_nav1, col_space, col_nav2 = st.columns([1, 1.8, 1])
-    
-    with col_nav1:
-        if st.button("←", key="back_to_screen_0", type="primary", use_container_width=True):
-            st.session_state['flow_stage'] = 0
-            # EXECUTE CLEAN SWAP SCROLL via Placeholder (Main Flow)
-            with nav_placeholder:
-                st.markdown('<script>window.parent.scrollTo(0, 0);</script>', unsafe_allow_html=True)
-            st.rerun()
-            
-    with col_nav2:
-        if st.button("→", key="proceed_to_financial_data", type="primary", use_container_width=True):
-            st.session_state['flow_stage'] = 2
-            # EXECUTE CLEAN SWAP SCROLL via Placeholder (Main Flow)
-            with nav_placeholder:
-                st.markdown('<script>window.parent.scrollTo(0, 0);</script>', unsafe_allow_html=True)
-            st.rerun()
+    # Nav buttons removed in favor of Tabs
+    pass
 
 
 def render_screen_2():
@@ -696,37 +676,13 @@ def render_screen_2():
     st.markdown("###")
     
     # ========== NAVIGATION BUTTONS ==========
-    nav_placeholder_2 = st.empty()
-    st.markdown("###")
-    # Ratio [1, 1.8, 1] in Left Col (~63% width) results in button width ~1/6 of Page (same as Clear button)
-    col_nav1, col_space, col_nav2 = st.columns([1, 1.8, 1])
-    
-    with col_nav1:
-        if st.button("←", key="back_to_screen_1", type="primary", use_container_width=True):
-            st.session_state['flow_stage'] = 1
-            # EXECUTE CLEAN SWAP SCROLL via Placeholder
-            with nav_placeholder_2:
-                st.markdown('<script>window.parent.scrollTo(0, 0);</script>', unsafe_allow_html=True)
-            st.rerun()
-            
-    with col_nav2:
-        if st.button("→", key="view_big_picture", type="primary", use_container_width=True):
-            # Save all data to session state
-            st.session_state['ledger_saved'] = True
-            st.session_state['monthly_cash_flow'] = monthly_cash_flow
-            st.session_state['total_investments'] = total_investments # Save explicit Investments for Graph
-            st.session_state['net_worth'] = grand_total # Keep legacy 'net_worth' as Total Assets for reference/backwards compat if needed, or use separate var.
-            # actually, lets clear confusion. 'net_worth' variable in session state has been used as the STARTING CAPITAL for the graph.
-            # User wants graph to start at INVESTMENTS ONLY.
-            # So we should save 'net_worth' key (used by Screen 3) as total_investments? 
-            # OR better, save both and update Screen 3 to read 'total_investments'.
-            # TO BE SAFE: I will save explicit 'total_investments' and update Screen 3 content.
-            st.session_state['total_annual_bucket'] = total_annual_bucket
-            st.session_state['flow_stage'] = 3
-            # EXECUTE CLEAN SWAP SCROLL via Placeholder
-            with nav_placeholder_2:
-                st.markdown('<script>window.parent.scrollTo(0, 0);</script>', unsafe_allow_html=True)
-            st.rerun()
+    # Nav buttons removed in favor of Tabs
+    # Save ledger state implicitly on widget interaction or tab switch
+    st.session_state['monthly_cash_flow'] = monthly_cash_flow
+    st.session_state['total_investments'] = total_investments
+    st.session_state['net_worth'] = grand_total
+    st.session_state['total_annual_bucket'] = total_annual_bucket
+    pass
 
 @st.fragment
 def render_screen_3():
@@ -1086,18 +1042,8 @@ def render_screen_3():
     
     # Recommended Reading removed as per user request
 
-    # NAV BUTTONS
-    nav_placeholder_3 = st.empty()
-    st.markdown("###")
-    # Ratio [1, 4, 1] in Full Width results in button width ~1/6 of Page (same as Clear button)
-    col_nav1, col_space, col_nav2 = st.columns([1, 4, 1])
-    
-    with col_nav1:
-        if st.button("←", key="back_to_finances", type="primary", use_container_width=True):
-            st.session_state['flow_stage'] = 2
-            with nav_placeholder_3:
-                st.markdown('<script>window.parent.scrollTo(0, 0);</script>', unsafe_allow_html=True)
-            st.rerun()
+    # Nav buttons removed in favor of Tabs
+    pass
     
     with col_nav2:
         # Forward button removed from Big Picture page as per user request
@@ -1192,26 +1138,32 @@ st.title("Your Retirement Dashboard")
 st.markdown("<br>", unsafe_allow_html=True)
 
 # MAIN LAYOUT
-current_stage = st.session_state.get('flow_stage', 0)
+# Tabs for Navigation
+tab_profile, tab_phase, tab_finance, tab_results = st.tabs(["Profile", "Phase Info", "Financial Data", "Big Picture"])
 
-if current_stage == 3:
-    # Full width for Screen 3
-    render_screen_3()
-else:
+with tab_profile:
     left_col, right_col = st.columns([1.72, 1], gap="large")
-    
-    # LEFT COLUMN: Dynamic Workspace
     with left_col:
-        if current_stage == 0:
-            render_screen_0()
-        elif current_stage == 1:
-            render_screen_1()
-        elif current_stage == 2:
-            render_screen_2()
-
-    # RIGHT COLUMN: Persistent Blog Sidebar
+        render_screen_0()
     with right_col:
         render_blog_sidebar()
+
+with tab_phase:
+    left_col, right_col = st.columns([1.72, 1], gap="large")
+    with left_col:
+        render_screen_1()
+    with right_col:
+        render_blog_sidebar()
+
+with tab_finance:
+    left_col, right_col = st.columns([1.72, 1], gap="large")
+    with left_col:
+        render_screen_2()
+    with right_col:
+        render_blog_sidebar()
+
+with tab_results:
+    render_screen_3()
 
 # INJECT JAVASCRIPT
 inject_select_on_focus()
