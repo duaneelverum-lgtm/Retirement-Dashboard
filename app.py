@@ -1139,7 +1139,7 @@ st.markdown("<br>", unsafe_allow_html=True)
 
 # MAIN LAYOUT
 # Tabs for Navigation
-tab_profile, tab_finance, tab_results, tab_read_more = st.tabs(["Profile", "Financial Data", "Big Picture", "Read More"])
+tab_profile, tab_finance, tab_results, tab_read_more = st.tabs(["Profile", "Add Details", "Big Picture", "Read More"])
 
 with tab_profile:
     left_col, right_col = st.columns([1.72, 1], gap="large")
