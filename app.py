@@ -129,6 +129,15 @@ if 'flow_stage' not in st.session_state:
 if 'reset_count' not in st.session_state:
     st.session_state['reset_count'] = 0
 
+if 'inheritance_amount' not in st.session_state:
+    st.session_state['inheritance_amount'] = None
+
+if 'inheritance_age' not in st.session_state:
+    st.session_state['inheritance_age'] = None
+
+if 'splurge_items' not in st.session_state:
+    st.session_state['splurge_items'] = [{'item': '', 'cost': None, 'age': None, 'frequency': 'Once'}]
+
 # ============================================================================
 # HELPER FUNCTIONS
 # ============================================================================
@@ -138,9 +147,15 @@ def clear_all():
         st.session_state['reset_count'] = 0
     st.session_state['reset_count'] += 1
     
-    keys_to_clear = ['name', 'age', 'target_retirement', 'current_savings', 
-                     'cpp_contribution', 'oas_benefit', 'cpp_benefit',
-                     'cpp_start_age', 'oas_start_age']
+    keys_to_clear = [
+        'name', 'age', 'target_retirement', 'current_savings', 
+        'cpp_contribution', 'oas_benefit', 'cpp_benefit',
+        'cpp_start_age', 'oas_start_age', 
+        'inheritance_amount', 'inheritance_age', 'splurge_items',
+        'income_rows', 'expense_rows', 'investment_rows', 
+        'asset_rows', 'liability_rows',
+        'interest_rate', 'inflation_rate', 'b_interest_rate', 'b_inflation_rate'
+    ]
     for k in keys_to_clear:
         if k in st.session_state:
             del st.session_state[k]
@@ -331,9 +346,9 @@ def render_screen_0():
     rc = st.session_state['reset_count']
     
     # Load persisted values
-    def_name = st.session_state.get('name', 'Freddy Mercury')
-    def_age = st.session_state.get('age', 0)
-    def_target = st.session_state.get('target_retirement', 65)
+    def_name = st.session_state.get('name', None)
+    def_age = st.session_state.get('age', None)
+    def_target = st.session_state.get('target_retirement', None)
     cpp_stored = st.session_state.get('cpp_contribution', "Yes")
     cpp_idx = 0 if cpp_stored == "Yes" else 1
     retired_stored = st.session_state.get('is_retired', False)
@@ -343,7 +358,7 @@ def render_screen_0():
 
     # Personal Stats & Benefits
     # ROW 1: Name
-    name_val = st.text_input("Name", value=def_name, key=f"name_input_{rc}")
+    name_val = st.text_input("Name", value=def_name, key=f"name_input_{rc}", placeholder="Your Name")
     
     # ROW 2: Age | Retirement Age
     col1, col2 = st.columns(2)
@@ -360,16 +375,17 @@ def render_screen_0():
         # Spacer to push checkbox down to align with radio label
         st.markdown("<div style='height: 32px;'></div>", unsafe_allow_html=True)
         auto_retired_val = retired_stored
-        if age_val >= target_ret_val:
-            auto_retired_val = True
+        if age_val is not None and target_ret_val is not None:
+            if age_val >= target_ret_val:
+                auto_retired_val = True
         is_retired = st.checkbox("I am retired", value=auto_retired_val, key=f"retired_toggle_{rc}")
 
     # ROW 4: CPP Start Age | OAS Start Age
     col1, col2 = st.columns(2)
     with col1:
-        cpp_age = st.number_input("When will you take CPP?", min_value=60, max_value=70, value=def_cpp_start, step=1, key=f"cpp_age_input_{rc}")
+        cpp_age = st.number_input("When will you take CPP?", min_value=60, max_value=70, value=def_cpp_start, step=1, key=f"cpp_age_input_{rc}", placeholder="65")
     with col2:
-        oas_age = st.number_input("When will you take OAS?", min_value=65, max_value=70, value=def_oas_start, step=1, key=f"oas_age_input_{rc}")
+        oas_age = st.number_input("When will you take OAS?", min_value=65, max_value=70, value=def_oas_start, step=1, key=f"oas_age_input_{rc}", placeholder="65")
         
         # AUTO-CALCULATION OF BENEFITS (Below OAS Age)
         calc_cpp, calc_oas = get_benefit_calculations(cpp_age, oas_age, cpp_toggle)
@@ -381,8 +397,8 @@ def render_screen_0():
     
     # SYNC STATE (Auto-save for other tabs)
     st.session_state['name'] = name_val
-    st.session_state['age'] = age_val
-    st.session_state['target_retirement'] = target_ret_val
+    st.session_state['age'] = age_val or 0
+    st.session_state['target_retirement'] = target_ret_val or 65
     st.session_state['cpp_contribution'] = cpp_toggle
     st.session_state['is_retired'] = is_retired
     st.session_state['cpp_start_age'] = cpp_age
@@ -408,8 +424,7 @@ def render_screen_1():
         subheadline = "Read more below, or go to the next page and let's get some details."
         tips = [
             ("OAS & CPP Optimization", "Understand when to start benefits to maximize lifetime income."),
-            ("Sustainable Withdrawal Rates", "Determine how much you can safely spend without running out of money."),
-            ("Travel & Bucket List", "Budget for experiences while you're healthy and active.")
+            ("Sustainable Withdrawal Rates", "Determine how much you can safely spend without running out of money.")
         ]
     elif age < 55:
         phase_name = "BUILDER"
@@ -432,8 +447,7 @@ def render_screen_1():
         subheadline = "Let's find out how much fun you can have."
         tips = [
             ("OAS & CPP Optimization", "Understand when to start benefits to maximize lifetime income."),
-            ("Sustainable Withdrawal Rates", "Determine how much you can safely spend without running out of money."),
-            ("Travel & Bucket List", "Budget for experiences while you're healthy and active.")
+            ("Sustainable Withdrawal Rates", "Determine how much you can safely spend without running out of money.")
         ]
     else:  # 75+ LEGACY
         phase_name = "LEGACY"
@@ -449,13 +463,10 @@ def render_screen_1():
     st.markdown("###")
     
     # Phase tip cards
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.info(f"**{tips[0][0]}**\n\n{tips[0][1]}")
-    with col2:
-        st.info(f"**{tips[1][0]}**\n\n{tips[1][1]}")
-    with col3:
-        st.info(f"**{tips[2][0]}**\n\n{tips[2][1]}")
+    cols = st.columns(len(tips))
+    for col, (title, text) in zip(cols, tips):
+        with col:
+            st.info(f"**{title}**\n\n{text}")
     
     st.markdown("###")
     
@@ -467,47 +478,50 @@ def render_screen_2():
     """Screen 2: Finances"""
     st.markdown("## Finances")
     
+    rc = st.session_state.get('reset_count', 0)
+    
     # Initialize data structures in session state
     if 'income_rows' not in st.session_state:
-        st.session_state['income_rows'] = [{'source': '', 'amount': 0}]
+        st.session_state['income_rows'] = [{'source': '', 'amount': None}]
     if 'expense_rows' not in st.session_state:
-        st.session_state['expense_rows'] = [{'kind': '', 'amount': 0, 'frequency': 'Monthly'}]
-    if 'bucket_rows' not in st.session_state:
-        st.session_state['bucket_rows'] = [{'activity': '', 'amount': 0, 'start_age': None}]
+        st.session_state['expense_rows'] = [{'kind': '', 'amount': None, 'frequency': 'Monthly'}]
     if 'investment_rows' not in st.session_state:
-        st.session_state['investment_rows'] = [{'name': '', 'balance': 0}]
+        st.session_state['investment_rows'] = [{'name': '', 'balance': None}]
     if 'asset_rows' not in st.session_state:
-        st.session_state['asset_rows'] = [{'kind': '', 'value': 0}]
+        st.session_state['asset_rows'] = [{'kind': '', 'value': None}]
     if 'liability_rows' not in st.session_state:
-        st.session_state['liability_rows'] = [{'kind': '', 'amount': 0}]
+        st.session_state['liability_rows'] = [{'kind': '', 'amount': None}]
     
     # ========== ALL CATEGORIES FRAME ==========
     with st.container(border=True):
         # ---------- MONEY IN ----------
         st.markdown("### Money In")
         # SECTION 1: MONTHLY INCOME
-        st.markdown("#### 💰 Monthly Income")
+        st.markdown("#### 💰 Monthly Net Income")
         
         income_data = []
         for i, row in enumerate(st.session_state['income_rows']):
             col1, col2, col3 = st.columns([3, 2, 0.5])
             with col1:
-                source = st.text_input("Source", value=row['source'], key=f"income_source_{i}", label_visibility="collapsed", placeholder="Salary, Tips, etc")
+                source = st.text_input("Source", value=row['source'], key=f"income_source_{i}_{rc}", label_visibility="collapsed", placeholder="Salary, Tips, etc")
             with col2:
-                amount = st.number_input("Amount", value=row['amount'], step=1, format="%d", key=f"income_amount_{i}", label_visibility="collapsed", placeholder="Amount")
+                amount = st.number_input("Amount", value=row['amount'], step=1, format="%d", key=f"income_amount_{i}_{rc}", label_visibility="collapsed", placeholder="Amount")
             with col3:
                 if i > 0:
-                    if st.button("🗑️", key=f"income_delete_{i}"):
+                    if st.button("🗑️", key=f"income_delete_{i}_{rc}"):
                         st.session_state['income_rows'].pop(i)
                         st.rerun()
-            income_data.append({'source': source, 'amount': int(amount)})
+            income_data.append({'source': source, 'amount': amount})
         
-        if st.button("➕ Add Income", key="add_income"):
-            st.session_state['income_rows'].append({'source': '', 'amount': 0})
-            st.rerun()
+        btn_col, _ = st.columns([1.9, 4.1])
+        with btn_col:
+            with st.container(border=True):
+                if st.button("➕ Add Income", key=f"add_income_{rc}", use_container_width=True):
+                    st.session_state['income_rows'].append({'source': '', 'amount': None})
+                    st.rerun()
         
         st.session_state['income_rows'] = income_data
-        total_income = sum([row['amount'] for row in income_data])
+        total_income = sum([row['amount'] or 0 for row in income_data])
         st.markdown(f"**Total Monthly Income: ${total_income:,}**")
 
         st.markdown("---")
@@ -521,54 +535,28 @@ def render_screen_2():
         for i, row in enumerate(st.session_state['expense_rows']):
             col1, col2, col3, col4 = st.columns([3, 2, 2, 0.5])
             with col1:
-                kind = st.text_input("Kind", value=row['kind'], key=f"expense_kind_{i}", label_visibility="collapsed", placeholder="Rent, Food, Phone, etc")
+                kind = st.text_input("Kind", value=row['kind'], key=f"expense_kind_{i}_{rc}", label_visibility="collapsed", placeholder="Rent, Food, Phone, etc")
             with col2:
-                frequency = st.selectbox("Frequency", ["Monthly", "Annually"], index=0 if row['frequency'] == 'Monthly' else 1, key=f"expense_freq_{i}", label_visibility="collapsed")
+                frequency = st.selectbox("Frequency", ["Monthly", "Annually"], index=0 if row['frequency'] == 'Monthly' else 1, key=f"expense_freq_{i}_{rc}", label_visibility="collapsed")
             with col3:
-                amount = st.number_input("Amount", value=row['amount'], step=1, format="%d", key=f"expense_amount_{i}", label_visibility="collapsed", placeholder="Amount")
+                amount = st.number_input("Amount", value=row['amount'], step=1, format="%d", key=f"expense_amount_{i}_{rc}", label_visibility="collapsed", placeholder="Amount")
             with col4:
                 if i > 0:
-                    if st.button("🗑️", key=f"expense_delete_{i}"):
+                    if st.button("🗑️", key=f"expense_delete_{i}_{rc}"):
                         st.session_state['expense_rows'].pop(i)
                         st.rerun()
-            expense_data.append({'kind': kind, 'amount': int(amount), 'frequency': frequency})
+            expense_data.append({'kind': kind, 'amount': amount, 'frequency': frequency})
         
-        if st.button("➕ Add Expense", key="add_expense"):
-            st.session_state['expense_rows'].append({'kind': '', 'amount': 0, 'frequency': 'Monthly'})
-            st.rerun()
+        btn_col, _ = st.columns([1.9, 4.1])
+        with btn_col:
+            with st.container(border=True):
+                if st.button("➕ Add Expense", key=f"add_expense_{rc}", use_container_width=True):
+                    st.session_state['expense_rows'].append({'kind': '', 'amount': None, 'frequency': 'Monthly'})
+                    st.rerun()
         
         st.session_state['expense_rows'] = expense_data
-        total_monthly_expenses = sum([row['amount'] if row['frequency'] == 'Monthly' else row['amount'] // 12 for row in expense_data])
+        total_monthly_expenses = sum([(row['amount'] or 0) if row['frequency'] == 'Monthly' else (row['amount'] or 0) // 12 for row in expense_data])
         st.markdown(f"**Total Monthly Expenses: ${total_monthly_expenses:,}**")
-        st.markdown("---")
-        
-        # SECTION 3: ANNUAL BUCKET LIST
-        st.markdown("#### 🏖️ Annual Bucket List")
-        
-        bucket_data = []
-        for i, row in enumerate(st.session_state['bucket_rows']):
-            col1, col2, col3, col4 = st.columns([3.5, 1.5, 2, 0.5])
-            with col1:
-                activity = st.text_input("Activity", value=row['activity'], key=f"bucket_activity_{i}", label_visibility="collapsed", placeholder="Trip, etc.")
-            with col2:
-                start_age = st.number_input("Age", value=row['start_age'], step=1, format="%d", key=f"bucket_age_{i}", label_visibility="collapsed", placeholder="Age")
-            with col3:
-                amount = st.number_input("Amount", value=row['amount'], step=1, format="%d", key=f"bucket_amount_{i}", label_visibility="collapsed", placeholder="Amount")
-            with col4:
-                if i > 0:
-                    if st.button("🗑️", key=f"bucket_delete_{i}"):
-                        st.session_state['bucket_rows'].pop(i)
-                        st.rerun()
-            bucket_data.append({'activity': activity, 'amount': int(amount), 'start_age': int(start_age or 0)})
-        
-        if st.button("➕ Add Bucket Item", key="add_bucket"):
-            st.session_state['bucket_rows'].append({'activity': '', 'amount': 0, 'start_age': None})
-            st.rerun()
-        
-        st.session_state['bucket_rows'] = bucket_data
-        total_annual_bucket = sum([row['amount'] for row in bucket_data])
-        st.markdown(f"**Total Annual Bucket List: ${total_annual_bucket:,}**")
-
         st.markdown("---")
 
         # ---------- BALANCE SHEET ----------
@@ -580,22 +568,25 @@ def render_screen_2():
         for i, row in enumerate(st.session_state['investment_rows']):
             col1, col2, col3 = st.columns([3, 2, 0.5])
             with col1:
-                name = st.text_input("Name", value=row['name'], key=f"inv_name_{i}", label_visibility="collapsed", placeholder="RSP's, Stocks, Savings, etc.")
+                name = st.text_input("Name", value=row['name'], key=f"inv_name_{i}_{rc}", label_visibility="collapsed", placeholder="RSP's, Stocks, Savings, etc.")
             with col2:
-                balance = st.number_input("Balance", value=row['balance'], step=1, format="%d", key=f"inv_balance_{i}", label_visibility="collapsed", placeholder="Balance")
+                balance = st.number_input("Balance", value=row['balance'], step=1, format="%d", key=f"inv_balance_{i}_{rc}", label_visibility="collapsed", placeholder="Balance")
             with col3:
                 if i > 0:
-                    if st.button("🗑️", key=f"inv_delete_{i}"):
+                    if st.button("🗑️", key=f"inv_delete_{i}_{rc}"):
                         st.session_state['investment_rows'].pop(i)
                         st.rerun()
-            investment_data.append({'name': name, 'balance': int(balance)})
+            investment_data.append({'name': name, 'balance': balance})
         
-        if st.button("➕ Add Investment", key="add_investment"):
-            st.session_state['investment_rows'].append({'name': '', 'balance': 0})
-            st.rerun()
+        btn_col, _ = st.columns([1.9, 4.1])
+        with btn_col:
+            with st.container(border=True):
+                if st.button("➕ Add Investment", key=f"add_investment_{rc}", use_container_width=True):
+                    st.session_state['investment_rows'].append({'name': '', 'balance': None})
+                    st.rerun()
         
         st.session_state['investment_rows'] = investment_data
-        total_investments = sum([row['balance'] for row in investment_data])
+        total_investments = sum([row['balance'] or 0 for row in investment_data])
         st.markdown(f"**Total Investments: ${total_investments:,}**")
         st.markdown("---")
         
@@ -606,22 +597,25 @@ def render_screen_2():
         for i, row in enumerate(st.session_state['asset_rows']):
             col1, col2, col3 = st.columns([3, 2, 0.5])
             with col1:
-                kind = st.text_input("Kind", value=row['kind'], key=f"asset_kind_{i}", label_visibility="collapsed", placeholder="Car, Inheritance, etc.")
+                kind = st.text_input("Kind", value=row['kind'], key=f"asset_kind_{i}_{rc}", label_visibility="collapsed", placeholder="Car, Inheritance, etc.")
             with col2:
-                value = st.number_input("Value", value=row['value'], step=1, format="%d", key=f"asset_value_{i}", label_visibility="collapsed", placeholder="Estimated Value")
+                value = st.number_input("Value", value=row['value'], step=1, format="%d", key=f"asset_value_{i}_{rc}", label_visibility="collapsed", placeholder="Estimated Value")
             with col3:
                 if i > 0:
-                    if st.button("🗑️", key=f"asset_delete_{i}"):
+                    if st.button("🗑️", key=f"asset_delete_{i}_{rc}"):
                         st.session_state['asset_rows'].pop(i)
                         st.rerun()
-            asset_data.append({'kind': kind, 'value': int(value)})
+            asset_data.append({'kind': kind, 'value': value})
         
-        if st.button("➕ Add Asset", key="add_asset"):
-            st.session_state['asset_rows'].append({'kind': '', 'value': 0})
-            st.rerun()
+        btn_col, _ = st.columns([1.9, 4.1])
+        with btn_col:
+            with st.container(border=True):
+                if st.button("➕ Add Asset", key=f"add_asset_{rc}", use_container_width=True):
+                    st.session_state['asset_rows'].append({'kind': '', 'value': None})
+                    st.rerun()
         
         st.session_state['asset_rows'] = asset_data
-        total_assets = sum([row['value'] for row in asset_data])
+        total_assets = sum([row['value'] or 0 for row in asset_data])
         st.markdown(f"**Total Other Assets: ${total_assets:,}**")
         st.markdown("---")
         
@@ -632,28 +626,31 @@ def render_screen_2():
         for i, row in enumerate(st.session_state['liability_rows']):
             col1, col2, col3 = st.columns([3, 2, 0.5])
             with col1:
-                kind = st.text_input("Kind", value=row['kind'], key=f"liab_kind_{i}", label_visibility="collapsed", placeholder="Loans, Credit Cards, etc.")
+                kind = st.text_input("Kind", value=row['kind'], key=f"liab_kind_{i}_{rc}", label_visibility="collapsed", placeholder="Loans, Credit Cards, etc.")
             with col2:
-                amount = st.number_input("Amount", value=row['amount'], step=1, format="%d", key=f"liab_amount_{i}", label_visibility="collapsed", placeholder="Amount")
+                amount = st.number_input("Amount", value=row['amount'], step=1, format="%d", key=f"liab_amount_{i}_{rc}", label_visibility="collapsed", placeholder="Amount")
             with col3:
                 if i > 0:
-                    if st.button("🗑️", key=f"liab_delete_{i}"):
+                    if st.button("🗑️", key=f"liab_delete_{i}_{rc}"):
                         st.session_state['liability_rows'].pop(i)
                         st.rerun()
-            liability_data.append({'kind': kind, 'amount': int(amount)})
+            liability_data.append({'kind': kind, 'amount': amount})
         
-        if st.button("➕ Add Liability", key="add_liability"):
-            st.session_state['liability_rows'].append({'kind': '', 'amount': 0})
-            st.rerun()
+        btn_col, _ = st.columns([1.9, 4.1])
+        with btn_col:
+            with st.container(border=True):
+                if st.button("➕ Add Liability", key=f"add_liability_{rc}", use_container_width=True):
+                    st.session_state['liability_rows'].append({'kind': '', 'amount': None})
+                    st.rerun()
         
         st.session_state['liability_rows'] = liability_data
-        total_liabilities = sum([row['amount'] for row in liability_data])
+        total_liabilities = sum([row['amount'] or 0 for row in liability_data])
         st.markdown(f"**Total Liabilities: ${total_liabilities:,}**")
 
     # ========== RESULTS SUMMARY (UNFRAMED) ==========
     st.markdown("## Results Summary")
     
-    monthly_cash_flow = total_income - (total_monthly_expenses + (total_annual_bucket // 12))
+    monthly_cash_flow = total_income - total_monthly_expenses
     
     # Per user request:
     # "Net Worth" = Investments only
@@ -683,7 +680,6 @@ def render_screen_2():
     st.session_state['monthly_cash_flow'] = monthly_cash_flow
     st.session_state['total_investments'] = total_investments
     st.session_state['net_worth'] = grand_total
-    st.session_state['total_annual_bucket'] = total_annual_bucket
     pass
 
 @st.fragment
@@ -709,24 +705,32 @@ def render_screen_3():
         )
         st.session_state['scroll_to_top'] = False
     
-    # 1. INITIALIZE WHAT-IF STATE
+    # 1. INITIALIZE DUAL-SLIDER STATE
+    if 'b_interest_rate' not in st.session_state:
+        st.session_state['b_interest_rate'] = 4.0
+    if 'b_inflation_rate' not in st.session_state:
+        st.session_state['b_inflation_rate'] = 2.0
+    if 'interest_rate' not in st.session_state:
+        st.session_state['interest_rate'] = 4.0
     if 'inflation_rate' not in st.session_state:
         st.session_state['inflation_rate'] = 2.0
-    if 'interest_rate' not in st.session_state:
-        st.session_state['interest_rate'] = 5.0
-    if 'splurge_items' not in st.session_state:
-        st.session_state['splurge_items'] = [{'item': '', 'cost': None, 'age': None}]
-    if 'inheritance_amount' not in st.session_state:
-        st.session_state['inheritance_amount'] = None
-    if 'inheritance_age' not in st.session_state:
-        st.session_state['inheritance_age'] = None
+        
+    # SYNC SPLURGE & INHERITANCE WIDGETS TO STATE (Pre-Calculation)
+    # This ensures "Enter" on a widget updates the graph immediately.
+    i_amt_key = f"inheritance_amount_{rc}"
+    i_age_key = f"inheritance_age_{rc}"
+    
+    if i_amt_key in st.session_state:
+        st.session_state['inheritance_amount'] = st.session_state[i_amt_key]
+    if i_age_key in st.session_state:
+        st.session_state['inheritance_age'] = st.session_state[i_age_key]
 
-    # SYNC SPLURGE WIDGETS TO STATE (Pre-Calculation)
     # This ensures "Enter" on a widget updates the graph immediately.
     for i, item in enumerate(st.session_state.get('splurge_items', [])):
         s_item_key = f"splurge_item_{i}_{rc}"
         s_cost_key = f"splurge_cost_{i}_{rc}"
         s_age_key = f"splurge_age_{i}_{rc}"
+        s_freq_key = f"splurge_freq_{i}_{rc}"
         
         if s_item_key in st.session_state:
             st.session_state['splurge_items'][i]['item'] = st.session_state[s_item_key]
@@ -734,10 +738,12 @@ def render_screen_3():
             st.session_state['splurge_items'][i]['cost'] = st.session_state[s_cost_key]
         if s_age_key in st.session_state:
             st.session_state['splurge_items'][i]['age'] = st.session_state[s_age_key]
+        if s_freq_key in st.session_state:
+            st.session_state['splurge_items'][i]['frequency'] = st.session_state[s_freq_key]
 
     # 2. CALCULATIONS
     current_age = st.session_state.get('age', 30)
-    retirement_age = st.session_state.get('retirement_age', 65)
+    retirement_age = st.session_state.get('target_retirement', 65)
     
     # GRAPH PROJECTION BASIS:
     # User requested: "Draw from Net Worth" (defined as Investments Only)
@@ -749,7 +755,6 @@ def render_screen_3():
         net_worth = st.session_state.get('net_worth', 0)
         
     monthly_cash_flow = st.session_state.get('monthly_cash_flow', 0)
-    bucket_rows = st.session_state.get('bucket_rows', [])
     
     # Re-calculate benefits in case ages were changed via sliders
     cpp_age = st.session_state.get('cpp_start_age', 65)
@@ -757,15 +762,15 @@ def render_screen_3():
     cpp_toggle = st.session_state.get('cpp_contribution', "Yes")
     calc_cpp, calc_oas = get_benefit_calculations(cpp_age, oas_age, cpp_toggle)
 
-    # Baseline Trajectory
+    # Baseline Trajectory (Independently Controlled)
     baseline = calculate_trajectory(
         current_age=current_age,
         retirement_age=retirement_age,
         current_net_worth=net_worth,
         monthly_cash_flow=monthly_cash_flow,
-        bucket_rows=bucket_rows,
-        interest_rate=st.session_state['interest_rate'] / 100,
-        inflation_rate=st.session_state['inflation_rate'] / 100,
+        bucket_rows=[],
+        interest_rate=st.session_state['b_interest_rate'] / 100.0,
+        inflation_rate=st.session_state['b_inflation_rate'] / 100.0,
         is_scenario=False,
         cpp_start_age=cpp_age,
         cpp_amount=calc_cpp,
@@ -773,15 +778,15 @@ def render_screen_3():
         oas_amount=calc_oas
     )
     
-    # Scenario Trajectory
+    # Scenario Trajectory (Independently Controlled)
     scenario = calculate_trajectory(
         current_age=current_age,
         retirement_age=retirement_age,
         current_net_worth=net_worth,
         monthly_cash_flow=monthly_cash_flow,
-        bucket_rows=bucket_rows,
-        interest_rate=st.session_state['interest_rate'] / 100,
-        inflation_rate=st.session_state['inflation_rate'] / 100,
+        bucket_rows=[],
+        interest_rate=st.session_state['interest_rate'] / 100.0,
+        inflation_rate=st.session_state['inflation_rate'] / 100.0,
         is_scenario=True,
         splurge_items=st.session_state['splurge_items'],
         inheritance_amount=st.session_state['inheritance_amount'],
@@ -801,7 +806,7 @@ def render_screen_3():
         y=[d['net_worth'] for d in baseline],
         mode='lines',
         name='Baseline Trajectory',
-        line=dict(color='#2E5BFF', width=3)
+        line=dict(color='#2E5BFF', width=3, dash='solid')
     ))
     
     # Scenario line (Dotted)
@@ -867,21 +872,38 @@ def render_screen_3():
     st.markdown("### How Long Will it Last")
     
     with st.container(border=True):
-        col1, col2 = st.columns(2)
+        col1, mid, col2 = st.columns([1, 0.1, 1])
         with col1:
-            st.slider("Interest/Growth Rate (%)", 0.0, 15.0, value=st.session_state['interest_rate'], step=0.5, key="interest_rate")
+            st.markdown("### <span style='color: #2E5BFF;'>▬ ▬ ▬</span> Baseline", unsafe_allow_html=True)
+            st.slider("Baseline Interest %", 0.0, 15.0, value=st.session_state['b_interest_rate'], step=0.5, key="b_interest_rate")
+            st.slider("Baseline Inflation %", 0.0, 10.0, value=st.session_state['b_inflation_rate'], step=0.5, key="b_inflation_rate")
+        
+        with mid:
+            # Vertical Divider Line
+            st.markdown(
+                """
+                <div style="display: flex; justify-content: center; height: 100%;">
+                    <div style="border-left: 1px solid #ddd; height: 180px; margin-top: 10px;"></div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+            
         with col2:
-            st.slider("Inflation Rate (%)", 0.0, 10.0, value=st.session_state['inflation_rate'], step=0.5, key="inflation_rate")
+            st.markdown("### <span style='color: #FF4B4B;'>- - -</span> Scenario", unsafe_allow_html=True)
+            st.slider("Scenario Interest %", 0.0, 15.0, value=st.session_state['interest_rate'], step=0.5, key="interest_rate")
+            st.slider("Scenario Inflation %", 0.0, 10.0, value=st.session_state['inflation_rate'], step=0.5, key="inflation_rate")
 
+        st.markdown("---")
         st.markdown("#### 🏎️ Future Splurges")
         
         # Multi-Splurge Row Logic
         splurge_data = []
         for i, item in enumerate(st.session_state['splurge_items']):
-            # Adjusted ratio to fill width [Item(3), Cost(1.5), Age(1), Delete(0.3)]
-            c1, c2, c3, c4 = st.columns([3, 1.5, 1, 0.3])
+            # Adjusted ratio to fill width [Item(1.5), Cost(1.8), Age(1.2), Frequency(1.5), Delete(0.3)]
+            c1, c2, c3, c4, c5 = st.columns([1.5, 1.8, 1.2, 1.5, 0.3])
             with c1:
-                s_item = st.text_input("Splurge Item", value=item['item'], placeholder="e.g. Lamborghini", key=f"splurge_item_{i}_{rc}", label_visibility="collapsed")
+                s_item = st.text_input("Splurge Item", value=item['item'], placeholder="Lambo", key=f"splurge_item_{i}_{rc}", label_visibility="collapsed")
             with c2:
                 # Use None for value if 0 or None to ensure placeholder "Cost" shows
                 cost_val = item['cost']
@@ -893,32 +915,43 @@ def render_screen_3():
                 if age_val == 0: age_val = None
                 s_age_val = st.number_input("Age", value=age_val, step=1, format="%d", key=f"splurge_age_{i}_{rc}", label_visibility="collapsed", placeholder="Age")
             with c4:
+                freq_options = ["Once", "Annually", "Bi-annually", "Semi-annually", "Every 5 years"]
+                current_freq = item.get('frequency', 'Once')
+                if current_freq not in freq_options: current_freq = "Once"
+                s_freq = st.selectbox("Frequency", options=freq_options, index=freq_options.index(current_freq), key=f"splurge_freq_{i}_{rc}", label_visibility="collapsed")
+            with c5:
                 # First row should check if > 1 for delete functionality or simply just pass if i == 0
                 if i > 0:
                     if st.button("🗑️", key=f"del_splurge_{i}_{rc}"):
                         st.session_state['splurge_items'].pop(i)
                         st.rerun()
-            splurge_data.append({'item': s_item, 'cost': s_cost, 'age': s_age_val})
+            splurge_data.append({'item': s_item, 'cost': s_cost, 'age': s_age_val, 'frequency': s_freq})
         
-        # Add Line Button
-        if st.button("➕ Add a Line", key=f"add_splurge_btn_{rc}"):
-            st.session_state['splurge_items'].append({'item': '', 'cost': None, 'age': None})
-            st.rerun()
-            
         st.session_state['splurge_items'] = splurge_data
 
+        # Add Line Button (Restored to Splurges section)
+        btn_col, _ = st.columns([1.9, 4.1])
+        with btn_col:
+            with st.container(border=True):
+                if st.button("➕ Add a Line", key=f"add_splurge_btn_{rc}", use_container_width=True):
+                    st.session_state['splurge_items'].append({'item': '', 'cost': None, 'age': None, 'frequency': 'Once'})
+                    st.rerun()
+
+        st.markdown("---")
         st.markdown("#### ⚓ Future Inheritance")
         i_col1, i_col2 = st.columns(2)
         with i_col1:
             # allow None for placeholder to show
             amt_val = st.session_state['inheritance_amount']
             if amt_val == 0: amt_val = None
-            st.number_input("Inheritance Amount", value=amt_val, step=5000, key="inheritance_amount", label_visibility="collapsed", placeholder="Inheritance Amount")
+            st.number_input("Inheritance Amount", value=amt_val, step=5000, key=f"inheritance_amount_{rc}", label_visibility="collapsed", placeholder="Inheritance Amount")
         with i_col2:
             # allow None for placeholder to show
             age_val = st.session_state['inheritance_age']
-            if age_val == 80: age_val = None 
-            st.number_input("Age Received", value=age_val, step=1, key="inheritance_age", label_visibility="collapsed", placeholder="Age of Inheritance")
+            if age_val == 0: age_val = None # Fixed weird check for 80 
+            st.number_input("Age Received", value=age_val, step=1, key=f"inheritance_age_{rc}", label_visibility="collapsed", placeholder="Age of Inheritance")
+
+        st.markdown("---")
 
     # 5. The Bottom Line
     st.markdown("### The Bottom Line")
@@ -969,9 +1002,9 @@ def render_screen_3():
         retirement_age=retirement_age,
         current_net_worth=net_worth,
         monthly_cash_flow=monthly_cash_flow,
-        bucket_rows=bucket_rows,
-        interest_rate=st.session_state['interest_rate'] / 100,
-        inflation_rate=st.session_state['inflation_rate'] / 100,
+        bucket_rows=[],
+        interest_rate=st.session_state['interest_rate'] / 100.0,
+        inflation_rate=st.session_state['inflation_rate'] / 100.0,
         is_scenario=True, # Changed to TRUE to include splurges/inheritance
         splurge_items=[s for s in st.session_state['splurge_items'] if s.get('cost') is not None and s.get('age') is not None],
         inheritance_amount=st.session_state['inheritance_amount'],
@@ -992,9 +1025,9 @@ def render_screen_3():
             retirement_age=retirement_age,
             current_net_worth=net_worth,
             monthly_cash_flow=monthly_cash_flow - test_spend_bump, # Spending is negative cash flow
-            bucket_rows=bucket_rows,
-            interest_rate=st.session_state['interest_rate'] / 100,
-            inflation_rate=st.session_state['inflation_rate'] / 100,
+            bucket_rows=[],
+            interest_rate=st.session_state['interest_rate'] / 100.0,
+            inflation_rate=st.session_state['inflation_rate'] / 100.0,
             is_scenario=True, # Match baseline assumption
             splurge_items=[s for s in st.session_state['splurge_items'] if s.get('cost') is not None and s.get('age') is not None],
             inheritance_amount=st.session_state['inheritance_amount'],

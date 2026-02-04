@@ -3,7 +3,7 @@ def calculate_trajectory(
     retirement_age,
     current_net_worth,
     monthly_cash_flow,
-    bucket_rows,
+    bucket_rows=[],
     interest_rate=0.05,
     inflation_rate=0.02,
     is_scenario=False,
@@ -50,10 +50,28 @@ def calculate_trajectory(
         # 6. Handle Scenario-specific events
         if is_scenario:
             for item in splurge_items:
-                if age == item.get('age', 0):
-                    annual_flow -= item.get('cost', 0)
-            if age == inheritance_age:
-                annual_flow += inheritance_amount
+                start_age = item.get('age')
+                cost = item.get('cost')
+                freq = item.get('frequency', 'Once')
+                
+                if start_age is not None and cost is not None and age >= start_age:
+                    if freq == 'Once':
+                        if age == start_age:
+                            annual_flow -= cost
+                    elif freq == 'Annually':
+                        annual_flow -= cost
+                    elif freq == 'Bi-annually':
+                        if (age - start_age) % 2 == 0:
+                            annual_flow -= cost
+                    elif freq == 'Semi-annually':
+                        # Twice per year
+                        annual_flow -= cost * 2
+                    elif freq == 'Every 5 years':
+                        if (age - start_age) % 5 == 0:
+                            annual_flow -= cost
+            if inheritance_age is not None and inheritance_amount is not None:
+                if age == inheritance_age:
+                    annual_flow += inheritance_amount
         
         # 7. Apply Growth and Inflation logic
         real_growth = interest_rate - inflation_rate
