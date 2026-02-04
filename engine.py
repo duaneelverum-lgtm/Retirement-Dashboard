@@ -2,7 +2,8 @@ def calculate_trajectory(
     current_age,
     retirement_age,
     current_net_worth,
-    monthly_cash_flow,
+    monthly_income,
+    monthly_expenses,
     bucket_rows=[],
     interest_rate=0.05,
     inflation_rate=0.02,
@@ -28,10 +29,15 @@ def calculate_trajectory(
         trajectory.append({"age": age, "net_worth": int(current_nw)})
         
         # 2. Add Annual Cash Flow
-        annual_flow = monthly_cash_flow * 12
+        # Income only persists until retirement age
+        if age < retirement_age:
+            annual_flow = (monthly_income - monthly_expenses) * 12
+        else:
+            annual_flow = -monthly_expenses * 12
         
         # 3. Add CPP if age >= start age
         if age >= cpp_start_age:
+            annual_flow += cpp_amount * 12
             annual_flow += cpp_amount * 12
             
         # 4. Add OAS if age >= start age

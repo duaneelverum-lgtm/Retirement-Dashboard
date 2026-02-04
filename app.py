@@ -390,7 +390,7 @@ def render_screen_0():
         # AUTO-CALCULATION OF BENEFITS (Below OAS Age)
         calc_cpp, calc_oas = get_benefit_calculations(cpp_age, oas_age, cpp_toggle)
         st.markdown(f"<div class='est-benefits'>"
-                    f"Estimated: CPP ${calc_cpp}/mo | OAS ${calc_oas}/mo"
+                    f"CPP at ${calc_cpp}/mo. & OAS at ${calc_oas}/mo. are based on national averages and reduce networth withdrawls on the chart."
                     f"</div>", unsafe_allow_html=True)
 
     st.markdown("###")
@@ -513,7 +513,7 @@ def render_screen_2():
                         st.rerun()
             income_data.append({'source': source, 'amount': amount})
         
-        btn_col, _ = st.columns([1.9, 4.1])
+        btn_col, _ = st.columns([2.0, 4.0])
         with btn_col:
             with st.container(border=True):
                 if st.button("➕ Add Income", key=f"add_income_{rc}", use_container_width=True):
@@ -547,7 +547,7 @@ def render_screen_2():
                         st.rerun()
             expense_data.append({'kind': kind, 'amount': amount, 'frequency': frequency})
         
-        btn_col, _ = st.columns([1.9, 4.1])
+        btn_col, _ = st.columns([2.0, 4.0])
         with btn_col:
             with st.container(border=True):
                 if st.button("➕ Add Expense", key=f"add_expense_{rc}", use_container_width=True):
@@ -578,7 +578,7 @@ def render_screen_2():
                         st.rerun()
             investment_data.append({'name': name, 'balance': balance})
         
-        btn_col, _ = st.columns([1.9, 4.1])
+        btn_col, _ = st.columns([2.4, 3.6])
         with btn_col:
             with st.container(border=True):
                 if st.button("➕ Add Investment", key=f"add_investment_{rc}", use_container_width=True):
@@ -607,7 +607,7 @@ def render_screen_2():
                         st.rerun()
             asset_data.append({'kind': kind, 'value': value})
         
-        btn_col, _ = st.columns([1.9, 4.1])
+        btn_col, _ = st.columns([2.0, 4.0])
         with btn_col:
             with st.container(border=True):
                 if st.button("➕ Add Asset", key=f"add_asset_{rc}", use_container_width=True):
@@ -636,7 +636,7 @@ def render_screen_2():
                         st.rerun()
             liability_data.append({'kind': kind, 'amount': amount})
         
-        btn_col, _ = st.columns([1.9, 4.1])
+        btn_col, _ = st.columns([2.1, 3.9])
         with btn_col:
             with st.container(border=True):
                 if st.button("➕ Add Liability", key=f"add_liability_{rc}", use_container_width=True):
@@ -677,7 +677,8 @@ def render_screen_2():
     # ========== NAVIGATION BUTTONS ==========
     # Nav buttons removed in favor of Tabs
     # Save ledger state implicitly on widget interaction or tab switch
-    st.session_state['monthly_cash_flow'] = monthly_cash_flow
+    st.session_state['monthly_income'] = total_income
+    st.session_state['monthly_expenses'] = total_monthly_expenses
     st.session_state['total_investments'] = total_investments
     st.session_state['net_worth'] = grand_total
     pass
@@ -743,7 +744,7 @@ def render_screen_3():
 
     # 2. CALCULATIONS
     current_age = st.session_state.get('age', 30)
-    retirement_age = st.session_state.get('target_retirement', 65)
+    target_retirement = st.session_state.get('target_retirement', 65)
     
     # GRAPH PROJECTION BASIS:
     # User requested: "Draw from Net Worth" (defined as Investments Only)
@@ -754,7 +755,8 @@ def render_screen_3():
     else:
         net_worth = st.session_state.get('net_worth', 0)
         
-    monthly_cash_flow = st.session_state.get('monthly_cash_flow', 0)
+    monthly_income = st.session_state.get('monthly_income', 0)
+    monthly_expenses = st.session_state.get('monthly_expenses', 0)
     
     # Re-calculate benefits in case ages were changed via sliders
     cpp_age = st.session_state.get('cpp_start_age', 65)
@@ -765,9 +767,10 @@ def render_screen_3():
     # Baseline Trajectory (Independently Controlled)
     baseline = calculate_trajectory(
         current_age=current_age,
-        retirement_age=retirement_age,
+        retirement_age=target_retirement,
         current_net_worth=net_worth,
-        monthly_cash_flow=monthly_cash_flow,
+        monthly_income=monthly_income,
+        monthly_expenses=monthly_expenses,
         bucket_rows=[],
         interest_rate=st.session_state['b_interest_rate'] / 100.0,
         inflation_rate=st.session_state['b_inflation_rate'] / 100.0,
@@ -781,9 +784,10 @@ def render_screen_3():
     # Scenario Trajectory (Independently Controlled)
     scenario = calculate_trajectory(
         current_age=current_age,
-        retirement_age=retirement_age,
+        retirement_age=target_retirement,
         current_net_worth=net_worth,
-        monthly_cash_flow=monthly_cash_flow,
+        monthly_income=monthly_income,
+        monthly_expenses=monthly_expenses,
         bucket_rows=[],
         interest_rate=st.session_state['interest_rate'] / 100.0,
         inflation_rate=st.session_state['inflation_rate'] / 100.0,
@@ -805,7 +809,7 @@ def render_screen_3():
         x=[d['age'] for d in baseline],
         y=[d['net_worth'] for d in baseline],
         mode='lines',
-        name='Baseline Trajectory',
+        name='Baseline    ',
         line=dict(color='#2E5BFF', width=3, dash='solid')
     ))
     
@@ -814,7 +818,7 @@ def render_screen_3():
         x=[d['age'] for d in scenario],
         y=[d['net_worth'] for d in scenario],
         mode='lines',
-        name='Scenario Trajectory',
+        name='Scenario    ',
         line=dict(color='#FF4B4B', width=3, dash='dot')
     ))
     
@@ -823,10 +827,10 @@ def render_screen_3():
 
     # Vertical Lifecycle Anchors
     # Retirement Age
-    if retirement_age >= current_age:
-        fig.add_shape(type="line", x0=retirement_age, y0=0, x1=retirement_age, y1=max_y,
+    if target_retirement >= current_age:
+        fig.add_shape(type="line", x0=target_retirement, y0=0, x1=target_retirement, y1=max_y,
                       line=dict(color="Gray", width=1, dash="dash"))
-        fig.add_annotation(x=retirement_age, y=max_y, text="Retirement", showarrow=False, yshift=10)
+        fig.add_annotation(x=target_retirement, y=max_y, text="Retirement", showarrow=False, yshift=10)
     
     # CPP Milestone
     if cpp_age >= current_age:
@@ -930,7 +934,7 @@ def render_screen_3():
         st.session_state['splurge_items'] = splurge_data
 
         # Add Line Button (Restored to Splurges section)
-        btn_col, _ = st.columns([1.9, 4.1])
+        btn_col, _ = st.columns([2.0, 4.0])
         with btn_col:
             with st.container(border=True):
                 if st.button("➕ Add a Line", key=f"add_splurge_btn_{rc}", use_container_width=True):
@@ -999,9 +1003,10 @@ def render_screen_3():
     # Check SCENARIO at 110 (User wants to know surplus AFTER splurges)
     base_110 = calculate_trajectory(
         current_age=current_age,
-        retirement_age=retirement_age,
+        retirement_age=target_retirement,
         current_net_worth=net_worth,
-        monthly_cash_flow=monthly_cash_flow,
+        monthly_income=monthly_income,
+        monthly_expenses=monthly_expenses,
         bucket_rows=[],
         interest_rate=st.session_state['interest_rate'] / 100.0,
         inflation_rate=st.session_state['inflation_rate'] / 100.0,
@@ -1022,9 +1027,10 @@ def render_screen_3():
         test_spend_bump = 1000
         test_110 = calculate_trajectory(
             current_age=current_age,
-            retirement_age=retirement_age,
+            retirement_age=target_retirement,
             current_net_worth=net_worth,
-            monthly_cash_flow=monthly_cash_flow - test_spend_bump, # Spending is negative cash flow
+            monthly_income=monthly_income,
+            monthly_expenses=monthly_expenses + test_spend_bump, 
             bucket_rows=[],
             interest_rate=st.session_state['interest_rate'] / 100.0,
             inflation_rate=st.session_state['inflation_rate'] / 100.0,
