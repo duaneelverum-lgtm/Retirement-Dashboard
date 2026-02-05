@@ -138,6 +138,9 @@ if 'inheritance_age' not in st.session_state:
 if 'splurge_items' not in st.session_state:
     st.session_state['splurge_items'] = [{'item': '', 'cost': None, 'age': None, 'frequency': 'Once'}]
 
+if 'disposal_items' not in st.session_state:
+    st.session_state['disposal_items'] = [{'asset': '', 'amount': None, 'age': None}]
+
 # ============================================================================
 # HELPER FUNCTIONS
 # ============================================================================
@@ -151,7 +154,7 @@ def clear_all():
         'name', 'age', 'target_retirement', 'current_savings', 
         'cpp_contribution', 'oas_benefit', 'cpp_benefit',
         'cpp_start_age', 'oas_start_age', 
-        'inheritance_amount', 'inheritance_age', 'splurge_items',
+        'inheritance_amount', 'inheritance_age', 'splurge_items', 'disposal_items',
         'income_rows', 'expense_rows', 'investment_rows', 
         'asset_rows', 'liability_rows',
         'interest_rate', 'inflation_rate', 'b_interest_rate', 'b_inflation_rate'
@@ -161,6 +164,12 @@ def clear_all():
             del st.session_state[k]
     
     st.session_state['flow_stage'] = 0
+
+def clear_field(key):
+    """Clear a specific field from session state and rerun."""
+    if key in st.session_state:
+        del st.session_state[key]
+    st.rerun()
 
 def get_benefit_calculations(cpp_age, oas_age, cpp_toggle="Yes"):
     """Calculate monthly CPP and OAS benefits based on start ages."""
@@ -228,6 +237,15 @@ def inject_select_on_focus():
                 height: auto !important;
                 min-height: 0px !important; 
                 line-height: 1 !important;
+                white-space: nowrap !important; /* Ensure text stays on one line */
+            }
+
+            /* Compact stButton (Primary and Secondary if not specifically caught above) */
+            div[data-testid="stColumn"] button, div[data-testid="column"] button {
+                padding-top: 4px !important;
+                padding-bottom: 4px !important;
+                min-height: 32px !important;
+                height: 32px !important;
             }
 
             /* 3. Hover effects */
@@ -515,10 +533,9 @@ def render_screen_2():
         
         btn_col, _ = st.columns([2.0, 4.0])
         with btn_col:
-            with st.container(border=True):
-                if st.button("➕ Add Income", key=f"add_income_{rc}", use_container_width=True):
-                    st.session_state['income_rows'].append({'source': '', 'amount': None})
-                    st.rerun()
+            if st.button("➕ Add Income", key=f"add_income_{rc}", use_container_width=True):
+                st.session_state['income_rows'].append({'source': '', 'amount': None})
+                st.rerun()
         
         st.session_state['income_rows'] = income_data
         total_income = sum([row['amount'] or 0 for row in income_data])
@@ -549,10 +566,9 @@ def render_screen_2():
         
         btn_col, _ = st.columns([2.0, 4.0])
         with btn_col:
-            with st.container(border=True):
-                if st.button("➕ Add Expense", key=f"add_expense_{rc}", use_container_width=True):
-                    st.session_state['expense_rows'].append({'kind': '', 'amount': None, 'frequency': 'Monthly'})
-                    st.rerun()
+            if st.button("➕ Add Expense", key=f"add_expense_{rc}", use_container_width=True):
+                st.session_state['expense_rows'].append({'kind': '', 'amount': None, 'frequency': 'Monthly'})
+                st.rerun()
         
         st.session_state['expense_rows'] = expense_data
         total_monthly_expenses = sum([(row['amount'] or 0) if row['frequency'] == 'Monthly' else (row['amount'] or 0) // 12 for row in expense_data])
@@ -580,10 +596,9 @@ def render_screen_2():
         
         btn_col, _ = st.columns([2.4, 3.6])
         with btn_col:
-            with st.container(border=True):
-                if st.button("➕ Add Investment", key=f"add_investment_{rc}", use_container_width=True):
-                    st.session_state['investment_rows'].append({'name': '', 'balance': None})
-                    st.rerun()
+            if st.button("➕ Add Investment", key=f"add_investment_{rc}", use_container_width=True):
+                st.session_state['investment_rows'].append({'name': '', 'balance': None})
+                st.rerun()
         
         st.session_state['investment_rows'] = investment_data
         total_investments = sum([row['balance'] or 0 for row in investment_data])
@@ -599,7 +614,7 @@ def render_screen_2():
             with col1:
                 kind = st.text_input("Kind", value=row['kind'], key=f"asset_kind_{i}_{rc}", label_visibility="collapsed", placeholder="Car, Inheritance, etc.")
             with col2:
-                value = st.number_input("Value", value=row['value'], step=1, format="%d", key=f"asset_value_{i}_{rc}", label_visibility="collapsed", placeholder="Estimated Value")
+                value = st.number_input("Value", value=row['value'], step=1, format="%d", key=f"asset_value_{i}_{rc}", label_visibility="collapsed", placeholder="Value")
             with col3:
                 if i > 0:
                     if st.button("🗑️", key=f"asset_delete_{i}_{rc}"):
@@ -609,10 +624,9 @@ def render_screen_2():
         
         btn_col, _ = st.columns([2.0, 4.0])
         with btn_col:
-            with st.container(border=True):
-                if st.button("➕ Add Asset", key=f"add_asset_{rc}", use_container_width=True):
-                    st.session_state['asset_rows'].append({'kind': '', 'value': None})
-                    st.rerun()
+            if st.button("➕ Add Asset", key=f"add_asset_{rc}", use_container_width=True):
+                st.session_state['asset_rows'].append({'kind': '', 'value': None})
+                st.rerun()
         
         st.session_state['asset_rows'] = asset_data
         total_assets = sum([row['value'] or 0 for row in asset_data])
@@ -638,10 +652,9 @@ def render_screen_2():
         
         btn_col, _ = st.columns([2.1, 3.9])
         with btn_col:
-            with st.container(border=True):
-                if st.button("➕ Add Liability", key=f"add_liability_{rc}", use_container_width=True):
-                    st.session_state['liability_rows'].append({'kind': '', 'amount': None})
-                    st.rerun()
+            if st.button("➕ Add Liability", key=f"add_liability_{rc}", use_container_width=True):
+                st.session_state['liability_rows'].append({'kind': '', 'amount': None})
+                st.rerun()
         
         st.session_state['liability_rows'] = liability_data
         total_liabilities = sum([row['amount'] or 0 for row in liability_data])
@@ -742,6 +755,18 @@ def render_screen_3():
         if s_freq_key in st.session_state:
             st.session_state['splurge_items'][i]['frequency'] = st.session_state[s_freq_key]
 
+    for i, item in enumerate(st.session_state.get('disposal_items', [])):
+        d_asset_key = f"disposal_asset_{i}_{rc}"
+        d_amt_key = f"disposal_amount_{i}_{rc}"
+        d_age_key = f"disposal_age_{i}_{rc}"
+        
+        if d_asset_key in st.session_state:
+            st.session_state['disposal_items'][i]['asset'] = st.session_state[d_asset_key]
+        if d_amt_key in st.session_state:
+            st.session_state['disposal_items'][i]['amount'] = st.session_state[d_amt_key]
+        if d_age_key in st.session_state:
+            st.session_state['disposal_items'][i]['age'] = st.session_state[d_age_key]
+
     # 2. CALCULATIONS
     current_age = st.session_state.get('age', 30)
     target_retirement = st.session_state.get('target_retirement', 65)
@@ -778,7 +803,9 @@ def render_screen_3():
         cpp_start_age=cpp_age,
         cpp_amount=calc_cpp,
         oas_start_age=oas_age,
-        oas_amount=calc_oas
+        oas_amount=calc_oas,
+        splurge_items=[],
+        disposal_items=[]
     )
     
     # Scenario Trajectory (Independently Controlled)
@@ -792,13 +819,14 @@ def render_screen_3():
         interest_rate=st.session_state['interest_rate'] / 100.0,
         inflation_rate=st.session_state['inflation_rate'] / 100.0,
         is_scenario=True,
-        splurge_items=st.session_state['splurge_items'],
         inheritance_amount=st.session_state['inheritance_amount'],
         inheritance_age=st.session_state['inheritance_age'],
         cpp_start_age=cpp_age,
         cpp_amount=calc_cpp,
         oas_start_age=oas_age,
-        oas_amount=calc_oas
+        oas_amount=calc_oas,
+        splurge_items=st.session_state['splurge_items'],
+        disposal_items=st.session_state['disposal_items']
     )
 
     # 3. CHART: THE DUAL-PATH GRAPH
@@ -825,40 +853,94 @@ def render_screen_3():
     # Calculate Max Y for vertical lines
     max_y = max([d['net_worth'] for d in baseline + scenario] + [1])
 
-    # Vertical Lifecycle Anchors
+    # COLLECT ALL MILESTONES FOR SMART STAGGERING
+    milestones = []
+    
     # Retirement Age
     if target_retirement >= current_age:
-        fig.add_shape(type="line", x0=target_retirement, y0=0, x1=target_retirement, y1=max_y,
-                      line=dict(color="Gray", width=1, dash="dash"))
-        fig.add_annotation(x=target_retirement, y=max_y, text="Retirement", showarrow=False, yshift=10)
+        milestones.append({
+            'age': target_retirement, 
+            'text': "Retirement", 
+            'color': "Gray", 
+            'dash': "dash"
+        })
     
     # CPP Milestone
     if cpp_age >= current_age:
-        fig.add_shape(type="line", x0=cpp_age, y0=0, x1=cpp_age, y1=max_y,
-                      line=dict(color="#4CAF50", width=1, dash="dash"))
-        fig.add_annotation(x=cpp_age, y=max_y, text=f"CPP Starts (${calc_cpp})", showarrow=False, yshift=25)
+        milestones.append({
+            'age': cpp_age, 
+            'text': f"CPP Starts (${calc_cpp})", 
+            'color': "#4CAF50", 
+            'dash': "dash"
+        })
     
     # OAS Milestone
     if oas_age >= current_age:
-        fig.add_shape(type="line", x0=oas_age, y0=0, x1=oas_age, y1=max_y,
-                      line=dict(color="#FF9800", width=1, dash="dash"))
-        fig.add_annotation(x=oas_age, y=max_y, text=f"OAS Starts (${calc_oas})", showarrow=False, yshift=40)
+        milestones.append({
+            'age': oas_age, 
+            'text': f"OAS Starts (${calc_oas})", 
+            'color': "#FF9800", 
+            'dash': "dash"
+        })
+
+    # Disposal Milestones
+    for item in st.session_state.get('disposal_items', []):
+        d_age = item.get('age')
+        d_asset = item.get('asset')
+        d_amount = item.get('amount')
+        if d_age and d_age >= current_age and d_asset and d_amount:
+            milestones.append({
+                'age': d_age, 
+                'text': f"Sell {d_asset}", 
+                'color': "#9C27B0", 
+                'dash': "dashdot"
+            })
     
     # Inheritance Age
     if st.session_state.get('inheritance_amount') and st.session_state['inheritance_amount'] > 0 and \
        st.session_state.get('inheritance_age') and st.session_state['inheritance_age'] >= current_age:
-        fig.add_shape(type="line", x0=st.session_state['inheritance_age'], y0=0, x1=st.session_state['inheritance_age'], y1=max_y,
-                      line=dict(color="#FFD700", width=1, dash="dash"))
-        fig.add_annotation(x=st.session_state['inheritance_age'], y=max_y, text="Inheritance", showarrow=False, yshift=55)
+        milestones.append({
+            'age': st.session_state['inheritance_age'], 
+            'text': "Inheritance", 
+            'color': "#FFD700", 
+            'dash': "dash"
+        })
 
     # Splurge Markers
-    for item in st.session_state['splurge_items']:
+    for item in st.session_state.get('splurge_items', []):
         age = item.get('age', 0)
         label = item.get('item', 'Splurge')
         if age and age >= current_age and (item.get('cost') or 0) > 0:
-             fig.add_shape(type="line", x0=age, y0=0, x1=age, y1=max_y,
-                           line=dict(color="#FF4B4B", width=1, dash="dot"))
-             fig.add_annotation(x=age, y=max_y, text=label, showarrow=False, yshift=60, font=dict(color="#FF4B4B"))
+            milestones.append({
+                'age': age, 
+                'text': label, 
+                'color': "#FF4B4B", 
+                'dash': "dot"
+            })
+
+    # SORT AND PLOT WITH STAGGERING
+    milestones.sort(key=lambda x: x['age'])
+    
+    # Cycling pool of y-shifts (negative to pull labels DOWN into the graph area)
+    shift_pool = [-10, -35, -60, -85, -110]
+    
+    for i, m in enumerate(milestones):
+        # Vertical Line
+        fig.add_shape(type="line", x0=m['age'], y0=0, x1=m['age'], y1=max_y,
+                      line=dict(color=m['color'], width=1, dash=m['dash']))
+        
+        # Calculate Shift: cycle based on sorted index
+        current_shift = shift_pool[i % len(shift_pool)]
+        
+        fig.add_annotation(
+            x=m['age'], 
+            y=max_y, 
+            text=m['text'], 
+            showarrow=False, 
+            yshift=current_shift,
+            font=dict(color=m['color'], size=10),
+            bgcolor="rgba(255, 255, 255, 0.7)" # Slight bg for readability
+        )
 
     fig.update_layout(
         # title="Networth Over Time", # Removed as per user request to avoid overlap
@@ -873,89 +955,124 @@ def render_screen_3():
     st.plotly_chart(fig, use_container_width=True)
 
     # 4. INTERACTIVE CALIBRATION CONTROLS
-    st.markdown("### How Long Will it Last")
+    col_controls, col_blog = st.columns([1.72, 1], gap="large")
     
-    with st.container(border=True):
-        col1, mid, col2 = st.columns([1, 0.1, 1])
-        with col1:
-            st.markdown("### <span style='color: #2E5BFF;'>▬ ▬ ▬</span> Baseline", unsafe_allow_html=True)
-            st.slider("Baseline Interest %", 0.0, 15.0, value=st.session_state['b_interest_rate'], step=0.5, key="b_interest_rate")
-            st.slider("Baseline Inflation %", 0.0, 10.0, value=st.session_state['b_inflation_rate'], step=0.5, key="b_inflation_rate")
-        
-        with mid:
-            # Vertical Divider Line
-            st.markdown(
-                """
-                <div style="display: flex; justify-content: center; height: 100%;">
-                    <div style="border-left: 1px solid #ddd; height: 180px; margin-top: 10px;"></div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+    with col_controls:
+        st.markdown("### How Long Will it Last")
+        with st.container(border=True):
+            col1, mid, col2 = st.columns([1, 0.1, 1])
+            with col1:
+                st.markdown("### <span style='color: #2E5BFF;'>▬ ▬ ▬</span> Baseline", unsafe_allow_html=True)
+                st.slider("Baseline Interest %", 0.0, 15.0, value=st.session_state['b_interest_rate'], step=0.5, key="b_interest_rate")
+                st.slider("Baseline Inflation %", 0.0, 10.0, value=st.session_state['b_inflation_rate'], step=0.5, key="b_inflation_rate")
             
-        with col2:
-            st.markdown("### <span style='color: #FF4B4B;'>- - -</span> Scenario", unsafe_allow_html=True)
-            st.slider("Scenario Interest %", 0.0, 15.0, value=st.session_state['interest_rate'], step=0.5, key="interest_rate")
-            st.slider("Scenario Inflation %", 0.0, 10.0, value=st.session_state['inflation_rate'], step=0.5, key="inflation_rate")
+            with mid:
+                # Vertical Divider Line
+                st.markdown(
+                    """
+                    <div style="display: flex; justify-content: center; height: 100%;">
+                        <div style="border-left: 1px solid #ddd; height: 180px; margin-top: 10px;"></div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+                
+            with col2:
+                st.markdown("### <span style='color: #FF4B4B;'>- - -</span> Scenario", unsafe_allow_html=True)
+                st.slider("Scenario Interest %", 0.0, 15.0, value=st.session_state['interest_rate'], step=0.5, key="interest_rate")
+                st.slider("Scenario Inflation %", 0.0, 10.0, value=st.session_state['inflation_rate'], step=0.5, key="inflation_rate")
 
-        st.markdown("---")
-        st.markdown("#### 🏎️ Future Splurges")
-        
-        # Multi-Splurge Row Logic
-        splurge_data = []
-        for i, item in enumerate(st.session_state['splurge_items']):
-            # Adjusted ratio to fill width [Item(1.5), Cost(1.8), Age(1.2), Frequency(1.5), Delete(0.3)]
-            c1, c2, c3, c4, c5 = st.columns([1.5, 1.8, 1.2, 1.5, 0.3])
-            with c1:
-                s_item = st.text_input("Splurge Item", value=item['item'], placeholder="Lambo", key=f"splurge_item_{i}_{rc}", label_visibility="collapsed")
-            with c2:
-                # Use None for value if 0 or None to ensure placeholder "Cost" shows
-                cost_val = item['cost']
-                if cost_val == 0: cost_val = None
-                s_cost = st.number_input("Cost ($)", value=cost_val, step=1000, format="%d", key=f"splurge_cost_{i}_{rc}", label_visibility="collapsed", placeholder="Cost")
-            with c3:
-                # Use None for value if 0 or None to ensure placeholder "Age" shows
-                age_val = item['age']
-                if age_val == 0: age_val = None
-                s_age_val = st.number_input("Age", value=age_val, step=1, format="%d", key=f"splurge_age_{i}_{rc}", label_visibility="collapsed", placeholder="Age")
-            with c4:
-                freq_options = ["Once", "Annually", "Bi-annually", "Semi-annually", "Every 5 years"]
-                current_freq = item.get('frequency', 'Once')
-                if current_freq not in freq_options: current_freq = "Once"
-                s_freq = st.selectbox("Frequency", options=freq_options, index=freq_options.index(current_freq), key=f"splurge_freq_{i}_{rc}", label_visibility="collapsed")
-            with c5:
-                # First row should check if > 1 for delete functionality or simply just pass if i == 0
-                if i > 0:
-                    if st.button("🗑️", key=f"del_splurge_{i}_{rc}"):
-                        st.session_state['splurge_items'].pop(i)
-                        st.rerun()
-            splurge_data.append({'item': s_item, 'cost': s_cost, 'age': s_age_val, 'frequency': s_freq})
-        
-        st.session_state['splurge_items'] = splurge_data
+            st.markdown("---")
+            st.markdown("#### 🏎️ Future Splurges")
+            
+            # Multi-Splurge Row Logic
+            splurge_data = []
+            for i, item in enumerate(st.session_state['splurge_items']):
+                # Adjusted ratio to fill width [Item(1.5), Cost(1.8), Age(1.2), Frequency(1.5), Delete(0.3)]
+                c1, c2, c3, c4, c5 = st.columns([1.5, 1.8, 1.2, 1.5, 0.3])
+                with c1:
+                    s_item = st.text_input("Splurge Item", value=item['item'], placeholder="Lambo", key=f"splurge_item_{i}_{rc}", label_visibility="collapsed")
+                with c2:
+                    # Use None for value if 0 or None to ensure placeholder "Cost" shows
+                    cost_val = item['cost']
+                    if cost_val == 0: cost_val = None
+                    s_cost = st.number_input("Cost ($)", value=cost_val, step=1000, format="%d", key=f"splurge_cost_{i}_{rc}", label_visibility="collapsed", placeholder="Cost")
+                with c3:
+                    # Use None for value if 0 or None to ensure placeholder "Age" shows
+                    age_val = item['age']
+                    if age_val == 0: age_val = None
+                    s_age_val = st.number_input("Age", value=age_val, step=1, format="%d", key=f"splurge_age_{i}_{rc}", label_visibility="collapsed", placeholder="Age")
+                with c4:
+                    freq_options = ["Once", "Annually", "Bi-annually", "Semi-annually", "Every 5 years"]
+                    current_freq = item.get('frequency', 'Once')
+                    if current_freq not in freq_options: current_freq = "Once"
+                    s_freq = st.selectbox("Frequency", options=freq_options, index=freq_options.index(current_freq), key=f"splurge_freq_{i}_{rc}", label_visibility="collapsed")
+                with c5:
+                    # First row should check if > 1 for delete functionality or simply just pass if i == 0
+                    if i > 0:
+                        if st.button("🗑️", key=f"del_splurge_{i}_{rc}"):
+                            st.session_state['splurge_items'].pop(i)
+                            st.rerun()
+                splurge_data.append({'item': s_item, 'cost': s_cost, 'age': s_age_val, 'frequency': s_freq})
+            
+            st.session_state['splurge_items'] = splurge_data
 
-        # Add Line Button (Restored to Splurges section)
-        btn_col, _ = st.columns([2.0, 4.0])
-        with btn_col:
-            with st.container(border=True):
+            # Add Line Button (Restored to Splurges section)
+            btn_col, _ = st.columns([2.0, 4.0])
+            with btn_col:
                 if st.button("➕ Add a Line", key=f"add_splurge_btn_{rc}", use_container_width=True):
                     st.session_state['splurge_items'].append({'item': '', 'cost': None, 'age': None, 'frequency': 'Once'})
                     st.rerun()
 
-        st.markdown("---")
-        st.markdown("#### ⚓ Future Inheritance")
-        i_col1, i_col2 = st.columns(2)
-        with i_col1:
-            # allow None for placeholder to show
-            amt_val = st.session_state['inheritance_amount']
-            if amt_val == 0: amt_val = None
-            st.number_input("Inheritance Amount", value=amt_val, step=5000, key=f"inheritance_amount_{rc}", label_visibility="collapsed", placeholder="Inheritance Amount")
-        with i_col2:
-            # allow None for placeholder to show
-            age_val = st.session_state['inheritance_age']
-            if age_val == 0: age_val = None # Fixed weird check for 80 
-            st.number_input("Age Received", value=age_val, step=1, key=f"inheritance_age_{rc}", label_visibility="collapsed", placeholder="Age of Inheritance")
+            st.markdown("---")
+            st.markdown("#### ⚓ Future Inheritance")
+            i_col1, i_col2 = st.columns(2)
+            with i_col1:
+                # allow None for placeholder to show
+                amt_val = st.session_state['inheritance_amount']
+                if amt_val == 0: amt_val = None
+                st.number_input("Inheritance Amount", value=amt_val, step=5000, key=f"inheritance_amount_{rc}", label_visibility="collapsed", placeholder="Inheritance Amount")
+            with i_col2:
+                # allow None for placeholder to show
+                age_val = st.session_state['inheritance_age']
+                if age_val == 0: age_val = None # Fixed weird check for 80 
+                st.number_input("Age Received", value=age_val, step=1, key=f"inheritance_age_{rc}", label_visibility="collapsed", placeholder="Age of Inheritance")
 
-        st.markdown("---")
+            st.markdown("---")
+            st.markdown("#### 🏠 Disposal of Assets")
+            
+            disposal_data = []
+            for i, item in enumerate(st.session_state['disposal_items']):
+                c1, c2, c3, c4 = st.columns([2.5, 1.8, 1.2, 0.5])
+                with c1:
+                    d_asset = st.text_input("Asset Name", value=item['asset'], placeholder="House, Car, etc.", key=f"disposal_asset_{i}_{rc}", label_visibility="collapsed")
+                with c2:
+                    d_amt_val = item['amount']
+                    if d_amt_val == 0: d_amt_val = None
+                    d_amount = st.number_input("Net Amount ($)", value=d_amt_val, step=10000, format="%d", key=f"disposal_amount_{i}_{rc}", label_visibility="collapsed", placeholder="Amount")
+                with c3:
+                    d_age_val = item['age']
+                    if d_age_val == 0: d_age_val = None
+                    d_age = st.number_input("Age Sold", value=d_age_val, step=1, format="%d", key=f"disposal_age_{i}_{rc}", label_visibility="collapsed", placeholder="Age")
+                with c4:
+                    if i > 0:
+                        if st.button("🗑️", key=f"del_disposal_{i}_{rc}"):
+                            st.session_state['disposal_items'].pop(i)
+                            st.rerun()
+                disposal_data.append({'asset': d_asset, 'amount': d_amount, 'age': d_age})
+            
+            st.session_state['disposal_items'] = disposal_data
+
+            btn_col, _ = st.columns([2.0, 4.0])
+            with btn_col:
+                if st.button("➕ Add Disposal", key=f"add_disposal_btn_{rc}", use_container_width=True):
+                    st.session_state['disposal_items'].append({'asset': '', 'amount': None, 'age': None})
+                    st.rerun()
+
+            st.markdown("---")
+
+    with col_blog:
+        render_blog_sidebar()
 
     # 5. The Bottom Line
     st.markdown("### The Bottom Line")
@@ -1011,13 +1128,14 @@ def render_screen_3():
         interest_rate=st.session_state['interest_rate'] / 100.0,
         inflation_rate=st.session_state['inflation_rate'] / 100.0,
         is_scenario=True, # Changed to TRUE to include splurges/inheritance
-        splurge_items=[s for s in st.session_state['splurge_items'] if s.get('cost') is not None and s.get('age') is not None],
         inheritance_amount=st.session_state['inheritance_amount'],
         inheritance_age=st.session_state['inheritance_age'],
         cpp_start_age=cpp_age,
         cpp_amount=calc_cpp,
         oas_start_age=oas_age,
         oas_amount=calc_oas,
+        splurge_items=[s for s in st.session_state['splurge_items'] if s.get('cost') is not None and s.get('age') is not None],
+        disposal_items=[d for d in st.session_state['disposal_items'] if d.get('amount') is not None and d.get('age') is not None],
         end_age=110
     )
     nw_110 = base_110[-1]['net_worth']
@@ -1035,13 +1153,14 @@ def render_screen_3():
             interest_rate=st.session_state['interest_rate'] / 100.0,
             inflation_rate=st.session_state['inflation_rate'] / 100.0,
             is_scenario=True, # Match baseline assumption
-            splurge_items=[s for s in st.session_state['splurge_items'] if s.get('cost') is not None and s.get('age') is not None],
             inheritance_amount=st.session_state['inheritance_amount'],
             inheritance_age=st.session_state['inheritance_age'],
             cpp_start_age=cpp_age,
             cpp_amount=calc_cpp,
             oas_start_age=oas_age,
             oas_amount=calc_oas,
+            splurge_items=[s for s in st.session_state['splurge_items'] if s.get('cost') is not None and s.get('age') is not None],
+            disposal_items=[d for d in st.session_state['disposal_items'] if d.get('amount') is not None and d.get('age') is not None],
             end_age=110
         )
         tnw_110 = test_110[-1]['net_worth']
@@ -1093,7 +1212,7 @@ def render_screen_3():
     
     header_text = encouragement.get(phase_name, "Your financial path looks solid!")
     
-    # Premium Styled Banner
+    # Premium Styled Banner (Full Width)
     st.markdown(f"""
         <div style="
             background-color: #f0f7ff; 
@@ -1246,11 +1365,7 @@ with tab_finance:
         render_blog_sidebar()
 
 with tab_results:
-    left_col, right_col = st.columns([1.72, 1], gap="large")
-    with left_col:
-        render_screen_3()
-    with right_col:
-        render_blog_sidebar()
+    render_screen_3()
 
 with tab_read_more:
     left_col, right_col = st.columns([1.72, 1], gap="large")

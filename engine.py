@@ -9,6 +9,7 @@ def calculate_trajectory(
     inflation_rate=0.02,
     is_scenario=False,
     splurge_items=[],
+    disposal_items=[],
     inheritance_amount=0,
     inheritance_age=0,
     cpp_start_age=65,
@@ -37,7 +38,6 @@ def calculate_trajectory(
         
         # 3. Add CPP if age >= start age
         if age >= cpp_start_age:
-            annual_flow += cpp_amount * 12
             annual_flow += cpp_amount * 12
             
         # 4. Add OAS if age >= start age
@@ -78,6 +78,13 @@ def calculate_trajectory(
             if inheritance_age is not None and inheritance_amount is not None:
                 if age == inheritance_age:
                     annual_flow += inheritance_amount
+            
+            for item in disposal_items:
+                d_age = item.get('age')
+                d_amount = item.get('amount')
+                if d_age is not None and d_amount is not None:
+                    if age == d_age:
+                        annual_flow += d_amount
         
         # 7. Apply Growth and Inflation logic
         real_growth = interest_rate - inflation_rate
