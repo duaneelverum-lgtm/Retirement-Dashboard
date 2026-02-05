@@ -861,7 +861,7 @@ def render_screen_3():
         milestones.append({
             'age': target_retirement, 
             'text': "Retirement", 
-            'color': "Gray", 
+            'color': "black", 
             'dash': "dash"
         })
     
@@ -870,7 +870,7 @@ def render_screen_3():
         milestones.append({
             'age': cpp_age, 
             'text': f"CPP Starts (${calc_cpp})", 
-            'color': "#4CAF50", 
+            'color': "black", 
             'dash': "dash"
         })
     
@@ -879,7 +879,7 @@ def render_screen_3():
         milestones.append({
             'age': oas_age, 
             'text': f"OAS Starts (${calc_oas})", 
-            'color': "#FF9800", 
+            'color': "black", 
             'dash': "dash"
         })
 
@@ -892,7 +892,7 @@ def render_screen_3():
             milestones.append({
                 'age': d_age, 
                 'text': f"Sell {d_asset}", 
-                'color': "#9C27B0", 
+                'color': "black", 
                 'dash': "dashdot"
             })
     
@@ -902,7 +902,7 @@ def render_screen_3():
         milestones.append({
             'age': st.session_state['inheritance_age'], 
             'text': "Inheritance", 
-            'color': "#FFD700", 
+            'color': "black", 
             'dash': "dash"
         })
 
@@ -914,7 +914,7 @@ def render_screen_3():
             milestones.append({
                 'age': age, 
                 'text': label, 
-                'color': "#FF4B4B", 
+                'color': "black", 
                 'dash': "dot"
             })
 
